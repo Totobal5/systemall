@@ -2,11 +2,11 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "MALL",
-    "path": "folders/Scripts/MALL.yy",
+    "name": "Struct N' Array Parser",
+    "path": "folders/Struct N' Array Parser.yy",
   },
   "resourceVersion": "1.0",
-  "name": "MallClass",
+  "name": "foreach",
   "tags": [],
   "resourceType": "GMScript",
 }

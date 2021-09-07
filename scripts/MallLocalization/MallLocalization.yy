@@ -6,7 +6,7 @@
     "path": "folders/Scripts/MALL.yy",
   },
   "resourceVersion": "1.0",
-  "name": "MallClass",
+  "name": "MallLocalization",
   "tags": [],
   "resourceType": "GMScript",
 }

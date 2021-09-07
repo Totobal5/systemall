@@ -1,6 +1,6 @@
 /// @desc
 
-mall_group_create("Default");
+mall_group_init("Default");
 
 var _stat = (new mall_stat_control() ); /// @is {mall_stat_control}
 
@@ -15,6 +15,7 @@ _stat.MasterAdd("int", undefined, function(old, base, lvl) {return round( ( (bas
 
 mall_group_add_stat(_stat);
 
+/*
 var _state = (new mall_state_control() );
 
 _state.MasterAdd("vivo"  , true );

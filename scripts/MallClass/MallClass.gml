@@ -1,7 +1,42 @@
+global._MALL_GLOBAL = {
+    stats: [], statsnames:  {}, 
+    state: [], statenames:  {}, 
+    elmn:  [], elmnnames:   {}, 
+    part:  [], partnames:   {}
+}
+global._MALL_MASTER = -1;
+
+#macro MALL_MASTER mall_group_init()
+
+#macro MALL_CONT_STATS MALL_MASTER.ControlStat    ()
+#macro MALL_CONT_STATE MALL_MASTER.ControlState   ()
+#macro MALL_CONT_ELEMN MALL_MASTER.ControlElements()
+
+/// @returns {array} all_stats
+function mall_global_stats  () {
+    return (global._MALL_GLOBAL.sts);   
+}
+
+/// @returns {array} all_states
+function mall_global_states () {
+    return (global._MALL_GLOBAL.state);
+}
+
+/// @returns {array} all_elements
+function mall_global_elements() {
+    return (global._MALL_GLOBAL.elmn);
+}
+
+/// @returns {array} all_parts
+function mall_global_parts() {
+    return (global._MALL_GLOBAL.part);
+}
+
+/// @param is
 function __mall_class_parent(_is) constructor {
     #region Interno
     __is = _is;
-    __context = self;   // Referencia así mismo.
+    // __context = weak_ref_create(self);   // Referencia así mismo.
     
     #endregion
 
@@ -14,7 +49,7 @@ function __mall_class_parent(_is) constructor {
     is_porcent = false; // Si es basado en porcentaje     
     
     #region Metodos
-    static set_basic  = function(_name, _index) {
+    static SetBasic  = function(_name, _index) {
         name  = _name;
         index = _index;
         
@@ -23,7 +58,7 @@ function __mall_class_parent(_is) constructor {
         return self;
     }
     
-    static set_string = function(_txt, _symbol, _porcent = false) {
+    static SetString = function(_txt, _symbol, _porcent = false) {
         var _scr = MALL_LOCAL.GetTranslate();
         
         var _new = (!is_undefined(_scr) ) ? _scr(_txt) : _txt;
@@ -36,6 +71,7 @@ function __mall_class_parent(_is) constructor {
         return self;
     }
     
+        #region Import
     /// @param array
     /// @param set_value
     static ImportFromArray = function(_array, _setval = 0) {
@@ -58,106 +94,56 @@ function __mall_class_parent(_is) constructor {
         }        
     }
     
-    /// @desc Convierte las variables no internas hacia un array
-    static ToArray  = function() {
+    #endregion
         
-    }
-    
-    /// @desc Convierte las variables no internas hacia un struct
-    static ToStruct = function() {
-        
-    }
-    
-    static Copy = function() {}
     
     #endregion
 }
 
-#region Localizacion
-global._MALL_LOCAL = (new __mall_class_localization() );
-
-#macro MALL_LOCAL global._MALL_LOCAL
-
-function __mall_class_localization() : __mall_class_parent("MALL_LOCAL") constructor {
-    name = "";
-    des = "";
-    ret = "";
+#region Group
+/// @param name
+/// @param index
+function __mall_class_group(_name, _index) : __mall_class_parent("MALL_GROUP_INTERN") constructor { 
+    SetBasic(_name, _index);
     
-    ext = [""];
-    
-    scr = undefined;
-    
-    static SetBasic = function(_name, _des, _ret, _scr) {
-        name = _name;
-        des = _des;
-        ret = _ret;
-        
-        scr = _scr;
-        
-        return self;
-    }
-    
-    static AddExtras = function(_extarray) {
-        var i = 0; repeat(array_length(_extarray) ) {
-            ext[i] = _extarray[i];
-            
-            ++i;
-        }
-        
-        return self;
-    }
-
-    static GetTranslate = function() {
-        return scr;
-    }    
+    stats = undefined;
+    state = undefined;
+    elemn = undefined;
+    part  = undefined;
 }
-
-function mall_set_localization(_name, _des, _ret, _scr, _ext = [""]) {
-    if (is_undefined(_scr) ) _scr = function(str) {return str; }
-    
-    return (MALL_LOCAL.SetBasic(_name, _des, _ret, _scr).AddExtras(_ext) );
-}
-
-#endregion
-
-#region GROUP
-global._MALL_MASTER = mall_group_init();
-
-#macro MALL_MASTER global._MALL_MASTER
-
-#macro MALL_CONT_STATS global._MALL_MASTER.MasterControlStat    ()
-#macro MALL_CONT_STATE global._MALL_MASTER.MasterControlState   ()
-#macro MALL_CONT_ELEMN global._MALL_MASTER.MasterControlElements()
 
 function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
-    races = [];
-    index =  0;
-    
-    master_stat  = [];
-    __master_stat_names  = {}
-    
-    master_state = [];
-    __master_state_names = {};
-    
-    master_elemn = [];
-    __master_elemn_names = {};
-    
+    group = [];
+    index =  0; // Para cambiar de grupo hay que cambiar el indice
+
     #region Metodos
-    static __class_race = function(_name) constructor {
-        name = "";
+    static Create = function(_name) {
+        static createcount = 0;
         
-        stats = undefined;
-        state = undefined;
-        elemn = undefined;
+        array_push(group, (new __mall_class_group(_name, createcount) ) );
+        createcount++;
+    }
+
+    static GetGroup = function(_ind) {
+        if (!is_undefined(_ind) ) index = _ind;
+  
+        return races[index];    
     }
     
-    static MasterCreate = function(_name) {
-        array_push(races, new __class_race(_name) );      
-    }
-    
-    static MasterAddStat = function(_stats) {
+    static AddStat = function(_stats) {
         static stat_count = 0;
         
+        foreach(_stats.order, function(in, i) {
+            if (!variable_struct_exists(global._MALL_GLOBAL.stsnames, in) ) {
+                array_push(global._MALL_GLOBAL.stats, in);
+                variable_struct_set(global._MALL_GLOBAL.statsnames, in, stat_count);
+                
+                stat_count++;
+            }
+        });
+        
+        group[index].stats = _stats;
+        /*
         var _order = _stats.order;
         var i = 0; repeat(array_length(_order) ) {
             var in = _order[i];
@@ -173,9 +159,10 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
         }
         
         races[index].stats = _stats;
+        */
     }
     
-    static MasterAddState = function(_state) {
+    static AddState = function(_state) {
         static state_count = 0;
         
         var _order = _state.order;
@@ -195,7 +182,7 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
         races[index].state = _state;  
     }
     
-    static MasterAddElement = function(_elemn) {
+    static AddElement = function(_elemn) {
         static elemn_count = 0;
         
         var _order = _elemn.order;
@@ -214,130 +201,170 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
        
         races[index].elemn = _elemn;
     }
-
-    static MasterReturn = function(_ind) {
-        if (!is_undefined(_ind) ) index = _ind;
-  
-        return races[index];    
-    }
     
-    static MasterControlStat = function() {
+    static AddPart    = function(_part)  {
+        GetGroup().part = _part;
+    }
+
+        #region Obtener controladores
+    static ControlStat = function() {
         return races[index].stats;
     }
 
-    static MasterControlState = function() {
+    static ControlState = function() {
         return races[index].state;
     }
     
-    static MasterControlElements = function() {
+    static ControlElements = function() {
         return races[index].elemn;
     }
+    
+    static ControlPart = function() {
+        return GetGroup().part;   
+    }
+    
+    #endregion
     
     #endregion
 }
 
-function mall_group_init() {
-    static racecontrol = (new mall_group_control() );
+/// @param default_group
+function mall_group_init(_group_name) {
+    static racecontrol = (new mall_group_control() ).Create(_group_name);
+    global._MALL_MASTER = racecontrol;
     
-    return racecontrol;
+    return global._MALL_MASTER;
 }
 
-#region Global
-function mall_global_stats  () {
-    return (MALL_MASTER.master_stat);   
-}
-
-function mall_global_states () {
-    return (MALL_MASTER.master_state);
-}
-
-function mall_globa_elements() {
-    return (MALL_MASTER.master_elemn);
-}
-
-#endregion
-
-function mall_group_create(_name) {
+/// @param group_name
+function mall_group_create(_name)       {
     MALL_MASTER.MasterCreate(_name);
-}
-
-function mall_group_add_stat(_stat) {
-    MALL_MASTER.MasterAddStat(_stat);
-}
-
-function mall_group_add_state(_state) {
-    MALL_MASTER.MasterAddState(_state);
-}
-
-function mall_group_add_element(_state) {
-    MALL_MASTER.MasterAddElement(_state);
 }
 
 function mall_group_change(_ind) {
     MALL_MASTER.index = _ind;
 }
 
+#region Group Add
+/// @param mall_stat
+function mall_group_add_stat(_stat)     {
+    MALL_MASTER.AddStat(_stat);
+}
+
+/// @param mall_state
+function mall_group_add_state(_state)   {
+    MALL_MASTER.AddState(_state);
+}
+
+/// @param mall_element
+function mall_group_add_element(_elmn)  {
+    MALL_MASTER.AddElement(_elmn);
+}
+
+/// @param mall_part
+function mall_group_add_part(_part)     {
+    MALL_MASTER.AddPart(_part);
+}
+
+#endregion
+
+
 #endregion
 
 #region Stats
 
+/// @param name
+/// @param index
 function __mall_stat_class(_name = "", _index = -1) : __mall_class_parent("MALL_STAT_INTERN") constructor {
     // Lo basico
-    set_basic(_name, _index);
+    SetBasic(_name, _index);
     
-    symbol = "";
-    is_porcent = false;
+    // Referencia al controlador
+    outside = undefined;
     
-    master = {};
+    // Master : Otra estadistica, no puede ser mayor que esta y solo master puede aumentar sus atributos mediante lvlup
+    master = undefined;
     master_name = "";
     
-    val_max = 0;
-    val_min = 0;
+    range_max = 0;
+    range_min = 0;
     
-    lvlup_form = function(old, base, lvl) {return old; };
+    lvlup = function(old, base, lvl) {return old; };
     
-    affected = [];
+    watch = {}; // Que estado afecta a esta estadistica.
     
     #region Metodos
-
-    static set_master = function(_name = "", _self) {
-        var _context = _self.stats_master;
+    /// @param stat_name
+    static SetMaster = function(_name) {
+        var _cont = outside.stats;
         
         if (_name != "") {
-            master      = _context[$ _name];
+            var in = _cont[$ _name];
+            
+            master      = in;
             master_name = _name;
             
-            val_max = _context[$ _name].val_max;
-            val_min = _context[$ _name].val_min;
+            range_max = in.range_max;
+            range_min = in.range_min;
             
-            set_lvlup(_context[$ _name].lvlup_form);
+            // Quitar la manera de subir de nivel, ya que ahora es esclavo de la otra estadistica
+            SetLvlUp(undefined);
+            
+            return  true;
         }
+        
+        return false;
     }
     
-    static set_limits = function(_min, _max) {
-        val_min = _min;
-        val_max = _max;
+    /// @param lvlup
+    static SetLvlUp  = function(_lvlup) {
+        lvlup = _lvlup;
         
         return self;
     }
     
-    static set_lvlup = function(_form) {
-        lvlup_form = _form;
+    /// @param range_min
+    /// @param range_max
+    static SetRange = function(_min, _max) {
+        range_max = _min;
+        range_min = _max;
+        
+        return self;
+    }
+
+    /// @param state_name
+    /// @param values
+    static AddWatch = function(_state_name, _values) {
+        if (!variable_struct_exists(watch, _state_name) ) {
+            variable_struct_set(watch, _state_name, {state: _state_name, val: _values} );
+        }
         
         return self;
     }
     
-    static add_affected = function(_state_name) {
-        array_push(affected, _state_name);
-        
-        return self;
+    /// @param watch_array
+    static AddWatchArray = function(_array) {
+        foreach(_array, function(in, i) {AddWatch(in[0], in[1] ); } );
     }
     
-    static get_master   = function() {return   master; }
-    static get_affected = function() {return affected; }
+    /// @returns {struct}
+    static GetWatch  = function() {
+        return watch;
+    }
     
-    static get_max = function() {return val_max; }
-    static get_min = function() {return val_min; }
+    /// @returns {array}
+    static GetRange  = function() {
+        return [range_min, range_min];
+    }
+    
+    /// @returns {array}
+    static GetMaster = function(_option = true) {
+        return (_option) ? master : [master, master_name];
+    }
+    
+    static GetLvlUp  = function() {
+        return lvlup;
+    }
     
     #endregion
 }
@@ -345,79 +372,81 @@ function __mall_stat_class(_name = "", _index = -1) : __mall_class_parent("MALL_
 function mall_stat_control () : __mall_class_parent("MALL_STAT") constructor {
     #region Variables
     order = []; // Estadisticas agregadas
-    
-    stats_master = {};
+    stats = {};
     
     #endregion
     
     #region Metodos
-    static MasterAdd  = function(_name, _master, _formula) {
-        static count = 0;
+    static Add = function(_name, _master, _formula) {
+        static statcount = 0;
         
-        if (!variable_struct_exists(stats_master, _name) ) {
-            var _stat = (new __mall_stat_class(_name, count) ).set_lvlup(_formula);
-            
-            _stat.set_master(_master, self);
+        if (!variable_struct_exists(stats, _name) ) {
+            var _stat = (new __mall_stat_class(_name, count) );
+            _stat.outside = self;
+
+            // Si no se establecio un master entonces agregar la formula
+            if (!_stat.SetMaster(_master) ) _stat.SetLvlUp(_formula);
             
             variable_struct_set(stats_master, _name, _stat);
-            
             array_push(order, _name);
+            
             count++;
             
             return _stat;
-        }    
+        }
+        
+        return noone;
     }
     
-    static MasterGetNames = function() {
+    static GetNames = function() {
         return order;
     }
     
-    static MasterGetCount = function() {
+    static GetCount = function() {
         return array_length(order);
     }
     
     /// @param stat
-    static MasterGetStat  = function(_name) {
-        return (is_string(_name) ) ? stats_master[$ _name] : MasterGetStatIndex(_name); 
+    static Get = function(_name) {
+        return (is_string(_name) ) ? stats[$ _name] : GetIndex(_name); 
     }
     
-    static MasterGetStatIndex = function(_index) {
-        return stats_master[$ order[_index] ];
+    /// @param index
+    static GetIndex = function(_index) {
+        return stats[$ order[_index] ];
     }
     
     #endregion
 }
 
 function mall_get_stat(_access) {
-    return (MALL_CONT_STATS.MasterGetStat(_access) );
+    return (MALL_CONT_STATS.Get(_access) );
 }
 
 /// @returns {array}
 function mall_stat_get_names() {
-    return (MALL_CONT_STATS.MasterGetNames() );
+    return (MALL_CONT_STATS.GetNames() );
 }
 
-/// @returns {array}
+/// @returns {number}
 function mall_stat_get_count() {
-    return (MALL_CONT_STATS.MasterGetCount() );
+    return (MALL_CONT_STATS.GetCount() );
 }
 
-function mall_stat_get_master(_access) {
-    return (mall_get_stat(_access) ).get_master();
+function mall_stat_get_master(_access, _option) {
+    return (mall_get_stat(_access) ).GetMaster(_option);
 }
 
 /// @returns {array}
-function mall_stat_get_affected(_access) {
-    return (mall_get_stat(_access) ).get_affected();  
+function mall_stat_get_watch(_access) {
+    return (mall_get_stat(_access) ).GetWatch();  
 }
 
-function mall_stat_get_max(_access) {
-    return (mall_get_stat(_access) ).get_max();    
+/// @returns {array}
+function mall_stat_get_range(_access) {
+    return (mall_get_stat(_access) ).GetRange();    
 }
 
-function mall_stat_get_min(_access) {
-    return (mall_get_stat(_access) ).get_min();       
-}
 
 #endregion
 
