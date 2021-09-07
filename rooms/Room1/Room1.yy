@@ -1,0 +1,55 @@
+{
+  "isDnd": false,
+  "volume": 1.0,
+  "parentRoom": null,
+  "views": [
+    {"inherit":false,"visible":false,"xview":0,"yview":0,"wview":128,"hview":128,"xport":0,"yport":0,"wport":128,"hport":128,"hborder":32,"vborder":32,"hspeed":-1,"vspeed":-1,"objectId":null,},
+    {"inherit":false,"visible":false,"xview":0,"yview":0,"wview":128,"hview":128,"xport":0,"yport":0,"wport":128,"hport":128,"hborder":32,"vborder":32,"hspeed":-1,"vspeed":-1,"objectId":null,},
+    {"inherit":false,"visible":false,"xview":0,"yview":0,"wview":128,"hview":128,"xport":0,"yport":0,"wport":128,"hport":128,"hborder":32,"vborder":32,"hspeed":-1,"vspeed":-1,"objectId":null,},
+    {"inherit":false,"visible":false,"xview":0,"yview":0,"wview":128,"hview":128,"xport":0,"yport":0,"wport":128,"hport":128,"hborder":32,"vborder":32,"hspeed":-1,"vspeed":-1,"objectId":null,},
+    {"inherit":false,"visible":false,"xview":0,"yview":0,"wview":128,"hview":128,"xport":0,"yport":0,"wport":128,"hport":128,"hborder":32,"vborder":32,"hspeed":-1,"vspeed":-1,"objectId":null,},
+    {"inherit":false,"visible":false,"xview":0,"yview":0,"wview":128,"hview":128,"xport":0,"yport":0,"wport":128,"hport":128,"hborder":32,"vborder":32,"hspeed":-1,"vspeed":-1,"objectId":null,},
+    {"inherit":false,"visible":false,"xview":0,"yview":0,"wview":128,"hview":128,"xport":0,"yport":0,"wport":128,"hport":128,"hborder":32,"vborder":32,"hspeed":-1,"vspeed":-1,"objectId":null,},
+    {"inherit":false,"visible":false,"xview":0,"yview":0,"wview":128,"hview":128,"xport":0,"yport":0,"wport":128,"hport":128,"hborder":32,"vborder":32,"hspeed":-1,"vspeed":-1,"objectId":null,},
+  ],
+  "layers": [
+    {"instances":[
+        {"properties":[],"isDnd":false,"objectId":{"name":"oControlador_global","path":"objects/oControlador_global/oControlador_global.yy",},"inheritCode":false,"hasCreationCode":false,"colour":4294967295,"rotation":0.0,"scaleX":1.0,"scaleY":1.0,"imageIndex":0,"imageSpeed":1.0,"inheritedItemId":null,"frozen":false,"ignore":false,"inheritItemSettings":false,"x":0.0,"y":0.0,"resourceVersion":"1.0","name":"inst_25B8FC14","tags":[],"resourceType":"GMRInstance",},
+      ],"visible":true,"depth":0,"userdefinedDepth":false,"inheritLayerDepth":false,"inheritLayerSettings":false,"gridX":16,"gridY":16,"layers":[],"hierarchyFrozen":false,"resourceVersion":"1.0","name":"Instances_1","tags":[],"resourceType":"GMRInstanceLayer",},
+  ],
+  "inheritLayers": false,
+  "creationCodeFile": "",
+  "inheritCode": false,
+  "instanceCreationOrder": [
+    {"name":"inst_25B8FC14","path":"rooms/Room1/Room1.yy",},
+  ],
+  "inheritCreationOrder": false,
+  "sequenceId": null,
+  "roomSettings": {
+    "inheritRoomSettings": false,
+    "Width": 128,
+    "Height": 128,
+    "persistent": false,
+  },
+  "viewSettings": {
+    "inheritViewSettings": false,
+    "enableViews": false,
+    "clearViewBackground": false,
+    "clearDisplayBuffer": true,
+  },
+  "physicsSettings": {
+    "inheritPhysicsSettings": false,
+    "PhysicsWorld": false,
+    "PhysicsWorldGravityX": 0.0,
+    "PhysicsWorldGravityY": 10.0,
+    "PhysicsWorldPixToMetres": 0.1,
+  },
+  "parent": {
+    "name": "rpg_systemall",
+    "path": "rpg_systemall.yyp",
+  },
+  "resourceVersion": "1.0",
+  "name": "Room1",
+  "tags": [],
+  "resourceType": "GMRoom",
+}
