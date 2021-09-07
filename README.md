@@ -1,2 +1,2 @@
 # mall
-rpg system for game maker
+rpg system for game maker 2.3+
