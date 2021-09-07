@@ -4,7 +4,9 @@ global._MALL_GLOBAL = {
     elmn:  [], elmnnames:   {}, 
     part:  [], partnames:   {}
 }
-global._MALL_MASTER = -1;
+
+global._MALL_MASTER   = -1;
+global._MALL_PROGRESS = -1; /// Cuando se crea algo
 
 #macro MALL_MASTER mall_group_init()
 
@@ -30,6 +32,11 @@ function mall_global_elements() {
 /// @returns {array} all_parts
 function mall_global_parts() {
     return (global._MALL_GLOBAL.part);
+}
+
+/// @param class
+function mall_global_progress(_class) {
+    global._MALL_PROGRESS = _class;
 }
 
 /// @param is
@@ -71,6 +78,11 @@ function __mall_class_parent(_is) constructor {
         return self;
     }
     
+    static TogglePorcent = function() {
+        is_porcent = !is_porcent;
+        return self;
+    }
+    
         #region Import
     /// @param array
     /// @param set_value
@@ -96,6 +108,17 @@ function __mall_class_parent(_is) constructor {
     
     #endregion
         
+    static GetBasic  = function() {
+        return [name, index];
+    }
+    
+    static GetString = function() {
+        return [txt, symbol];
+    }
+    
+    static IsPorcent = function() {
+        return is_porcent;
+    }
     
     #endregion
 }
@@ -291,33 +314,44 @@ function __mall_stat_class(_name = "", _index = -1) : __mall_class_parent("MALL_
     
     lvlup = function(old, base, lvl) {return old; };
     
-    watch = {}; // Que estado afecta a esta estadistica.
+    watched = {};   // Que estado es observado
+    used    = {};   // Que partes lo usan
+    
+    absorb = [];    // Que elemento absorbe
+    reduce = [];    // Que elemento reduce
     
     #region Metodos
-    /// @param stat_name
-    static SetMaster = function(_name) {
-        var _cont = outside.stats;
-        
-        if (_name != "") {
-            var in = _cont[$ _name];
+    
+    /// @param {__mall_stat_class} stat_class
+    /// @desc Hereda la formula y rangos de otro estado, pero no es su maestro
+    static Inherit = function(_stat) {
+        range_max = _stat.range_max;
+        range_min = _stat.range_min;
             
-            master      = in;
-            master_name = _name;
+        // Quitar la manera de subir de nivel, ya que ahora es esclavo de la otra estadistica
+        SetLvlUp(_stat.GetLvlUp() );
+    }
+    
+    /// @param {__mall_stat_class} stat_class
+    static SetMaster = function(_stat) {
+        if (is_struct(_stat) ) {
+            master      = _stat;
+            master_name = _stat.name;
             
-            range_max = in.range_max;
-            range_min = in.range_min;
+            range_max = _stat.range_max;
+            range_min = _stat.range_min;
             
             // Quitar la manera de subir de nivel, ya que ahora es esclavo de la otra estadistica
             SetLvlUp(undefined);
             
-            return  true;
+            return  true;        
         }
-        
+
         return false;
     }
     
     /// @param lvlup
-    static SetLvlUp  = function(_lvlup) {
+    static SetLvlUp = function(_lvlup) {
         lvlup = _lvlup;
         
         return self;
@@ -326,30 +360,54 @@ function __mall_stat_class(_name = "", _index = -1) : __mall_class_parent("MALL_
     /// @param range_min
     /// @param range_max
     static SetRange = function(_min, _max) {
-        range_max = _min;
-        range_min = _max;
+        range_min = _min;
+        range_max = _max;
         
         return self;
     }
 
-    /// @param state_name
+    /// @param state_class
     /// @param values
-    static AddWatch = function(_state_name, _values) {
-        if (!variable_struct_exists(watch, _state_name) ) {
-            variable_struct_set(watch, _state_name, {state: _state_name, val: _values} );
+    static AddWatched = function(_state, _values) {
+        var _name = _state.name;
+        
+        if (!variable_struct_exists(watched, _name) ) {
+            variable_struct_set(watched, _name, {state: _name, val: _values} );
         }
         
         return self;
     }
     
     /// @param watch_array
-    static AddWatchArray = function(_array) {
-        foreach(_array, function(in, i) {AddWatch(in[0], in[1] ); } );
+    static AddWatchedArray = function(_array) {
+        for (var i = 0, _len = array_length(_array); i < _len; ++i) AddWatched(_array[i], _array[i + 1] );
+
+        return self;
     }
     
+    static AddAbsorb = function(_elmn) {
+        array_push(absorb, _elmn.name);
+        return self;
+    }
+    
+    static AddAbsorbArray = function(_array) {
+        for (var i = 0, _len = array_length(_array); i < _len; ++i) AddAbsorb(_array[i]);
+        return self;
+    }
+
+    static AddReduce = function(_elmn) {
+        array_push(reduce, _elmn.name);
+        return self;
+    }
+    
+    static AddReduceArray = function(_array) {
+        for (var i = 0, _len = array_length(_array); i < _len; ++i) AddReduce(_array[i]);
+        return self;
+    }
+   
     /// @returns {struct}
     static GetWatch  = function() {
-        return watch;
+        return watched;
     }
     
     /// @returns {array}
@@ -381,16 +439,16 @@ function mall_stat_control () : __mall_class_parent("MALL_STAT") constructor {
         static statcount = 0;
         
         if (!variable_struct_exists(stats, _name) ) {
-            var _stat = (new __mall_stat_class(_name, count) );
+            var _stat = (new __mall_stat_class(_name, statcount) );
             _stat.outside = self;
 
             // Si no se establecio un master entonces agregar la formula
             if (!_stat.SetMaster(_master) ) _stat.SetLvlUp(_formula);
             
-            variable_struct_set(stats_master, _name, _stat);
+            variable_struct_set(stats, _name, _stat);
             array_push(order, _name);
             
-            count++;
+            statcount++;
             
             return _stat;
         }
@@ -452,58 +510,73 @@ function mall_stat_get_range(_access) {
 
 #region States
 function __mall_state_class(_name = "", _index = -1, _init = false) : __mall_class_parent("MALL_STATE_INTERN") constructor {
-    // Lo basico
-    set_basic(_name, _index);
+    SetBasic(_name, _index);
     
-    val_init = _init;
+    init = _init;
     
-    pross      = [];
-    pross_form = [];
+    processes = {}; // Procesos que puede ejecutar.
     
-    affect = [];    // A que estadisticas afecta
-    affected = [];  // Que elemento lo puede invocar
+    watch_stat = [];    // Que estadistica lo vigilan
+    watch_part = [];    // Que partes lo vigilan    
     
     #region Metodos
-    static add_affected = function(_elemn_name) {
-        array_push(affected, _elemn_name);
+    static Get = function() {
+        return init;
+    }
+    
+    /// @param init_value
+    static SetInit = function(_init) {
+        init = _init;
+        
         return self;
     }
     
-    static add_affect = function() {
-        if (is_array(argument[0] ) ) {
-            var i = 0; repeat(array_length(argument[0] ) ) {
-                var in = argument[0][i];
-                
-                array_push(affect, in);
-                
-                var _stat = mall_get_stat(in);
-                
-                _stat.add_affected(name);
+    static SetProcess = function(_name, _values) {
+        if (!variable_struct_exists(processes, _name) ) {
+            variable_struct_set(processes, _name, {value: _values, name: _name} );
+        }
+        
+        return self;
+    }
+    
+    /// @param process_array
+    static SetProcessArray = function(_array) {
+        for (var i = 0, _len = array_length(_array); i < _len; ++i) SetProcess(_array[i], _array[i + 1] );
 
-                ++i;
-            }
-        }
-        
         return self;
     }
     
-    static add_proccess = function() {
-        if (is_array(argument[0]) ) {
-            var i = 0; repeat(array_length(argument[0] ) ) {
-                var in = argument[0][i];
-                
-                array_push(pross     , in[0] );
-                array_push(pross_form, in[1] );
-                
-                ++i;
-            }
+    /// @param stat_class
+    /// @param values
+    /// Necesita que el anterior sea un stat
+    static SetWatchStat = function(_stat, _values) {
+        if (is_struct(_stat) ) {
+            _stat.AddWatched(self, _values);
+            array_push(watch_stat, _stat.name);
         }
-        
+    
         return self;
     }
     
-    static get_proccess = function(_ind) {
-        return [pross[_ind], pross_form[_ind] ];
+    /// @param watch_array
+    static SetWatchStatArray = function(_array) {
+        for (var i = 0, _len = array_length(_array); i < _len; ++i) SetWatchStat(_array[i], _array[i + 1] );        
+
+        return self;          
+    }
+    
+    /// @returns {array}
+    static GetWatchStat = function() {
+        return watch_stat;
+    }
+    
+    /// @returns {array}
+    static GetWatchPart = function() {
+        return watch_part;
+    }
+    
+    static GetProcesses = function() {
+        return processes;
     }
     
     #endregion
@@ -511,45 +584,67 @@ function __mall_state_class(_name = "", _index = -1, _init = false) : __mall_cla
 
 function mall_state_control() : __mall_class_parent("MALL_STATE") constructor {
     order = [];
-    state_master = {};
+    state = {};
     
     #region Metodos
-    static MasterAdd = function(_name, _init, _affects, _proccess) {
-        static count = 0;
+    static Add = function(_name, _init, _watch) {
+        static statecount = 0;
         
-        if (!variable_struct_exists(state_master, _name) ) {
-            var _state = (new __mall_state_class(_name, count, _init) ).add_affect(_affects).add_proccess(_proccess);
+        if (!variable_struct_exists(state, _name) ) {
+            var _state = (new __mall_state_class(_name, statecount, _init) ).SetWatchStatArray(_watch);
 
-            variable_struct_set(state_master, _name, _state);
+            variable_struct_set(state, _name, _state);
             
             array_push(order, _name);
-            count++;
+            statecount++;
             
             return _state;
         }             
     }
 
-    static MasterGetNames = function() {
+    static GetNames = function() {
         return order;
     }
     
-    static MasterGetCount = function() {
+    static GetCount = function() {
         return array_length(order);
     }
     
-    static MasterGetState = function(_name) {
-        return (is_string(_name) ) ? state_master[$ _name] : MasterGetStateIndex(_name);
+    static Get = function(_name) {
+        return (is_string(_name) ) ? state[$ _name] : GetIndex(_name);
     }
     
-    static MasterGetStateIndex = function(_ind) {
-        return state_master[$ order[_ind] ];        
+    static GetIndex = function(_ind) {
+        return state[$ order[_ind] ];        
     }
 
     #endregion
 }
 
 function mall_get_state(_access) {
-    return (MALL_CONT_STATE.MasterGetState(_access) );
+    return (MALL_CONT_STATE.Get(_access) );
+}
+
+/// @returns {array}
+function mall_state_get_names() {
+    return (MALL_CONT_STATE.GetNames() );
+}
+
+/// @returns {number}
+function mall_state_get_count() {
+    return (MALL_CONT_STATE.GetCount() );
+}
+
+function mall_state_get_watch_stat(_access) {
+    return (mall_get_state(_access) ).GetWatchStat();
+}
+
+function mall_state_get_watch_part(_access) {
+    return (mall_get_state(_access) ).GetWatchPart();   
+}
+
+function mall_state_get_processes(_access)  {
+    return (mall_get_state(_access) ).GetProcesses();
 }
 
 #endregion
@@ -557,44 +652,74 @@ function mall_get_state(_access) {
 #region Elements
 function __mall_element_class(_name = "", _index = -1) : __mall_class_parent("MALL_ELEMENT_INTERN") constructor {
     // Lo basico
-    set_basic(_name, _index);
+    SetBasic(_name, _index);
     
-    produce      = [];   // Estados
-    produce_prob = [];   // Probabilidad de producirlos
+    absorb = []; // Una estadistica se puede beneficiar del elemento
+    reduce = []; // Una estadistica se puede perjudiciar del elemento
+    
+    produce = {}; // Probabilidad de producirlos estados
     
     #region Metodos
-    static add_produce = function(_array) {
-        var i = 0; repeat(array_length(_array) ) {
-            var _name = _array[i][0], _val = _array[i][1];
-            
-            array_push(produce      , _name);
-            array_push(produce_prob ,  _val);
-            
-            var _state = mall_get_state(_name);
-            _state.add_affected(name);
-            
-            ++i;
-        }
+    
+    /// @param state_name
+    /// @param value
+    static AddProduce = function(_state, _values) {
+        var _name = _state.name;
         
+        if (!variable_struct_exists(produce, _name) ) {
+            variable_struct_set(produce, _name, {name: _name, values: _values} ); 
+        }
+    
         return self;
     }
     
+    /// @param produce_array
+    static AddProduceArray = function(_array) {
+        for (var i = 0, _len = array_length(_array); i < _len; ++i) AddProduce(_array[i], _array[i + 1] );        
+        return self;
+    }
+    
+    static AddAbsorb = function(_stat) {
+        array_push(absorb, _stat.name);
+        _stat.AddAbsorb(self);
+        
+        return self;   
+    }
+
+    static AddAbsorbArray = function(_array) {
+        for (var i = 0, _len = array_length(_array); i < _len; ++i) AddAbsorb(_array[i]);  
+
+        return self;   
+    }
+    
+    static AddReduce = function(_stat) {
+        array_push(reduce, _stat.name);
+        _stat.AddReduce(self);
+        
+        return self;          
+    }
+    
+    static AddReduceArray = function(_stat) {
+        for (var i = 0, _len = array_length(_array); i < _len; ++i) AddReduce(_array[i] ); 
+
+        return self;          
+    }
     
     #endregion
 }
 
 function mall_element_control() : __mall_class_parent("MALL_ELEMENT") constructor {
     order = [];
-    elemn_control = {};
+    elemn = {};
     
     #region Metodos
-    static MasterAdd = function(_name, _produce) {
+    static Add = function(_name, _produce) {
         static count = 0;
         
-        if (!variable_struct_exists(elemn_control, _name) ) {
-            var _elemn = (new __mall_element_class(_name, count) ).add_produce(_produce);
+        if (!variable_struct_exists(elemn, _name) ) {
+            var _elemn = (new __mall_element_class(_name, count) ).AddProduceArray(_produce);
 
-            variable_struct_set(elemn_control, _name, _elemn);
+            variable_struct_set(elemn, _name, _elemn);
             
             array_push(order, _name);
             count++;
@@ -603,13 +728,22 @@ function mall_element_control() : __mall_class_parent("MALL_ELEMENT") constructo
         }    
     }
 
-    static MasterGetNames = function() {
+    static GetNames = function() {
         return order;
     }
     
-    static MasterGetCount = function() {
+    static GetCount = function() {
         return array_length(order);
     }
+
+    static Get = function(_name) {
+        return (is_string(_name) ) ? elemn[$ _name] : GetIndex(_name);
+    }
+    
+    static GetIndex = function(_ind) {
+        return elemn[$ order[_ind] ];        
+    }
+
     
     #endregion
 }

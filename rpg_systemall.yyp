@@ -15,10 +15,11 @@
     {"id":{"name":"TreeClass","path":"scripts/TreeClass/TreeClass.yy",},"order":0,},
     {"id":{"name":"timer_use","path":"notes/timer_use/timer_use.yy",},"order":5,},
     {"id":{"name":"GroupFun","path":"scripts/GroupFun/GroupFun.yy",},"order":8,},
-    {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},"order":4,},
+    {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},"order":5,},
     {"id":{"name":"MallClass","path":"scripts/MallClass/MallClass.yy",},"order":0,},
     {"id":{"name":"MallFun","path":"scripts/MallFun/MallFun.yy",},"order":1,},
     {"id":{"name":"MallLocalization","path":"scripts/MallLocalization/MallLocalization.yy",},"order":2,},
+    {"id":{"name":"repeateach","path":"scripts/repeateach/repeateach.yy",},"order":3,},
   ],
   "Options": [
     {"name":"Linux","path":"options/linux/options_linux.yy",},
@@ -40,7 +41,7 @@
     {"folderPath":"folders/Scripts.yy","order":0,"resourceVersion":"1.0","name":"Scripts","tags":[],"resourceType":"GMFolder",},
     {"folderPath":"folders/Tree.yy","order":1,"resourceVersion":"1.0","name":"Tree","tags":[],"resourceType":"GMFolder",},
     {"folderPath":"folders/Scripts/MALL.yy","order":0,"resourceVersion":"1.0","name":"MALL","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/Struct N' Array Parser.yy","order":6,"resourceVersion":"1.0","name":"Struct N' Array Parser","tags":[],"resourceType":"GMFolder",},
+    {"folderPath":"folders/Struct N' Array Parser.yy","order":7,"resourceVersion":"1.0","name":"Struct N' Array Parser","tags":[],"resourceType":"GMFolder",},
   ],
   "AudioGroups": [
     {"targets":-1,"resourceVersion":"1.3","name":"audiogroup_default","resourceType":"GMAudioGroup",},
