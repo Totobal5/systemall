@@ -6,7 +6,6 @@ global._MALL_GLOBAL = {
 }
 
 global._MALL_MASTER   = -1;
-global._MALL_PROGRESS = -1; /// Cuando se crea algo
 
 #macro MALL_MASTER mall_group_init()
 
@@ -32,11 +31,6 @@ function mall_global_elements() {
 /// @returns {array} all_parts
 function mall_global_parts() {
     return (global._MALL_GLOBAL.part);
-}
-
-/// @param class
-function mall_global_progress(_class) {
-    global._MALL_PROGRESS = _class;
 }
 
 /// @param is
@@ -621,6 +615,7 @@ function mall_state_control() : __mall_class_parent("MALL_STATE") constructor {
     #endregion
 }
 
+/// @returns {__mall_state_class}
 function mall_get_state(_access) {
     return (MALL_CONT_STATE.Get(_access) );
 }
@@ -643,7 +638,7 @@ function mall_state_get_watch_part(_access) {
     return (mall_get_state(_access) ).GetWatchPart();   
 }
 
-function mall_state_get_processes(_access)  {
+function mall_state_get_processes (_access)  {
     return (mall_get_state(_access) ).GetProcesses();
 }
 
@@ -705,6 +700,14 @@ function __mall_element_class(_name = "", _index = -1) : __mall_class_parent("MA
         return self;          
     }
     
+    static GetProduce = function(_state_name) {
+        return (is_undefined(_state_name) ) ? produce : produce[$ _state_name];
+    }
+    
+    static GetProduceAll = function() {
+        return produce;
+    }
+    
     #endregion
 }
 
@@ -744,10 +747,38 @@ function mall_element_control() : __mall_class_parent("MALL_ELEMENT") constructo
         return elemn[$ order[_ind] ];        
     }
 
-    
     #endregion
 }
 
+/// @returns {__mall_element_class}
+function mall_get_element(_access) {
+    return (MALL_CONT_ELEMN.Get(_access) );
+}
+
+/// @returns {array}
+function mall_element_get_names() {
+    return (MALL_CONT_ELEMN.GetNames() );
+}
+
+/// @returns {number}
+function mall_element_get_count() {
+    return (MALL_CONT_ELEMN.GetCount() );
+}
+
+/// @returns {struct}
+function mall_element_get_produce(_access, _state_name) {
+    return (mall_get_element(_access) ).GetProduce(_state_name);  
+}
+
+/// @returns {array}
+function mall_element_get_absorb(_access) {
+    return (mall_get_element(_access) ).absorb;
+}
+
+/// @returns {array}
+function mall_element_get_reduce(_access) {
+    return (mall_get_element(_access) ).reduce;    
+}
 
 #endregion
 
