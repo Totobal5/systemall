@@ -2,7 +2,9 @@ global._MALL_GLOBAL = {
     stats: [], statsnames:  {}, 
     state: [], statenames:  {}, 
     elmn:  [], elmnnames:   {}, 
-    part:  [], partnames:   {}
+    part:  [], partnames:   {},
+    
+    itemtype: [], itemtypenames: {}
 }
 
 global._MALL_MASTER   = -1;
@@ -12,6 +14,9 @@ global._MALL_MASTER   = -1;
 #macro MALL_CONT_STATS MALL_MASTER.ControlStat    ()
 #macro MALL_CONT_STATE MALL_MASTER.ControlState   ()
 #macro MALL_CONT_ELEMN MALL_MASTER.ControlElements()
+
+#macro MALL_ITEM_TYPE global._MALL_GLOBAL.itemtypenames
+#macro MALL_ITEM_TYPE_ORDER global._MALL_GLOBAL.itemtype
 
 /// @param is
 function __mall_class_parent(_is) constructor {
@@ -209,18 +214,20 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
         return (group[index] );    
     }
     
-    /// @param {__mall_stat_class} stat_class
+    /// @param {__mall_class_stat} stat_class
     static AddStat = function(_stat) {
         static statcount = 0;
         
         var _gstats = global._MALL_GLOBAL.statsnames;
+        var _gorder = global._MALL_GLOBAL.stats;
+        
         var _order  = _stat.order; 
         
         repeat(each(_order) ) {
             var in = this.value;
             
             if (!variable_struct_exists(_gstats, in) ) {
-                array_push(_order, in);
+                array_push(_gorder, in);
                 variable_struct_set(_gstats, in, statcount);
             
                 statcount++;
@@ -231,18 +238,20 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
         return self;
     }
 
-    /// @param {__mall_state_class} state_class    
+    /// @param {__mall_class_state} state_class    
     static AddState = function(_state) {
         static statecount = 0;
         
-        var _gstates = global.__MALL_GLOBAL.statenames;
+        var _gstates = global._MALL_GLOBAL.statenames;
+        var _gorder  = global._MALL_GLOBAL.state;
+        
         var _order   = _state.order;
         
         repeat(each(_order) ) {
             var in = this.value;
             
             if (!variable_struct_exists(_gstates, in) ) {
-                array_push(_order, in);
+                array_push(_gorder, in);
                 variable_struct_set(_gstates, in, statecount);
             
                 statecount++;
@@ -253,18 +262,20 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
         return self;        
     }
     
-    /// @param {__mall_element_class} element_class
+    /// @param {__mall_class_element} element_class
     static AddElement = function(_elemn) {
         static elemncount = 0;
         
         var _gelemn = global._MALL_GLOBAL.elmnnames;
+        var _gorder = global._MALL_GLOBAL.elmn;
+        
         var _order  = _elemn.order;
         
         repeat(each(_order) ) {
             var in = this.value;
             
             if (!variable_struct_exists(_gelemn, in) ) {
-                array_push(_order, in);
+                array_push(_gorder, in);
                 variable_struct_set(_gelemn, in, elemncount);
             
                 elemncount++;
@@ -275,18 +286,20 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
         return self;        
     }
     
-    /// @param {} part_class
+    /// @param {__mall_class_part} part_class
     static AddPart    = function(_part)  {
         static partcount = 0;
         
-        var _gpart = global._MALL_GLOBAL.partnames;
+        var _gpart  = global._MALL_GLOBAL.partnames;
+        var _gorder = global._MALL_GLOBAL.part;
+        
         var _order = _part.order;
         
         repeat(each(_order) ) {
             var in = this.value;
             
             if (!variable_struct_exists(_gpart, in) ) {
-                array_push(_order, in);
+                array_push(_gorder, in);
                 variable_struct_set(_gpart, in, partcount);
             
                 partcount++;
@@ -866,6 +879,8 @@ function mall_element_get_reduce(_access) {
 
 #region Parts
 
+/// @param name
+/// @param index
 function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_PART_INTERN") constructor {
     // Deterioro
     deter = 0;
@@ -874,7 +889,8 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     
     deter_txt = "n";
     noitem = "noitem";    // Si no hay objeto equipado
-    
+        
+    possible = [];  // Que objetos puede llevar esta parte.
     
     // Componentes que lo afectan
     link = (new __mall_class_group("", -1) ).AllSetArray();   /// @is {__mall_class_group}
@@ -900,7 +916,7 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
             case "MALL_STAT_INTERN"   : link.stat  = _class;    break;
             case "MALL_STATE_INTERN"  : link.state = _class;    break;
             case "MALL_ELEMENT_INTERN": link.elemn = _class;    break;
-            case "MALL_ELEMENT_INTERN": link.part  = _class;    break;
+            case "MALL_PART_INTERN"   : link.part  = _class;    break;
         }
         
         return self;
@@ -910,6 +926,32 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     static AddLinkArray = function(_class_array) {
         repeat(each(_class_array) ) AddLink(this.value);
         
+        return self;
+    }
+    
+    /// @param item_type
+    /// @param item_subtypes
+    /// @desc Se debe de asegurar que los objetos hayan sido creado antes!!
+    static AddItemTypes = function(_item_type, _select) {
+        if (mall_itemtypes_exists(_item_type) ) {
+            var _subtypes = mall_itemtypes_get_subtype(_item_type);
+
+            repeat (each(_select) ) {
+                var in = this.value;
+                
+                // Si existe el subtypo
+                if (!variable_struct_exists(_subtypes, in) ) array_push(possible, in);
+            }
+        }
+        
+        return self;
+    }
+
+    /// @param itemtype_array
+    /// @desc Se debe de asegurar que los objetos hayan sido creado antes!!
+    static AddItemTypesArray = function(_array) {
+        repeat (each(_array) ) {var in = this.value; AddItemTypes(in[0], in[1] ); }
+
         return self;
     }
     
@@ -936,16 +978,31 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     #endregion
 }
 
-/// @param part_name
-/// @param stat_array
 /// @desc Crea las ranuras para equipar objetos (mano, armadura, etc)
 function mall_part_control() : __mall_class_parent("MALL_PART") constructor {
     order = [];
     part  = {};
     
     #region Metodos
-    static Add = function(_name, _item_type, ) {
+    /// @param part_name
+    /// @param item_types
+    /// @param link_array    
+    static Add = function(_name, _item_type, _link_array) {
+        static partcount = 0;
         
+        if (!variable_struct_exists(part, _name) ) {
+            var _part = (new __mall_class_part(_name, partcount) );
+            
+            _part.AddItemTypes(_item_type ); 
+            _part.AddLinkArray(_link_array);
+
+            variable_struct_set(part, _name, _part);
+            
+            array_push(order, _name);
+            partcount++;
+            
+            return _part;
+        }              
     }
     
     
@@ -982,50 +1039,81 @@ function mall_slot_set_noname(_noname) {
 
 #region Item_types
 
+/// @param name
+/// @param index
+function __mall_class_itemtype(_name = "", _index = -1) : __mall_class_parent("MALL_ITEMTYPE_INTERN") constructor {
+    subtypes = {};  // Que subtipos posee
+    order    = []; 
+    
+    #region Metodos
+    
+    /// @param subtype
+    static Add = function(_subtype) {
+        static subtypecount = 0;
+        
+        if (!variable_struct_exists(subtypes, _subtype) ) {
+            variable_struct_set(subtypes, _subtype, subtypecount);
+            
+            array_push(order, _subtype);
+            subtypecount++;
+        }
+        
+        return self;
+    }
+    
+    /// @param subtype_array
+    static AddArray = function(_array) {
+        repeat (each(_array) ) Add(this.value);
+    
+        return self;
+    }
+    
+    #endregion
+}
+
 /// @param {string} item_type
 /// @param {array} item_subtypes
 /// @desc Crea los distintos tipos de objetos (armas, consumibles) tambien incluye los sub-tipos (arma:Espada, armadura:Vestido)
 function mall_create_itemtypes(_item_type, _item_subtypes = [""]) {
-    if (!variable_struct_exists(global._MALL_ITEMS_TYPE, _item_type) ) {
-        variable_struct_set(global._MALL_ITEMS_TYPE, _item_type, {order: []});
-        
-        // Una vez agregado se agregan los sub-tipos
-        var _sub = global._MALL_ITEMS_TYPE[$ _item_type];
-        
-        var i = 0; repeat(array_length(_item_subtypes) ) {
-            var in = _item_subtypes[i];
-            
-            variable_struct_set(_sub, in, i);
-            
-            array_push(_sub.order, in);
-            
-            ++i;    
-        }
-        
+    static typecount = 0;
+    
+    if (!variable_struct_exists(MALL_ITEM_TYPE, _item_type) ) {
+        var _type = (new __mall_class_itemtype(_item_type, typecount) ).AddArray(_item_subtypes);
+
         // Agregar al orden
-        array_push(global._MALL_ITEMS_TYPE.order, _item_type);
+        variable_struct_set(MALL_ITEM_TYPE, _item_type, _type);
+        array_push(MALL_ITEM_TYPE_ORDER, _item_type);
+        
+        typecount++;
+        
+        return _type;
     }      
 }
 
 /// @returns {array}
 function mall_itemtypes_get_types() {
-    return global._MALL_ITEMS_TYPE.order;
+    return MALL_ITEM_TYPE_ORDER;
 }
 
 /// @param item_type
-/// @returns {struct}
+/// @returns {__mall_class_itemtype}
 function mall_itemtypes_get_subtype(_item_type) {
-    return (variable_struct_get(global._MALL_ITEMS_TYPE, _item_type) );
+    return (variable_struct_get(MALL_ITEM_TYPE, _item_type) ).subtypes;
 }
 
 /// @param item_type
 /// @returns {bool}
 function mall_itemtypes_exists(_item_type) {
-    return variable_struct_exists(global._MALL_ITEMS_TYPE, _item_type);
+    return (variable_struct_exists(MALL_ITEM_TYPE, _item_type) );
 }
 
+/// @param itemtype 
+/// @param subtype
+/// @returns {bool}
 function mall_itemtypes_exists_subtype(_item_type, _sub_type) {
-    return (mall_itemtypes_exists(_item_type) && variable_struct_exists(mall_itemtypes_get_subtype(_item_type), _sub_type) );
+    var _sub = mall_itemtypes_get_subtype(_item_type);
+    
+    return (variable_struct_exists(_sub, _sub_type) );
 }
 
 #endregion

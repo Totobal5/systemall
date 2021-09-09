@@ -1,5 +1,7 @@
 /// @desc
 
+mall_create_itemtypes("Armas", ["Espadas", "Arcos", "Escudos"] );
+
 mall_group_init("Default");
 
 var _stat = (new mall_stat_control() ); /// @is {mall_stat_control}
