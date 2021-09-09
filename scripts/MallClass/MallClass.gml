@@ -13,29 +13,10 @@ global._MALL_MASTER   = -1;
 #macro MALL_CONT_STATE MALL_MASTER.ControlState   ()
 #macro MALL_CONT_ELEMN MALL_MASTER.ControlElements()
 
-/// @returns {array} all_stats
-function mall_global_stats  () {
-    return (global._MALL_GLOBAL.sts);   
-}
-
-/// @returns {array} all_states
-function mall_global_states () {
-    return (global._MALL_GLOBAL.state);
-}
-
-/// @returns {array} all_elements
-function mall_global_elements() {
-    return (global._MALL_GLOBAL.elmn);
-}
-
-/// @returns {array} all_parts
-function mall_global_parts() {
-    return (global._MALL_GLOBAL.part);
-}
-
 /// @param is
 function __mall_class_parent(_is) constructor {
     #region Interno
+    __mall = "MALL";
     __is = _is;
     // __context = weak_ref_create(self);   // Referencia así mismo.
     
@@ -114,8 +95,59 @@ function __mall_class_parent(_is) constructor {
         return is_porcent;
     }
     
+    static GetType   = function() {
+        return __is;
+    }
+    
     #endregion
 }
+
+/// @returns {array} all_stats
+function mall_global_stats  () {
+    return (global._MALL_GLOBAL.sts);   
+}
+
+/// @returns {array} all_states
+function mall_global_states () {
+    return (global._MALL_GLOBAL.state);
+}
+
+/// @returns {array} all_elements
+function mall_global_elements() {
+    return (global._MALL_GLOBAL.elmn);
+}
+
+/// @returns {array} all_parts
+function mall_global_parts() {
+    return (global._MALL_GLOBAL.part);
+}
+
+#region Is
+/// @param mall_class
+/// @returns {bool}
+function is_mall_stat   (_class) {
+    return ( (is_struct(_class) ) && (_class.__is == "MALL_STAT_INTERN") );
+}
+
+/// @param mall_class
+/// @returns {bool}
+function is_mall_state  (_class) {
+    return ( (is_struct(_class) ) && (_class.__is == "MALL_STATE_INTERN") );
+}
+
+/// @param mall_class
+/// @returns {bool}
+function is_mall_element(_class) {
+    return ( (is_struct(_class) ) && (_class.__is == "MALL_ELEMENT_INTERN") );   
+}
+
+/// @param mall_class
+/// @returns {bool}
+function is_mall_part   (_class) {
+    return ( (is_struct(_class) ) && (_class.__is == "MALL_PART_INTERN") );     
+}
+
+#endregion
 
 #region Group
 /// @param name
@@ -123,10 +155,36 @@ function __mall_class_parent(_is) constructor {
 function __mall_class_group(_name, _index) : __mall_class_parent("MALL_GROUP_INTERN") constructor { 
     SetBasic(_name, _index);
     
-    stats = undefined;
+    stat  = undefined;
     state = undefined;
     elemn = undefined;
     part  = undefined;
+    
+    #region Metodos
+    /// @param stat
+    /// @param state
+    /// @param element
+    /// @param part
+    static SetComponents = function(_stat, _state, _elemn, _part) {
+        stat  = _stat ;
+        state = _state;
+        elemn = _elemn;
+        part  = _part ;
+        
+        return self;
+    }
+    
+    /// @desc Todas las variables son puestas como un array
+    static AllSetArray = function() {
+        stat  = [];
+        state = [];
+        elemn = [];
+        part  = [];
+        
+        return self;
+    }
+    
+    #endregion
 }
 
 function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
@@ -139,93 +197,109 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
         
         array_push(group, (new __mall_class_group(_name, createcount) ) );
         createcount++;
+        
+        return self;
+    }
+    
+    /// @param index*
+    /// @returns {__mall_class_group}
+    static GetGroup = function(_ind) {
+        if (index == undefined) index = _ind;
+
+        return (group[index] );    
+    }
+    
+    /// @param {__mall_stat_class} stat_class
+    static AddStat = function(_stat) {
+        static statcount = 0;
+        
+        var _gstats = global._MALL_GLOBAL.statsnames;
+        var _order  = _stat.order; 
+        
+        repeat(each(_order) ) {
+            var in = this.value;
+            
+            if (!variable_struct_exists(_gstats, in) ) {
+                array_push(_order, in);
+                variable_struct_set(_gstats, in, statcount);
+            
+                statcount++;
+            }
+        }
+ 
+        GetGroup().stat = _stat;
+        return self;
     }
 
-    static GetGroup = function(_ind) {
-        if (!is_undefined(_ind) ) index = _ind;
-  
-        return races[index];    
-    }
-    
-    static AddStat = function(_stats) {
-        static stat_count = 0;
-        
-        foreach(_stats.order, function(in, i) {
-            if (!variable_struct_exists(global._MALL_GLOBAL.stsnames, in) ) {
-                array_push(global._MALL_GLOBAL.stats, in);
-                variable_struct_set(global._MALL_GLOBAL.statsnames, in, stat_count);
-                
-                stat_count++;
-            }
-        });
-        
-        group[index].stats = _stats;
-        /*
-        var _order = _stats.order;
-        var i = 0; repeat(array_length(_order) ) {
-            var in = _order[i];
-            
-            if (!variable_struct_exists(__master_stat_names, in) ) {
-                array_push(master_stat, in);
-                
-                variable_struct_set(__master_state_names, in, stat_count);
-                stat_count++;
-            }
-        
-            ++i;
-        }
-        
-        races[index].stats = _stats;
-        */
-    }
-    
+    /// @param {__mall_state_class} state_class    
     static AddState = function(_state) {
-        static state_count = 0;
+        static statecount = 0;
         
-        var _order = _state.order;
-        var i = 0; repeat(array_length(_order) ) {
-            var in = _order[i];
+        var _gstates = global.__MALL_GLOBAL.statenames;
+        var _order   = _state.order;
+        
+        repeat(each(_order) ) {
+            var in = this.value;
             
-            if (!variable_struct_exists(__master_state_names, in) ) {
-                array_push(master_state, in);
-                
-                variable_struct_set(__master_state_names, in, state_count);
-                state_count++;
+            if (!variable_struct_exists(_gstates, in) ) {
+                array_push(_order, in);
+                variable_struct_set(_gstates, in, statecount);
+            
+                statecount++;
             }
-        
-            ++i;
-        }
-        
-        races[index].state = _state;  
+        }        
+
+        GetGroup().state = _state;
+        return self;        
     }
     
+    /// @param {__mall_element_class} element_class
     static AddElement = function(_elemn) {
-        static elemn_count = 0;
+        static elemncount = 0;
         
-        var _order = _elemn.order;
-        var i = 0; repeat(array_length(_order) ) {
-            var in = _order[i];
+        var _gelemn = global._MALL_GLOBAL.elmnnames;
+        var _order  = _elemn.order;
+        
+        repeat(each(_order) ) {
+            var in = this.value;
             
-            if (!variable_struct_exists(__master_elemn_names, in) ) {
-                array_push(master_elemn, in);
-                
-                variable_struct_set(__master_elemn_names, in, elemn_count);
-                elemn_count++;
+            if (!variable_struct_exists(_gelemn, in) ) {
+                array_push(_order, in);
+                variable_struct_set(_gelemn, in, elemncount);
+            
+                elemncount++;
             }
-        
-            ++i;
         }
-       
-        races[index].elemn = _elemn;
+        
+        GetGroup().elemn = _elemn;
+        return self;        
     }
     
+    /// @param {} part_class
     static AddPart    = function(_part)  {
+        static partcount = 0;
+        
+        var _gpart = global._MALL_GLOBAL.partnames;
+        var _order = _part.order;
+        
+        repeat(each(_order) ) {
+            var in = this.value;
+            
+            if (!variable_struct_exists(_gpart, in) ) {
+                array_push(_order, in);
+                variable_struct_set(_gpart, in, partcount);
+            
+                partcount++;
+            }
+        }
+        
         GetGroup().part = _part;
+        return self;
     }
 
         #region Obtener controladores
     static ControlStat = function() {
-        return races[index].stats;
+        return races[index].stat;
     }
 
     static ControlState = function() {
@@ -241,7 +315,7 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
     }
     
     #endregion
-    
+ 
     #endregion
 }
 
@@ -250,7 +324,7 @@ function mall_group_init(_group_name) {
     static racecontrol = (new mall_group_control() ).Create(_group_name);
     global._MALL_MASTER = racecontrol;
     
-    return global._MALL_MASTER;
+    return (global._MALL_MASTER );
 }
 
 /// @param group_name
@@ -289,10 +363,9 @@ function mall_group_add_part(_part)     {
 #endregion
 
 #region Stats
-
-/// @param name
-/// @param index
-function __mall_stat_class(_name = "", _index = -1) : __mall_class_parent("MALL_STAT_INTERN") constructor {
+/// @param stat_name
+/// @param stat_index
+function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_STAT_INTERN") constructor {
     // Lo basico
     SetBasic(_name, _index);
     
@@ -374,7 +447,7 @@ function __mall_stat_class(_name = "", _index = -1) : __mall_class_parent("MALL_
     
     /// @param watch_array
     static AddWatchedArray = function(_array) {
-        for (var i = 0, _len = array_length(_array); i < _len; ++i) AddWatched(_array[i], _array[i + 1] );
+        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) AddWatched(_array[i], _array[i + 1] );
 
         return self;
     }
@@ -385,7 +458,7 @@ function __mall_stat_class(_name = "", _index = -1) : __mall_class_parent("MALL_
     }
     
     static AddAbsorbArray = function(_array) {
-        for (var i = 0, _len = array_length(_array); i < _len; ++i) AddAbsorb(_array[i]);
+        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) AddAbsorb(_array[i]);
         return self;
     }
 
@@ -395,7 +468,7 @@ function __mall_stat_class(_name = "", _index = -1) : __mall_class_parent("MALL_
     }
     
     static AddReduceArray = function(_array) {
-        for (var i = 0, _len = array_length(_array); i < _len; ++i) AddReduce(_array[i]);
+        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) AddReduce(_array[i]);
         return self;
     }
    
@@ -433,7 +506,7 @@ function mall_stat_control () : __mall_class_parent("MALL_STAT") constructor {
         static statcount = 0;
         
         if (!variable_struct_exists(stats, _name) ) {
-            var _stat = (new __mall_stat_class(_name, statcount) );
+            var _stat = (new __mall_class_stat(_name, statcount) );
             _stat.outside = self;
 
             // Si no se establecio un master entonces agregar la formula
@@ -503,7 +576,10 @@ function mall_stat_get_range(_access) {
 #endregion
 
 #region States
-function __mall_state_class(_name = "", _index = -1, _init = false) : __mall_class_parent("MALL_STATE_INTERN") constructor {
+/// @param state_name
+/// @param state_index
+/// @param state_init
+function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_class_parent("MALL_STATE_INTERN") constructor {
     SetBasic(_name, _index);
     
     init = _init;
@@ -534,8 +610,8 @@ function __mall_state_class(_name = "", _index = -1, _init = false) : __mall_cla
     }
     
     /// @param process_array
-    static SetProcessArray = function(_array) {
-        for (var i = 0, _len = array_length(_array); i < _len; ++i) SetProcess(_array[i], _array[i + 1] );
+    static SetProcessArray = function(_array = []) {
+        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) SetProcess(_array[i], _array[i + 1] );
 
         return self;
     }
@@ -553,8 +629,8 @@ function __mall_state_class(_name = "", _index = -1, _init = false) : __mall_cla
     }
     
     /// @param watch_array
-    static SetWatchStatArray = function(_array) {
-        for (var i = 0, _len = array_length(_array); i < _len; ++i) SetWatchStat(_array[i], _array[i + 1] );        
+    static SetWatchStatArray = function(_array = []) {
+        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) SetWatchStat(_array[i], _array[i + 1] );        
 
         return self;          
     }
@@ -585,7 +661,7 @@ function mall_state_control() : __mall_class_parent("MALL_STATE") constructor {
         static statecount = 0;
         
         if (!variable_struct_exists(state, _name) ) {
-            var _state = (new __mall_state_class(_name, statecount, _init) ).SetWatchStatArray(_watch);
+            var _state = (new __mall_class_state(_name, statecount, _init) ).SetWatchStatArray(_watch);
 
             variable_struct_set(state, _name, _state);
             
@@ -645,7 +721,9 @@ function mall_state_get_processes (_access)  {
 #endregion
 
 #region Elements
-function __mall_element_class(_name = "", _index = -1) : __mall_class_parent("MALL_ELEMENT_INTERN") constructor {
+/// @param element_name
+/// @param element_index
+function __mall_class_element(_name = "", _index = -1) : __mall_class_parent("MALL_ELEMENT_INTERN") constructor {
     // Lo basico
     SetBasic(_name, _index);
     
@@ -670,7 +748,7 @@ function __mall_element_class(_name = "", _index = -1) : __mall_class_parent("MA
     
     /// @param produce_array
     static AddProduceArray = function(_array) {
-        for (var i = 0, _len = array_length(_array); i < _len; ++i) AddProduce(_array[i], _array[i + 1] );        
+        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) AddProduce(_array[i], _array[i + 1] );        
         return self;
     }
     
@@ -682,7 +760,7 @@ function __mall_element_class(_name = "", _index = -1) : __mall_class_parent("MA
     }
 
     static AddAbsorbArray = function(_array) {
-        for (var i = 0, _len = array_length(_array); i < _len; ++i) AddAbsorb(_array[i]);  
+        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) AddAbsorb(_array[i]);  
 
         return self;   
     }
@@ -717,32 +795,36 @@ function mall_element_control() : __mall_class_parent("MALL_ELEMENT") constructo
     
     #region Metodos
     static Add = function(_name, _produce) {
-        static count = 0;
+        static elmncount = 0;
         
         if (!variable_struct_exists(elemn, _name) ) {
-            var _elemn = (new __mall_element_class(_name, count) ).AddProduceArray(_produce);
+            var _elemn = (new __mall_class_element(_name, elmncount) ).AddProduceArray(_produce);
 
             variable_struct_set(elemn, _name, _elemn);
             
             array_push(order, _name);
-            count++;
+            elmncount++;
             
             return _elemn;
         }    
     }
 
+    /// @returns {array}
     static GetNames = function() {
         return order;
     }
     
+    /// @returns {number}
     static GetCount = function() {
         return array_length(order);
     }
-
+    
+    /// @returns {__mall_class_element}
     static Get = function(_name) {
         return (is_string(_name) ) ? elemn[$ _name] : GetIndex(_name);
     }
     
+    /// @returns {__mall_class_element}
     static GetIndex = function(_ind) {
         return elemn[$ order[_ind] ];        
     }
@@ -782,20 +864,92 @@ function mall_element_get_reduce(_access) {
 
 #endregion
 
-#region Slots
-/// @param slot_name
-/// @desc Crea las ranuras para equipar objetos (mano, armadura, etc)
-function mall_create_slots(_slot_name, _item_type, _no_item = "------") {
-    global._MALL_SLOTS.noname = _no_item;
+#region Parts
+
+function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_PART_INTERN") constructor {
+    // Deterioro
+    deter = 0;
+    deter_min = noone;
+    deter_max = noone;
     
-    if (!variable_struct_exists(global._MALL_SLOTS, _slot_name) ) {
-        if (!mall_itemtypes_exists(_item_type) ) show_error("MALL SLOTS && ITEMTYPE: NO EXISTE EL ITEM TYPE!", true);
+    deter_txt = "n";
+    noitem = "noitem";    // Si no hay objeto equipado
+    
+    
+    // Componentes que lo afectan
+    link = (new __mall_class_group("", -1) ).AllSetArray();   /// @is {__mall_class_group}
+    
+    #region Metodos
+    
+    /// @param deterior
+    /// @param range_min
+    /// @param range_max
+    static SetDeter = function(_val, _min, _max) {
+        deter = _val;
         
-        variable_struct_set(global._MALL_SLOTS, _slot_name, _item_type);
+        deter_min = _min;
+        deter_max = _max;
         
-        // Agregar al orden
-        array_push(global._MALL_SLOTS.order, _slot_name);
-    }   
+        return self;
+    }
+    
+    /// @param mall_class
+    /// @desc Crea un link a otra clase de mall
+    static AddLink = function(_class) {
+        switch (_class.GetType() ) {
+            case "MALL_STAT_INTERN"   : link.stat  = _class;    break;
+            case "MALL_STATE_INTERN"  : link.state = _class;    break;
+            case "MALL_ELEMENT_INTERN": link.elemn = _class;    break;
+            case "MALL_ELEMENT_INTERN": link.part  = _class;    break;
+        }
+        
+        return self;
+    }
+    
+    /// @param mall_class_array
+    static AddLinkArray = function(_class_array) {
+        repeat(each(_class_array) ) AddLink(this.value);
+        
+        return self;
+    }
+    
+    /// @returns {array}
+    static GetLinkStat    = function() {
+        return link.stat;
+    }
+    
+    /// @returns {array}
+    static GetLinkState   = function() {
+        return link.state;
+    }
+    
+    /// @returns {array}
+    static GetLinkElement = function() {
+        return link.elemn;
+    }
+    
+    /// @returns {array}
+    static GetLinkPart    = function() {
+        return link.part;
+    }
+    
+    #endregion
+}
+
+/// @param part_name
+/// @param stat_array
+/// @desc Crea las ranuras para equipar objetos (mano, armadura, etc)
+function mall_part_control() : __mall_class_parent("MALL_PART") constructor {
+    order = [];
+    part  = {};
+    
+    #region Metodos
+    static Add = function(_name, _item_type, ) {
+        
+    }
+    
+    
+    #endregion
 }
 
 /// @returns {array}
