@@ -63,6 +63,19 @@ function __mall_class_parent(_is) constructor {
         return self;
     }
     
+    /// @param name
+    /// @param class
+    /// @desc Permite vincular una clase de mall a alguna estructura de otro sistema
+    static Vinculate = function(_name, _value) {
+        if (is_struct(_value) ) {
+            if (!variable_struct_exists(self, _name) ) {
+                variable_struct_set(self, _name, _value);
+            }    
+        }
+        
+        return self;
+    }
+    
         #region Import
     /// @param array
     /// @param set_value
@@ -704,7 +717,7 @@ function mall_state_control() : __mall_class_parent("MALL_STATE") constructor {
     #endregion
 }
 
-/// @returns {__mall_state_class}
+/// @returns {__mall_class_state}
 function mall_get_state(_access) {
     return (MALL_CONT_STATE.Get(_access) );
 }
@@ -845,7 +858,7 @@ function mall_element_control() : __mall_class_parent("MALL_ELEMENT") constructo
     #endregion
 }
 
-/// @returns {__mall_element_class}
+/// @returns {__mall_class_element}
 function mall_get_element(_access) {
     return (MALL_CONT_ELEMN.Get(_access) );
 }
@@ -897,6 +910,15 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     
     #region Metodos
     
+    /// @param {string} deter_txt
+    /// @param {string} noitem_txt
+    static SetTexts = function(_detertxt, _noitem) {
+        deter_txt = _detertxt;
+        noitem = _noitem;
+        
+        return self;
+    }
+    
     /// @param deterior
     /// @param range_min
     /// @param range_max
@@ -912,19 +934,23 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     /// @param mall_class
     /// @desc Crea un link a otra clase de mall
     static AddLink = function(_class) {
+        if (!is_struct(_class) ) return self;
+        
         switch (_class.GetType() ) {
-            case "MALL_STAT_INTERN"   : link.stat  = _class;    break;
-            case "MALL_STATE_INTERN"  : link.state = _class;    break;
-            case "MALL_ELEMENT_INTERN": link.elemn = _class;    break;
-            case "MALL_PART_INTERN"   : link.part  = _class;    break;
+            case "MALL_STAT_INTERN"   : array_push(link.stat , _class); break;
+            case "MALL_STATE_INTERN"  : array_push(link.state, _class); break;
+            case "MALL_ELEMENT_INTERN": array_push(link.elemn, _class); break;
+            case "MALL_PART_INTERN"   : array_push(link.part , _class); break;
         }
         
         return self;
     }
     
     /// @param mall_class_array
-    static AddLinkArray = function(_class_array) {
-        repeat(each(_class_array) ) AddLink(this.value);
+    static AddLinkArray = function(_array) {
+        if (!is_array(_array) ) return self;
+        
+        repeat(each(_array) ) AddLink(this.value);
         
         return self;
     }
@@ -936,12 +962,18 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
         if (mall_itemtypes_exists(_item_type) ) {
             var _subtypes = mall_itemtypes_get_subtype(_item_type);
 
+            var _new = [];
+            
             repeat (each(_select) ) {
                 var in = this.value;
                 
                 // Si existe el subtypo
-                if (!variable_struct_exists(_subtypes, in) ) array_push(possible, in);
+                if (variable_struct_exists(_subtypes, in) ) {
+                    array_push(_new, in);
+                }
             }
+            
+            array_push(possible, _item_type, _new);
         }
         
         return self;
@@ -950,11 +982,45 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     /// @param itemtype_array
     /// @desc Se debe de asegurar que los objetos hayan sido creado antes!!
     static AddItemTypesArray = function(_array) {
-        repeat (each(_array) ) {var in = this.value; AddItemTypes(in[0], in[1] ); }
+        if (!is_array(_array) ) return self;
+        
+        var i = 0; repeat(array_length(_array) ) {
+            var _type = _array[i], _subtype;
+            
+            if (!is_array(_type) ) {
+                try {_subtype = _array[i + 1]; } catch (_subtype) {_subtype = []; }
+                
+                // Tiene una seleccion de los subtipos
+                if (is_array(_subtype) ) {
+                    AddItemTypes(_type, _subtype);    
+                } else { // Es otro tipo
+                    var _names = mall_itemtypes_get_subtype(_type).order;
+                    AddItemTypes(_type, _names);    
+                }
+            }
+            
+            ++i;
+        }
 
         return self;
     }
     
+    /// @param {__mall_class_part} part_class
+    /// @desc Hereda las propiedades de otra parte
+    static Inherit = function(_part) {
+        var _link = _part.link;
+        
+        AddLinkArray(_link.stat); 
+		AddLinkArray(_link.state); 
+		AddLinkArray(_link.elemn); 
+		AddLinkArray(_link.part);
+        
+        SetDeter(_part.deter, _part.deter_min, _part.deter_min);
+        SetTexts(_part.deter_txt, _part.noitem);
+        
+        return AddItemTypesArray(_part.possible);
+    }
+ 
     /// @returns {array}
     static GetLinkStat    = function() {
         return link.stat;
@@ -993,7 +1059,7 @@ function mall_part_control() : __mall_class_parent("MALL_PART") constructor {
         if (!variable_struct_exists(part, _name) ) {
             var _part = (new __mall_class_part(_name, partcount) );
             
-            _part.AddItemTypes(_item_type ); 
+            _part.AddItemTypesArray(_item_type ); 
             _part.AddLinkArray(_link_array);
 
             variable_struct_set(part, _name, _part);

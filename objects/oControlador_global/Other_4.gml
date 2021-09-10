@@ -32,9 +32,15 @@ var _elemn = (new mall_element_control() );
 _elemn.Add("fuego"   , [_ven, .2] );
 _elemn.Add("polucion", [_qem, .5] );
 
+var _parts = (new mall_part_control() );
+
+var _hand1 = _parts.Add("Mano izq.", ["Armas", ["Espadas"] ], [_fue, _int] );
+var _hand2 = _parts.Add("Mano der.").Inherit(_hand1);
+
 mall_group_add_stat   (_stat );
 mall_group_add_state  (_state);
 mall_group_add_element(_elemn);
+mall_group_add_part   (_parts);
 
 /*
 dark_init();
