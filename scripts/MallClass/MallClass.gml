@@ -4,6 +4,7 @@ global._MALL_GLOBAL = {
     elmn:  [], elmnnames:   {}, 
     part:  [], partnames:   {},
     
+    dark:     [], darknames:     {},   
     itemtype: [], itemtypenames: {}
 }
 
@@ -17,6 +18,9 @@ global._MALL_MASTER   = -1;
 
 #macro MALL_ITEM_TYPE global._MALL_GLOBAL.itemtypenames
 #macro MALL_ITEM_TYPE_ORDER global._MALL_GLOBAL.itemtype
+
+#macro MALL_DARK_TYPE  global._MALL_GLOBAL.darknames
+#macro MALL_DARK_ORDER global._MALL_GLOBAL.dark
 
 /// @param is
 function __mall_class_parent(_is) constructor {
@@ -1193,45 +1197,75 @@ function mall_itemtypes_exists_subtype(_item_type, _sub_type) {
 #macro DARK_SUBTYPE_WSPELL "White Spell"
 
 
-function mall_create_dark(_type, _sub_types) {
-    if (!variable_struct_exists(global._MALL_DARK, _type) ) {
-        variable_struct_set(global._MALL_DARK, _type, {order: []});
+/// @param name
+/// @param index
+function __mall_class_dark(_name, _index) : __mall_class_parent("MALL_DARK_INTERN") constructor {
+    subtypes = {};
+    order    = [];
+    
+    #region Metodos
+    /// @param {string} subtype
+    static Add = function(_subtype) {
+        static darksubtypecount = 0;
         
-        // Una vez agregado se agregan los sub-tipos
-        var _sub = global._MALL_DARK[$ _type];
-        
-        var i = 0; repeat(array_length(_sub_types) ) {
-            var in = _sub_types[i];
+        if (!variable_struct_exists(subtypes, _subtype) ) {
+            variable_struct_set(subtypes, _subtype, darksubtypecount);
             
-            variable_struct_set(_sub, in, i);
-            
-            array_push(_sub.orden, in);
-            
-            ++i;    
+            array_push(order, _subtype);
+            darksubtypecount++;
         }
         
-        // Agregar al orden
-        array_push(global._MALL_DARK.order, _item_type);
+        return self;
+    }
+    
+    /// @param {Array} subtype_array
+    static AddArray = function(_array) {
+        repeat (each(_array) ) Add(this.value);
+        
+        return self;
+    }
+    
+    #endregion
+}
+
+/// @param {string} dark_type
+/// @param {array} dark_subtypes
+function mall_create_dark(_type, _subtypes) {
+    static darkcount = 0;
+    
+    if (!variable_struct_exists(MALL_DARK_TYPE, _type) ) {
+        var _dark = (new __mall_class_dark(_type, darkcount) ).AddArray(_subtypes);
+        
+        variable_struct_set(MALL_DARK_TYPE, _type, _dark);
+        array_push(MALL_DARK_ORDER, _type);
+        
+        darkcount++;
     }
 }
 
 /// @returns {array}
 function mall_dark_get_types() {
-    return global._MALL_DARK.order;
-}
-
-/// @param {string} sub_type
-function mall_dark_get_subtype(_subtype) {
-    return (variable_struct_get(global._MALL_DARK, _subtype) );
+    return MALL_DARK_ORDER;
 }
 
 /// @param {string} dark_type
-function mall_dark_exists(_type) {
-    return (variable_struct_exists(global._MALL_DARK, _type) );
+function mall_dark_get_subtypes(_type) {
+    return (variable_struct_get(MALL_DARK_TYPE, _type) ).subtypes;
 }
 
+/// @param {string} dark_type
+/// @returns {bool}
+function mall_dark_exists(_type) {
+    return (variable_struct_exists(MALL_DARK_TYPE, _type) );
+}
+
+/// @param {string} dark_type
+/// @param {string} dark_subtype
+/// @returns {bool}
 function mall_dark_exists_subtype(_type, _subtype) {
-    return (mall_dark_exists(_type) && variable_struct_exists(mall_dark_get_subtype(_type), _subtype) );
+    var in = mall_dark_get_subtypes(_type);
+    
+    return (variable_struct_exists(in, _subtype) );
 }
 
 #endregion

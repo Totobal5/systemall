@@ -2,6 +2,9 @@
 
 mall_create_itemtypes("Armas", ["Espadas", "Arcos", "Escudos"] );
 
+mall_create_dark("Batalla", ["Ataque", "Defensa", "Objeto"] );
+mall_create_dark("Magia"  , ["Blanca", "Negra"  , "Roja"  ] );
+
 mall_group_init("Default");
 
 var _stat = (new mall_stat_control() ); /// @is {mall_stat_control}
