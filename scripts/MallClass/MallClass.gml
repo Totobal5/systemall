@@ -5,7 +5,8 @@ global._MALL_GLOBAL = {
     part:  [], partnames:   {},
     
     dark:     [], darknames:     {},   
-    itemtype: [], itemtypenames: {}
+    itemtype: [], itemtypenames: {},
+    pocket:   [], pocketnames:   {}
 }
 
 global._MALL_MASTER   = -1;
@@ -21,6 +22,9 @@ global._MALL_MASTER   = -1;
 
 #macro MALL_DARK_TYPE  global._MALL_GLOBAL.darknames
 #macro MALL_DARK_ORDER global._MALL_GLOBAL.dark
+
+#macro MALL_POCKET_TYPE  global._MALL_GLOBAL.pocket
+#macro MALL_POCKET_ORDER global._MALL_GLOBAL.pocketnames
 
 /// @param is
 function __mall_class_parent(_is) constructor {
@@ -1190,13 +1194,6 @@ function mall_itemtypes_exists_subtype(_item_type, _sub_type) {
 
 #region Dark (Comandos)
 
-// Types defaults
-#macro DARK_TYPE_BATTLE "Battle"
-
-#macro DARK_TYPE_SPELL "Spells"
-#macro DARK_SUBTYPE_WSPELL "White Spell"
-
-
 /// @param name
 /// @param index
 function __mall_class_dark(_name, _index) : __mall_class_parent("MALL_DARK_INTERN") constructor {
@@ -1272,39 +1269,73 @@ function mall_dark_exists_subtype(_type, _subtype) {
 
 #region Pockets
 
+/// @param name
+/// @param index
+function __mall_class_pocket(_name, _index) : __mall_class_parent("MALL_POCKET_INTERN") constructor {
+    subtypes = {};	// Se almacenan los tipos de objetos que almacena.
+    
+    order = [];
+    limit = noone;
+    
+    #region Metodos
+    /// @param {string} subtype
+    static Add = function(_subtype) {
+        static pocketincount = 0;
+        
+        if (!mall_itemtypes_exists(_subtype) ) {
+            variable_struct_set(subtypes, _subtype, pocketincount);
+            
+            array_push(order, _subtype);
+            pocketincount++;
+        }
+        
+        return self;
+    }
+    
+    /// @param {Array} subtype_array
+    static AddArray = function(_array) {
+        repeat (each(_array) ) Add(this.value);
+        
+        return self;
+    }
+    
+    /// @param {number} limite
+    static SetLimit = function(_lim) {
+    	limit = _lim;
+    	
+    	return self;
+    }
+    
+    #endregion	
+}
+
 /// @param {string} pocket_name
 /// @param {array}  items_types
 /// @param {number} limit
 function mall_create_pocket(_pocket_name, _itemtypes, _limit = noone) {   
+    static pocketcount = 0;
+    
     if (!mall_pocket_exists(_pocket_name) ) {
-        static Count = 0;
+		var _pocket = (new __mall_class_pocket(_pocket_name, pocketcount) ).SetLimit(_limit);
+		
+		_pocket.AddArray(_itemtypes);
+		
+        variable_struct_set(MALL_POCKET_TYPE, _pocket_name, _pocket);
+        array_push(MALL_POCKET_ORDER, _pocket_name); // Agregar a la lista de bolsillos
+    	
+        pocketcount++;
         
-        variable_struct_set(global._MALL_POCKETS, _pocket_name, {order: [], lim: _limit, index: Count});
-        
-        var _sub = global._MALL_POCKETS[$ _pocket_name];
-
-        var i = 0; repeat(array_length(_itemtypes) ) {
-            var in = _itemtypes[i];
-            
-            variable_struct_set(_sub, in, i);
-            array_push(_sub.order, in);
-            
-            ++i;
-        }
-        
-        // Agregar a la lista de bolsillos
-        array_push(global._MALL_POCKETS.order, _pocket_name);
-        Count++;
+        return _pocket;
     }    
 }
-
 
 /// @returns {array}
 /// @desc Obtiene el nombre de todos los bolsillos
 function mall_pocket_get_names() {
-    return (global._MALL_POCKETS.order);   
+    return (MALL_POCKET_ORDER);   
 }
 
+/// @param {number}
 /// @desc Devuelve la cantidad de bolsillos
 function mall_pocket_count() {
     return (array_length(mall_pocket_get_names() ) );    
@@ -1314,29 +1345,33 @@ function mall_pocket_count() {
 /// @returns {bool}
 /// @desc Devuelve true si un bolsillo existe
 function mall_pocket_exists(_pocket_name) {
-    return (variable_struct_exists(global._MALL_POCKETS, _pocket_name) );
+    return (variable_struct_exists(MALL_POCKET_TYPE, _pocket_name) );
 }
 
 /// @param pocket_index|name
 /// @desc Devuelve un pocket mediante su nombre o indice
-/// @returns {struct}
-function mall_pocket_get() {
-    var _access = (is_string(argument[0] ) ) ? argument[0] : global._MALL_POCKETS.order[argument[0] ];
-
-    return (global._MALL_POCKETS[$ _access] );
+/// @returns {__mall_class_pocket}
+function mall_pocket_get(_access) {
+	if (is_string(_access) ) {
+		return (MALL_POCKET_TYPE[$ _access] );
+		
+	} else {
+		var _ind = MALL_POCKET_ORDER[_access];
+		
+		return (MALL_POCKET_TYPE[$ _ind] );
+	}
 }
 
-/// Devuelve un bolsillo que permite este tipo de objeto
-function mall_pocket_get_by_type(_item_type) {
-    var i = 0; repeat(mall_pocket_count() ) {
-        var _pocket = mall_pocket_get(i);
-        
-        if (variable_struct_exists(_pocket, _item_type) ) return _pocket;
-        
-        ++i;
-    }
-    
-    return noone;
+/// @param pocket_index|name
+/// @returns {struct}
+function mall_pocket_get_itemtypes(_access) {
+	return (mall_pocket_get(_access) ).subtypes;
+}
+
+/// @param pocket_index|name
+/// @returns {array}
+function mall_pocket_get_names(_access) {
+	return (mall_pocket_get(_access) ).order;	
 }
 
 /// @param pocket_name
@@ -1347,13 +1382,16 @@ function mall_pocket_get_index(_pocket) {
 
 /// @param {number} pocket_index|name
 function mall_pocket_get_limit(_access) {
-    return (mall_pocket_get(_access).lim ); 
+    return (mall_pocket_get(_access).limit ); 
 }
 
 /// @param pocket_id
 /// @param {string} item_type
-function mall_pocket_permited(_pocket, _itemtype) {
-    return (variable_struct_exists(_pocket, _itemtype) );
+/// @desc Comprueba su un itemtype existe en el bolsillo
+function mall_pocket_is_inside(_pocket, _itemtype) {
+	var in = mall_pocket_get_itemtypes(_pocket);
+	
+    return (variable_struct_exists(in, _itemtype) );
 }
 
 #endregion
@@ -1365,3 +1403,60 @@ function is_group(_group_id) {
 }
 
 #endregion
+
+
+/// @desc PLANTILLA PARA INICIAR EL SISTEMA!
+function mall_init() {
+	mall_create_itemtypes("Armas"  , ["Espadas", "Arcos"   , "Escudos"] );
+	mall_create_itemtypes("Objetos", ["Comida" , "Pociones"] );
+	
+	mall_create_dark("Batalla", ["Ataque", "Defensa", "Objeto"] );
+	mall_create_dark("Magia"  , ["Blanca", "Negra"  , "Roja"  ] );
+	
+	mall_create_pocket("Armas"  , ["Armas"  ] );
+	mall_create_pocket("Objetos", ["Objetos"] );
+	
+	mall_group_init("Default");
+	
+	var _stat = (new mall_stat_control() ); /// @is {mall_stat_control}
+	
+	var _psmax = _stat.Add("ps_max", undefined, function(old, base, lvl) {return (base * lvl) / max(1, (lvl - 1) ); } ).SetRange(0, 9999);
+	var _pmmax = _stat.Add("pm_max").Inherit(_psmax);
+	
+	_stat.Add("ps", _psmax);
+	_stat.Add("pm", _pmmax);
+	
+	var _fue = _stat.Add("fue", undefined, function(old, base, lvl) {return round( ( (base * lvl) / 15) + 5); } ).SetRange(0, 255);
+	var _int = _stat.Add("int").Inherit(_fue);
+	
+	var _def = _stat.Add("def").Inherit(_fue);
+	var _esp = _stat.Add("esp").Inherit(_fue);
+	
+	var _state = (new mall_state_control() );
+	
+	_state.Add("vivo", true);
+	
+	var _ven = _state.Add("veneno"    , false, [_fue, .2] );
+	var _qem = _state.Add("quemadura" , false, [_fue, .5] );
+	
+	_state.Add("melancolia", false, [_int, .5] );
+	
+	var _elemn = (new mall_element_control() );
+	
+	_elemn.Add("fuego"   , [_ven, .2] );
+	_elemn.Add("polucion", [_qem, .5] );
+	
+	var _parts = (new mall_part_control() );
+	
+	var _hand1 = _parts.Add("Mano izq.", ["Armas", ["Espadas"] ], [_fue, _int] );
+	var _hand2 = _parts.Add("Mano der.").Inherit(_hand1);
+	
+	mall_group_add_stat   (_stat );
+	mall_group_add_state  (_state);
+	mall_group_add_element(_elemn);
+	mall_group_add_part   (_parts);	
+}
+
+
+
+
