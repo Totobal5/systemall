@@ -108,8 +108,12 @@ function __mall_class_parent(_is) constructor {
     }
     
     #endregion
+    
+    static GetName  = function() {
+    	return name;
+    }
         
-    static GetBasic  = function() {
+    static GetBasic = function() {
         return [name, index];
     }
     
@@ -149,6 +153,11 @@ function mall_global_parts() {
 }
 
 #region Is
+/// @param group_id
+function is_mall_group(_class) {
+    return (is_struct(_class) && _class.__is == "MALL_GROUP_INTERN");
+}
+
 /// @param mall_class
 /// @returns {bool}
 function is_mall_stat   (_class) {
@@ -354,7 +363,7 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
 }
 
 /// @param default_group
-function mall_group_init(_group_name) {
+function mall_group_init(_group_name = "Default") {
     static racecontrol = (new mall_group_control() ).Create(_group_name);
     global._MALL_MASTER = racecontrol;
     
@@ -1222,6 +1231,14 @@ function __mall_class_dark(_name, _index) : __mall_class_parent("MALL_DARK_INTER
         return self;
     }
     
+    static GetSubtype = function(_name) {
+    	return subtypes[$ _name];
+    }
+    
+    static ExistsSubtype = function(_name) {
+    	return (variable_struct_exists(subtypes, _name) );
+    }
+    
     #endregion
 }
 
@@ -1238,6 +1255,26 @@ function mall_create_dark(_type, _subtypes) {
         
         darkcount++;
     }
+}
+
+/// @returns {__mall_class_dark}
+function mall_dark_get(_access) {
+	if (!is_string(_access) ) {_access = MALL_DARK_ORDER[_access]; }
+	
+	return (MALL_DARK_TYPE[$ _access] );
+}
+
+/// @returns {__mall_class_dark}
+/// @desc Devuelve el tipo al que pertenece este subtipo.
+function mall_dark_get_by_subtype(_subtype) {
+	repeat (each(MALL_DARK_ORDER) ) {
+		var in = this.value, _dark = mall_dark_get(in);
+		
+		// Obtengo los subtipos
+		if (_dark.ExistsSubtype(_subtype) ) return (_dark );
+	}	
+	
+	return noone;
 }
 
 /// @returns {array}
@@ -1396,14 +1433,8 @@ function mall_pocket_is_inside(_pocket, _itemtype) {
 
 #endregion
 
-#region Is
-/// @param group_id
-function is_group(_group_id) {
-    return (is_struct(_group_id) && _group_id.__is == "GROUP_ID");
-}
-
-#endregion
-
+#macro DARK_TYPE_BATTLE	"Batalla"
+#macro DARK_TYPE_MAGIC	"Magia"
 
 /// @desc PLANTILLA PARA INICIAR EL SISTEMA!
 function mall_init() {

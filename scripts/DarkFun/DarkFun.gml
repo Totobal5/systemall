@@ -1,28 +1,27 @@
 global._DARK_COMMANDS = ds_map_create();
 
-
 #macro DARK global._DARK_COMMANDS
 #macro DARK_FUN function(caster, targets, extra)
 
 /// @param {string} key
-/// @param {} dark_id
+/// @param {__dark_class_spell} dark_id
+/// @returns {__dark_class_spell}
 function dark_add(_key, _dark_id) {
     if (!dark_exists(_key) ) {
         ds_map_add(DARK, _key, _dark_id.SetInformation(_key) );
+    } 
     
-        
-    } else return DARK[? _key];
+    return DARK[? _key];
 }
 
-/// @param {string} dark_type
+/// @param {string} dark_subtype
 /// @param consume
 /// @param include?
-/// @param {string} dark_subtype
 /// @param targets
 /// @param {string} dark_key
 /// @returns {__dark_class_spell}
-function dark_create_spell(_type, _consume = 0, _include = true, _subtype = "", _target = 1, _key = "") {
-    return (new __dark_class_spell(_type, _consume, _include, _subtype, _target, _key) );
+function dark_create_spell(_subtype = "", _consume = 0, _include = true, _target = 1, _key = "") {
+    return (new __dark_class_spell(_subtype, _consume, _include, _target, _key) );
 }
 
 /// @param {string} state_type
@@ -48,10 +47,10 @@ function dark_exists(_key) {
 
 /// @desc Con este codigo se crean todos los hechizos
 function dark_init() {
-    dark_add("DARK.BATTLE.OBJECT", dark_create_spell(DARK_TYPE_BATTLE) );
-    dark_add("DARK.BATTLE.ATACK" , dark_create_spell(DARK_TYPE_BATTLE) );
+    dark_add("DARK.BATTLE.OBJECT", dark_create_spell("Ataque") );
+    dark_add("DARK.BATTLE.ATACK" , dark_create_spell("Objeto") );
     
-    dark_add("DARK.WSPEEL.HEAL1", dark_create_spell(DARK_TYPE_SPELL, 30, true, DARK_SUBTYPE_WSPELL).SetFunction(DARK_FUN {
+    dark_add("DARK.WSPEEL.HEAL1", (dark_create_spell("Blanca", 30, true) ).SetSpell(DARK_FUN {
         show_debug_message("DARK SPELL PRUEBA!");    
     }));
 }
