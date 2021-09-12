@@ -6,15 +6,17 @@ global._BAG_DATA = ds_map_create();
 
 /// @desc Crea el almacenamiento para cada bolsillo
 function bag_init() {
-    repeat(mall_pocket_count() ) {array_push(BAG, [] ); }
+	
+	// Crear los bolsillos
+    repeat(array_length(MALL_POCKET_ORDER) ) array_push(BAG, [] ); 
     
     #region Crear objetos
-    bag_item_add_consumible("OBJ.MANZANA", "MyB", 100, 80, (bag_create_item() ).SetProp("OBJ.CURAR.PS", [250 , false] ) );
+    bag_item_add("OBJ.MANZANA", (bag_create_item("Comida" , 100, 80) ).SetSpecial("DARK.WSPEEL.HEAL1", [250 , false] ) );
+    bag_item_add("OBJ.PESCADO", (bag_create_item("Comida" , 800, 80) ).SetSpecial("DARK.WSPEEL.HEAL1", [999 , false] ) );
     
-    var _item = bag_create_item();
-    _item.GetStats().SetStats([ ["fue", 10], ["int", 20] ] );
-    bag_item_add_weapon("ARM.REGLAMETAL", "regla", 2000, 1250, _item);
-    
+    bag_item_add("ARM.ESPADA_COBRE" , (bag_create_item("Espadas", 2000, 1250) ).SetStat("fue", 10, "int",  20) );
+	bag_item_add("ARM.ESPADA_VENENO", (bag_create_item("Espadas", 5000, 1250) ).SetStat("fue", 30, "int", -20) );
+	
     #endregion
 }
 
@@ -23,37 +25,9 @@ function bag_init() {
 /// @param {string} item_key
 /// @param {__bag_class_item} item_id
 function bag_item_add(_key, _item) {
-    _item.SetInformation(_key);
-    
-    if (!bag_item_exists(_key) ) {ds_map_add(BAG_DATA, _key, _item); return true; } else {return false; }
-}
-
-/*
-    Puedes crear templates para agregar objetos, ejemplo con armas y usables
-
-*/
-/// @param {string} item_key
-/// @param {string} item_subtype
-/// @param item_buy
-/// @param item_sell
-/// @param {__bag_class_item} item_id
-function bag_item_add_weapon(_key, _subtype, _buy, _sell, _item) {
-    _item.SetType ("Armas", _subtype);
-    _item.SetTrade(_buy, _sell);
-    
-	bag_item_add(_key, _item);
-}
-
-/// @param {string} item_key
-/// @param {string} item_subtype
-/// @param item_buy
-/// @param item_sell
-/// @param {__bag_class_item} item_id
-function bag_item_add_consumible(_key, _subtype, _buy, _sell, _item) {
-    _item.SetType ("Consumibles", _subtype);
-    _item.SetTrade(_buy, _sell);
-    
-	bag_item_add(_key, _item);
+    if (!bag_item_exists(_key) ) ds_map_add(BAG_DATA, _key, _item.SetInformation(_key) ); 
+	
+	return (_item );
 }
 
 /// @param item_key
@@ -64,7 +38,7 @@ function bag_item_exists(_key) {
 /// @param item_key
 /// @returns {__bag_class_item}
 function bag_item_get(_key) {
-    return BAG_DATA[$ _key];
+    return BAG_DATA[? _key];
 }
 
 /// @returns {__group_class_stats}
@@ -89,13 +63,17 @@ function bag_item_get_elements(_key) {
 /// @param item_key
 /// @param amount
 function bag_storage_add(_key, _amount = 1) {
-    var _item = bag_item_get(_key);
+    var _item = bag_item_get(_key);	/// @is {__bag_class_item}
     
-    var _type   = _item.type, _subtype = _item.subtype, _name = _item.name;
+    var _name = _item.GetName();
+    var _type    = _item.type;
+    var _subtype = _item.subtype;
     
-    var _pocket = mall_pocket_get_by_type(_type);
-    var _bag    = bag_storage_get(_pocket.index);
-
+    var _pocket = _item.pocket;
+    var _index = _pocket.index;
+    
+    var _bag = bag_storage_get(_index); 
+    
     for (var i = 0, _len = array_length(_bag); i < _len; i++) {
         var in = _bag[i];
         
@@ -107,8 +85,8 @@ function bag_storage_add(_key, _amount = 1) {
             if (_amount > 0) {
                 // Agregar objeto solo si hay espacio
                 if (!bag_storage_is_full(_pocket, _amount) ) {
-                    _bag[i] = [_key, _amount, _type, _subtype, _name];
-                
+                	array_set(_bag, i, [_key, _amount, _type, _subtype, _name] );                            
+
                     return true;
                 
                 } else return false;
@@ -160,24 +138,21 @@ function bag_storage_delete_by_index(_pocket, i) {
 /// @param pocket
 /// @param [amount]
 function bag_storage_is_full(_pocket, _amount = 0) {
-    var _index = mall_pocket_get_index(_pocket);
+    var _index = _pocket.index, _lim = _pocket.limit;
     
-    // No posee limite de almacenamiento
-    if (_pocket.lim == noone) return false;
-    
-    return (array_length(BAG[_index] ) + _amount > mall_pocket_get(_pocket).lim);
+    return !(_lim == noone) && (bag_storage_count(_index) + _amount > _lim);
 }
 
-/// @param pocket
+/// @param indice
 /// @returns {array}
 /// @desc Devuelve un storage
-function bag_storage_get(_pocket) {
-    return BAG[mall_pocket_get_index(_pocket)];
+function bag_storage_get(_index) {
+    return BAG[_index];
 }
 
 /// @param pocket
-function bag_storage_count(_pocket) {
-    return array_length(bag_storage_get(_pocket) );
+function bag_storage_count(_index) {
+    return array_length(bag_storage_get(_index) );
 }
 
 #endregion

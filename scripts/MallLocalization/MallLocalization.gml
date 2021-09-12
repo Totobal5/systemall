@@ -12,7 +12,7 @@ function __mall_class_localization() constructor {
     des = "";
     ret = "";
     
-    ext = [""];
+    ext = [""]; // Extras
     
     scr = undefined;
     
@@ -42,6 +42,11 @@ function __mall_class_localization() constructor {
     static GetExtra  = function(_ind) {
         return ext[_ind];
     } 
+    
+    /// @returns {array}
+    static GetExtraAll = function() {
+        return ext;
+    }
     
     /// @returns {script}
     static GetTranslate = function() {

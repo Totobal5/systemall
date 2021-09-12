@@ -16,15 +16,17 @@ global._MALL_MASTER   = -1;
 #macro MALL_CONT_STATS MALL_MASTER.ControlStat    ()
 #macro MALL_CONT_STATE MALL_MASTER.ControlState   ()
 #macro MALL_CONT_ELEMN MALL_MASTER.ControlElements()
+#macro MALL_CONT_PARTS MALL_MASTER.ControlPart    ()
 
-#macro MALL_ITEM_TYPE global._MALL_GLOBAL.itemtypenames
-#macro MALL_ITEM_TYPE_ORDER global._MALL_GLOBAL.itemtype
+
+#macro MALL_ITEMTYPE		global._MALL_GLOBAL.itemtypenames
+#macro MALL_ITEMTYPE_ORDER	global._MALL_GLOBAL.itemtype
 
 #macro MALL_DARK_TYPE  global._MALL_GLOBAL.darknames
 #macro MALL_DARK_ORDER global._MALL_GLOBAL.dark
 
-#macro MALL_POCKET_TYPE  global._MALL_GLOBAL.pocket
-#macro MALL_POCKET_ORDER global._MALL_GLOBAL.pocketnames
+#macro MALL_POCKET_TYPE  global._MALL_GLOBAL.pocketnames
+#macro MALL_POCKET_ORDER global._MALL_GLOBAL.pocket
 
 /// @param is
 function __mall_class_parent(_is) constructor {
@@ -34,8 +36,14 @@ function __mall_class_parent(_is) constructor {
     // __context = weak_ref_create(self);   // Referencia así mismo.
     
     #endregion
-
-    name  = "";
+	
+	key = "";
+	
+	// Para trabajar con una gui
+    name = "";
+    des  = "";
+    ext  = [];
+    
     index = -1;
     
     txt    = name;
@@ -129,12 +137,17 @@ function __mall_class_parent(_is) constructor {
         return __is;
     }
     
+    	#region Misq
+    static Copy = function() {}
+    
+    #endregion
+    
     #endregion
 }
 
 /// @returns {array} all_stats
 function mall_global_stats  () {
-    return (global._MALL_GLOBAL.sts);   
+    return (global._MALL_GLOBAL.stats);   
 }
 
 /// @returns {array} all_states
@@ -275,14 +288,14 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
         var _gstates = global._MALL_GLOBAL.statenames;
         var _gorder  = global._MALL_GLOBAL.state;
         
-        var _order   = _state.order;
+        var _names = _state.order;
         
-        repeat(each(_order) ) {
+        repeat(each(_names) ) {
             var in = this.value;
             
             if (!variable_struct_exists(_gstates, in) ) {
+            	variable_struct_set(_gstates, in, statecount);
                 array_push(_gorder, in);
-                variable_struct_set(_gstates, in, statecount);
             
                 statecount++;
             }
@@ -341,16 +354,16 @@ function mall_group_control () : __mall_class_parent("MALL_GROUP") constructor {
     }
 
         #region Obtener controladores
-    static ControlStat = function() {
-        return races[index].stat;
+    static ControlStat  = function() {
+        return GetGroup().stat;
     }
 
     static ControlState = function() {
-        return races[index].state;
+        return GetGroup().state;
     }
     
     static ControlElements = function() {
-        return races[index].elemn;
+        return GetGroup().elemn;
     }
     
     static ControlPart = function() {
@@ -371,11 +384,11 @@ function mall_group_init(_group_name = "Default") {
 }
 
 /// @param group_name
-function mall_group_create(_name)       {
+function mall_group_create(_name) {
     MALL_MASTER.MasterCreate(_name);
 }
 
-function mall_group_change(_ind) {
+function mall_group_change(_ind)  {
     MALL_MASTER.index = _ind;
 }
 
@@ -422,7 +435,11 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
     range_max = 0;
     range_min = 0;
     
-    lvlup = function(old, base, lvl) {return old; };
+    lvlup  = function(old, base, lvl) {return old; };
+    lvlmax = 100; 
+    
+    tomin = false;	// Si al subir de nivel se devuelve al valor minimo
+    tomax = false;	// Si al subir de nivel se devuelve al valor del maestro
     
     watched = {};   // Que estado es observado
     used    = {};   // Que partes lo usan
@@ -432,7 +449,7 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
     
     #region Metodos
     
-    /// @param {__mall_stat_class} stat_class
+    /// @param {__mall_class_stat} stat_class
     /// @desc Hereda la formula y rangos de otro estado, pero no es su maestro
     static Inherit = function(_stat) {
         range_max = _stat.range_max;
@@ -442,7 +459,7 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
         SetLvlUp(_stat.GetLvlUp() );
     }
     
-    /// @param {__mall_stat_class} stat_class
+    /// @param {__mall_class_stat} stat_class
     static SetMaster = function(_stat) {
         if (is_struct(_stat) ) {
             master      = _stat;
@@ -461,12 +478,18 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
     }
     
     /// @param lvlup
-    static SetLvlUp = function(_lvlup) {
-        lvlup = _lvlup;
+    static SetLvlUp  = function(_lvlup, _max = 100) {
+        lvlup  = _lvlup;
+        lvlmax = _max;
         
         return self;
     }
-    
+
+	static SetLvlMax = function(_max) {
+		lvlmax = _max;
+		return self;
+	}
+	
     /// @param range_min
     /// @param range_max
     static SetRange = function(_min, _max) {
@@ -476,6 +499,12 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
         return self;
     }
 
+	static ToggleToMin = function() {
+		tomin = !tomin;
+		
+		return self;
+	}
+	
     /// @param state_class
     /// @param values
     static AddWatched = function(_state, _values) {
@@ -522,7 +551,7 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
     
     /// @returns {array}
     static GetRange  = function() {
-        return [range_min, range_min];
+        return [range_min, range_max];
     }
     
     /// @returns {array}
@@ -589,6 +618,12 @@ function mall_stat_control () : __mall_class_parent("MALL_STAT") constructor {
 
 function mall_get_stat(_access) {
     return (MALL_CONT_STATS.Get(_access) );
+}
+
+/// @param name
+/// @returns {bool}
+function mall_stat_exists(_name) {
+	return (variable_struct_exists(global._MALL_GLOBAL.statsnames, _name) );
 }
 
 /// @returns {array}
@@ -658,7 +693,12 @@ function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_cla
 
         return self;
     }
+
+    static GetProcesses = function() {
+        return processes;
+    }
     
+    	#region Watch
     /// @param stat_class
     /// @param values
     /// Necesita que el anterior sea un stat
@@ -688,10 +728,10 @@ function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_cla
         return watch_part;
     }
     
-    static GetProcesses = function() {
-        return processes;
-    }
-    
+    #endregion
+   
+	static Copy = function() {}
+   
     #endregion
 }
 
@@ -732,6 +772,12 @@ function mall_state_control() : __mall_class_parent("MALL_STATE") constructor {
     }
 
     #endregion
+}
+
+/// @param name
+/// @returns {bool}
+function mall_state_exists(_name) {
+	return (variable_struct_exists(global._MALL_GLOBAL.statenames, _name) );	
 }
 
 /// @returns {__mall_class_state}
@@ -875,6 +921,11 @@ function mall_element_control() : __mall_class_parent("MALL_ELEMENT") constructo
     #endregion
 }
 
+/// @param name
+function mall_element_exists(_name) {
+	return (variable_struct_exists(global._MALL_GLOBAL.elmnnames, _name) );
+}
+
 /// @returns {__mall_class_element}
 function mall_get_element(_access) {
     return (MALL_CONT_ELEMN.Get(_access) );
@@ -913,14 +964,17 @@ function mall_element_get_reduce(_access) {
 /// @param index
 function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_PART_INTERN") constructor {
     // Deterioro
-    deter = 0;
+    deter_start = 0;
     deter_min = noone;
     deter_max = noone;
     
     deter_txt = "n";
     noitem = "noitem";    // Si no hay objeto equipado
         
-    possible = [];  // Que objetos puede llevar esta parte.
+    possible = {};  // Que objetos puede llevar esta parte.
+    
+    bonus   = {};
+    penalty = {};
     
     // Componentes que lo afectan
     link = (new __mall_class_group("", -1) ).AllSetArray();   /// @is {__mall_class_group}
@@ -939,8 +993,8 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     /// @param deterior
     /// @param range_min
     /// @param range_max
-    static SetDeter = function(_val, _min, _max) {
-        deter = _val;
+    static SetDeter = function(_start, _min, _max) {
+        deter_start = _start;
         
         deter_min = _min;
         deter_max = _max;
@@ -972,55 +1026,64 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
         return self;
     }
     
+    #region Itemtypes
     /// @param item_type
     /// @param item_subtypes
     /// @desc Se debe de asegurar que los objetos hayan sido creado antes!!
-    static AddItemTypes = function(_item_type, _select) {
-        if (mall_itemtypes_exists(_item_type) ) {
-            var _subtypes = mall_itemtypes_get_subtype(_item_type);
-
-            var _new = [];
-            
-            repeat (each(_select) ) {
-                var in = this.value;
-                
-                // Si existe el subtypo
-                if (variable_struct_exists(_subtypes, in) ) {
-                    array_push(_new, in);
-                }
-            }
-            
-            array_push(possible, _item_type, _new);
-        }
+    static AddItemtypes = function(_itemtype) {
+        if (mall_itemtypes_exists(_itemtype) ) variable_struct_set(possible, _itemtype, true);
         
         return self;
     }
 
     /// @param itemtype_array
     /// @desc Se debe de asegurar que los objetos hayan sido creado antes!!
-    static AddItemTypesArray = function(_array) {
-        if (!is_array(_array) ) return self;
-        
-        var i = 0; repeat(array_length(_array) ) {
-            var _type = _array[i], _subtype;
-            
-            if (!is_array(_type) ) {
-                try {_subtype = _array[i + 1]; } catch (_subtype) {_subtype = []; }
-                
-                // Tiene una seleccion de los subtipos
-                if (is_array(_subtype) ) {
-                    AddItemTypes(_type, _subtype);    
-                } else { // Es otro tipo
-                    var _names = mall_itemtypes_get_subtype(_type).order;
-                    AddItemTypes(_type, _names);    
-                }
-            }
-            
-            ++i;
-        }
-
+    static AddItemtypesArray = function(_array) {
+    	if (!is_array(_array) ) return self;
+    	
+		repeat(each(_array) ) AddItemtypes(this.value);
+		
         return self;
     }
+    
+    #endregion
+    
+    #region Bonus y penalty
+    // BONUS O PENALIZACION PARA LAS ARMAS DEL MISMO TIPO
+    
+    /// @param item_subtype
+    /// @param bonus_value
+    static AddBonus   = function(_subtype, _bonus) {
+    	if (!variable_struct_exists(bonus, _subtype)  ) variable_struct_set(bonus, _subtype, _bonus);
+    	
+    	return self;
+    }
+
+	/// @param bonus_array
+    static AddBonusArray = function(_array) {
+		if (!is_array(_array) ) return self;
+    	
+    	var i = 0; repeat(array_length(_array) ) {AddBonus(_array[i], _array[i + 1] ); ++i;}
+    	return self;
+    }
+    
+    /// @param item_subtype
+    /// @param penalty_value
+    static AddPenalty = function(_subtype, _penalty) {
+    	if (!variable_struct_exists(penalty, _subtype) ) variable_struct_set(penalty, _subtype, _penalty);
+    	
+    	return self;    	
+    }
+    
+    /// @param penalty_array
+    static AddPenaltyArray = function(_array) {
+		if (!is_array(_array) ) return self;    	
+    	
+    	var i = 0; repeat(array_length(_array) ) {AddPenalty(_array[i], _array[i + 1] ); ++i;}
+    	return self;
+    }
+    
+    #endregion
     
     /// @param {__mall_class_part} part_class
     /// @desc Hereda las propiedades de otra parte
@@ -1035,7 +1098,26 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
         SetDeter(_part.deter, _part.deter_min, _part.deter_min);
         SetTexts(_part.deter_txt, _part.noitem);
         
-        return AddItemTypesArray(_part.possible);
+        var _names = variable_struct_get_names(_part.possible);
+        AddItemtypesArray(_names);
+        
+        var _names = variable_struct_get_names(_part.bonus);
+        var i = 0; repeat(array_length(_names) ) {
+    		var _name = _names[i], in = _part.bonus[$ _name];
+    		AddBonus(_name, in);
+        
+        	++i;
+        }
+        
+        var _names = variable_struct_get_names(_part.penalty);
+        var i = 0; repeat(array_length(_names) ) {
+    		var _name = _names[i], in = _part.penalty[$ _name];
+    		AddPenalty(_name, in);
+        
+        	++i;
+        }        
+        
+        return self;
     }
  
     /// @returns {array}
@@ -1070,15 +1152,17 @@ function mall_part_control() : __mall_class_parent("MALL_PART") constructor {
     /// @param part_name
     /// @param item_types
     /// @param link_array    
-    static Add = function(_name, _item_type, _link_array) {
+    static Add = function(_name, _itemtype, _bonusitem, _penaltyitem, _link_array) {
         static partcount = 0;
         
         if (!variable_struct_exists(part, _name) ) {
-            var _part = (new __mall_class_part(_name, partcount) );
-            
-            _part.AddItemTypesArray(_item_type ); 
-            _part.AddLinkArray(_link_array);
+            var _part = (new __mall_class_part(_name, partcount) ).AddItemtypesArray(_itemtype);
 
+        	_part.AddBonusArray  (_bonusitem  );
+        	_part.AddPenaltyArray(_penaltyitem);
+           
+			_part.AddLinkArray(_link_array);
+           
             variable_struct_set(part, _name, _part);
             
             array_push(order, _name);
@@ -1088,34 +1172,32 @@ function mall_part_control() : __mall_class_parent("MALL_PART") constructor {
         }              
     }
     
+    static Get = function(_access) {
+    	return (is_string(_access) ) ? part[$ _access] : GetIndex(_access);
+    }
+    
+    static GetIndex = function(_index) {
+    	return part[$ order[_index] ];
+    }
+    
+    static Exists = function(_name) {
+    	return (variable_struct_exists(part, _name) );
+    }
     
     #endregion
 }
 
-/// @returns {array}
-function mall_slots_get_names() {
-    return global._MALL_STATES.order;
+/// @returns {__mall_class_part}
+function mall_get_part(_access) {
+	return (MALL_CONT_PARTS).Get(_access);	
 }
 
-/// @param slot_name
-function mall_slot_get_type(_slot) {
-    return (variable_struct_get(global._MALL_SLOTS, _slot) );
+function mall_part_get_names() {
+	return (MALL_CONT_PARTS.order);
 }
 
-/// @param slot_name
-/// @returns {bool}
-function mall_slot_exists(_slot_name) {
-    return (variable_struct_exists(global._MALL_SLOTS, _slot_name) );
-}
-
-/// @returns {string}
-function mall_slot_get_noname() {
-    return global._MALL_SLOTS.noname;
-}
-
-/// @param {string} no_name
-function mall_slot_set_noname(_noname) {
-    variable_struct_set(global._MALL_SLOTS, "noname", _noname);
+function mall_part_exists(_name) {
+	return (MALL_CONT_PARTS.Exists(_name) );
 }
 
 #endregion
@@ -1125,6 +1207,8 @@ function mall_slot_set_noname(_noname) {
 /// @param name
 /// @param index
 function __mall_class_itemtype(_name = "", _index = -1) : __mall_class_parent("MALL_ITEMTYPE_INTERN") constructor {
+    SetBasic(_name, _index);
+    
     subtypes = {};  // Que subtipos posee
     order    = []; 
     
@@ -1151,21 +1235,27 @@ function __mall_class_itemtype(_name = "", _index = -1) : __mall_class_parent("M
         return self;
     }
     
+    /// @param {string} subtype
+    /// @returns {bool}
+    static ExistsSubtype = function(_subtype) {
+    	return (variable_struct_exists(subtypes, _subtype) );
+    }
+    
     #endregion
 }
 
 /// @param {string} item_type
 /// @param {array} item_subtypes
 /// @desc Crea los distintos tipos de objetos (armas, consumibles) tambien incluye los sub-tipos (arma:Espada, armadura:Vestido)
-function mall_create_itemtypes(_item_type, _item_subtypes = [""]) {
+function mall_create_itemtypes(_itemtype, _itemsubtypes = [""]) {
     static typecount = 0;
     
-    if (!variable_struct_exists(MALL_ITEM_TYPE, _item_type) ) {
-        var _type = (new __mall_class_itemtype(_item_type, typecount) ).AddArray(_item_subtypes);
+    if (!variable_struct_exists(MALL_ITEMTYPE, _itemtype) ) {
+        var _type = (new __mall_class_itemtype(_itemtype, typecount) ).AddArray(_itemsubtypes);
 
         // Agregar al orden
-        variable_struct_set(MALL_ITEM_TYPE, _item_type, _type);
-        array_push(MALL_ITEM_TYPE_ORDER, _item_type);
+        variable_struct_set(MALL_ITEMTYPE, _itemtype, _type);
+        array_push(MALL_ITEMTYPE_ORDER, _itemtype);
         
         typecount++;
         
@@ -1173,30 +1263,47 @@ function mall_create_itemtypes(_item_type, _item_subtypes = [""]) {
     }      
 }
 
+/// @returns {__mall_class_itemtype}
+function mall_get_itemtype(_access) {
+	if (!is_string(_access) ) {_access = MALL_ITEMTYPE_ORDER[_access]; }
+	
+	return (MALL_ITEMTYPE[$ _access] );
+}
+
+/// @param {string} subtype
+function mall_get_itemtype_by_subtype(_subtype) {
+	repeat (each(MALL_ITEMTYPE_ORDER) ) {
+		var in = this.value, _itemtype = mall_get_itemtype(in);
+		
+		// Obtengo los subtipos
+		if (_itemtype.ExistsSubtype(_subtype) ) return (_itemtype );
+	}	
+	
+	return noone;	
+}
+
 /// @returns {array}
 function mall_itemtypes_get_types() {
-    return MALL_ITEM_TYPE_ORDER;
+    return MALL_ITEMTYPE_ORDER;
 }
 
 /// @param item_type
 /// @returns {__mall_class_itemtype}
-function mall_itemtypes_get_subtype(_item_type) {
-    return (variable_struct_get(MALL_ITEM_TYPE, _item_type) ).subtypes;
+function mall_itemtypes_get_subtype(_itemtype) {
+    return (variable_struct_get(MALL_ITEMTYPE, _itemtype) ).subtypes;
 }
 
 /// @param item_type
 /// @returns {bool}
-function mall_itemtypes_exists(_item_type) {
-    return (variable_struct_exists(MALL_ITEM_TYPE, _item_type) );
+function mall_itemtypes_exists(_itemtype) {
+    return (variable_struct_exists(MALL_ITEMTYPE, _itemtype) );
 }
 
 /// @param itemtype 
 /// @param subtype
 /// @returns {bool}
-function mall_itemtypes_exists_subtype(_item_type, _sub_type) {
-    var _sub = mall_itemtypes_get_subtype(_item_type);
-    
-    return (variable_struct_exists(_sub, _sub_type) );
+function mall_itemtypes_exists_subtype(_itemtype, _subtype) {
+	return (MALL_ITEMTYPE[$ _itemtype].ExistsSubtype(_subtype));
 }
 
 #endregion
@@ -1309,6 +1416,8 @@ function mall_dark_exists_subtype(_type, _subtype) {
 /// @param name
 /// @param index
 function __mall_class_pocket(_name, _index) : __mall_class_parent("MALL_POCKET_INTERN") constructor {
+    SetBasic(_name, _index);
+    
     subtypes = {};	// Se almacenan los tipos de objetos que almacena.
     
     order = [];
@@ -1319,7 +1428,7 @@ function __mall_class_pocket(_name, _index) : __mall_class_parent("MALL_POCKET_I
     static Add = function(_subtype) {
         static pocketincount = 0;
         
-        if (!mall_itemtypes_exists(_subtype) ) {
+        if (mall_itemtypes_exists(_subtype) ) {
             variable_struct_set(subtypes, _subtype, pocketincount);
             
             array_push(order, _subtype);
@@ -1341,6 +1450,10 @@ function __mall_class_pocket(_name, _index) : __mall_class_parent("MALL_POCKET_I
     	limit = _lim;
     	
     	return self;
+    }
+    
+    static Exists = function(_name) {
+    	return (variable_struct_exists(subtypes, _name) );
     }
     
     #endregion	
@@ -1366,128 +1479,29 @@ function mall_create_pocket(_pocket_name, _itemtypes, _limit = noone) {
     }    
 }
 
-/// @returns {array}
-/// @desc Obtiene el nombre de todos los bolsillos
-function mall_pocket_get_names() {
-    return (MALL_POCKET_ORDER);   
-}
-
-/// @param {number}
-/// @desc Devuelve la cantidad de bolsillos
-function mall_pocket_count() {
-    return (array_length(mall_pocket_get_names() ) );    
-}
- 
-/// @param {string} pocket_name
-/// @returns {bool}
-/// @desc Devuelve true si un bolsillo existe
-function mall_pocket_exists(_pocket_name) {
-    return (variable_struct_exists(MALL_POCKET_TYPE, _pocket_name) );
-}
-
-/// @param pocket_index|name
-/// @desc Devuelve un pocket mediante su nombre o indice
-/// @returns {__mall_class_pocket}
-function mall_pocket_get(_access) {
-	if (is_string(_access) ) {
-		return (MALL_POCKET_TYPE[$ _access] );
-		
-	} else {
-		var _ind = MALL_POCKET_ORDER[_access];
-		
-		return (MALL_POCKET_TYPE[$ _ind] );
-	}
-}
-
-/// @param pocket_index|name
-/// @returns {struct}
-function mall_pocket_get_itemtypes(_access) {
-	return (mall_pocket_get(_access) ).subtypes;
-}
-
-/// @param pocket_index|name
-/// @returns {array}
-function mall_pocket_get_names(_access) {
-	return (mall_pocket_get(_access) ).order;	
-}
-
 /// @param pocket_name
-/// @returns {number}
-function mall_pocket_get_index(_pocket) {
-    return (mall_pocket_get(_pocket).index );
+/// @returns {bool}
+function mall_pocket_exists(_name) {
+	return (variable_struct_exists(MALL_POCKET_TYPE, _name) );
 }
 
-/// @param {number} pocket_index|name
-function mall_pocket_get_limit(_access) {
-    return (mall_pocket_get(_access).limit ); 
-}
-
-/// @param pocket_id
-/// @param {string} item_type
-/// @desc Comprueba su un itemtype existe en el bolsillo
-function mall_pocket_is_inside(_pocket, _itemtype) {
-	var in = mall_pocket_get_itemtypes(_pocket);
+function mall_get_pocket(_access) {
+	if (!is_string(_access) ) {_access = MALL_POCKET_TYPE[_access]; }
 	
-    return (variable_struct_exists(in, _itemtype) );
+	return (MALL_POCKET_TYPE[$ _access] );
 }
+
+/// @desc Devuelve el bolsillo al que pertenece este tipo de objeto
+function mall_pocket_get_itemtype(_itemtype) {
+	repeat (each(MALL_POCKET_ORDER) ) {
+		var in = this.value, _pocket = mall_get_pocket(in);
+		
+		if (_pocket.Exists(_itemtype) ) return _pocket;
+	}
+	
+	return noone;
+}
+
 
 #endregion
-
-#macro DARK_TYPE_BATTLE	"Batalla"
-#macro DARK_TYPE_MAGIC	"Magia"
-
-/// @desc PLANTILLA PARA INICIAR EL SISTEMA!
-function mall_init() {
-	mall_create_itemtypes("Armas"  , ["Espadas", "Arcos"   , "Escudos"] );
-	mall_create_itemtypes("Objetos", ["Comida" , "Pociones"] );
-	
-	mall_create_dark("Batalla", ["Ataque", "Defensa", "Objeto"] );
-	mall_create_dark("Magia"  , ["Blanca", "Negra"  , "Roja"  ] );
-	
-	mall_create_pocket("Armas"  , ["Armas"  ] );
-	mall_create_pocket("Objetos", ["Objetos"] );
-	
-	mall_group_init("Default");
-	
-	var _stat = (new mall_stat_control() ); /// @is {mall_stat_control}
-	
-	var _psmax = _stat.Add("ps_max", undefined, function(old, base, lvl) {return (base * lvl) / max(1, (lvl - 1) ); } ).SetRange(0, 9999);
-	var _pmmax = _stat.Add("pm_max").Inherit(_psmax);
-	
-	_stat.Add("ps", _psmax);
-	_stat.Add("pm", _pmmax);
-	
-	var _fue = _stat.Add("fue", undefined, function(old, base, lvl) {return round( ( (base * lvl) / 15) + 5); } ).SetRange(0, 255);
-	var _int = _stat.Add("int").Inherit(_fue);
-	
-	var _def = _stat.Add("def").Inherit(_fue);
-	var _esp = _stat.Add("esp").Inherit(_fue);
-	
-	var _state = (new mall_state_control() );
-	
-	_state.Add("vivo", true);
-	
-	var _ven = _state.Add("veneno"    , false, [_fue, .2] );
-	var _qem = _state.Add("quemadura" , false, [_fue, .5] );
-	
-	_state.Add("melancolia", false, [_int, .5] );
-	
-	var _elemn = (new mall_element_control() );
-	
-	_elemn.Add("fuego"   , [_ven, .2] );
-	_elemn.Add("polucion", [_qem, .5] );
-	
-	var _parts = (new mall_part_control() );
-	
-	var _hand1 = _parts.Add("Mano izq.", ["Armas", ["Espadas"] ], [_fue, _int] );
-	var _hand2 = _parts.Add("Mano der.").Inherit(_hand1);
-	
-	mall_group_add_stat   (_stat );
-	mall_group_add_state  (_state);
-	mall_group_add_element(_elemn);
-	mall_group_add_part   (_parts);	
-}
-
-
-
 

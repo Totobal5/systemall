@@ -1,15 +1,11 @@
-function __bag_class_item() : __mall_class_parent("BAG_ITEM") constructor {
-    type    = "";
-    subtype = "";
-    
-    key = "";
-    
-    name = "";  // Nombre del objeto
-    des  = "";  // Descripcion del objeto
-    ext  = [];  // Texto extra que es un array    
-    
+function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM") constructor {
+    type    = (mall_get_itemtype_by_subtype(_subtype) ).GetName();
+    subtype = _subtype;
+	
+	pocket = (mall_pocket_get_itemtype(type) );
+	
     // Si posee algo en especial (envenena, +daño a un enemigo etc)
-    prop = {};
+    special = {};
     
     // Datos
     sts = (new __group_class_stats() ); 		 // Crear estadisticas
@@ -20,8 +16,8 @@ function __bag_class_item() : __mall_class_parent("BAG_ITEM") constructor {
     can_sell = true;
     can_buy  = true;
     
-    sell = 1;
-    buy  = 1;
+    sell = _sell;
+    buy  = _buy;
     
     #region Metodos
     
@@ -38,55 +34,37 @@ function __bag_class_item() : __mall_class_parent("BAG_ITEM") constructor {
     static SetInformation = function(_name, _des = _name, _ext) {
 		if (key == "") SetKey(_name);
 		
-		var _scr = MALL_LOCAL.scr;  // Obtener localizacion
+		var _scr = MALL_LOCAL.GetTranslate();  // Obtener localizacion
 		
-		if (is_undefined(_ext) ) _ext = [_name];
+		if (_ext == undefined) _ext = [_name];
 		
 		if (!is_undefined(_scr) ) {
-		    _name += MALL_LOCAL.name;
-			_des  += MALL_LOCAL.des;
-
-			name = _scr(_name);
- 			des  = _scr(_des) ;
+			name = _scr(_name + MALL_LOCAL.name);
+ 			des  = _scr(_des  + MALL_LOCAL.des );
  			
  			// Textos extras
-			var i = 0; repeat(array_length(_ext) ) {
-			    var in = _ext[i] + MALL_LOCAL.ext[i];
-			    
-			    array_push(ext, _scr(in) ); 
-			    ++i;
-			}
-			
+ 			var _extlocal = MALL_LOCAL.GetExtraAll();
+ 			
+ 			repeat (each(_ext) ) {
+ 				var in = this, _txt = in.value + _extlocal[in.index];
+
+ 				array_push(ext, _scr(_txt) );
+ 			}
+
 		} else {
 			name = _name;
  			des  = _des;
  			
-			var i = 0; repeat(array_length(_ext) ) {
-			    var in = _ext[i] + MALL_LOCAL.ext[i];
-			    
-			    array_push(ext, in); 
-			    ++i;
-			}
+ 			repeat (each(_ext) ) array_push(ext, this.value);
 		}
 		
 		return self;
     }
     
-    /// @param item_type
-    /// @param item_subtype
-    static SetType = function(_type, _subtype) {
-    	if (mall_pocket_get_by_type(_type) != noone ) {
-    		type = _type;
-    		subtype = _subtype;
-    	}
-
-        return self;
-    }
-    
     /// @param dark_key Puede ser una id de un hechizo dark o una funcion nueva
     /// @param {array} arguments
-    static SetProp = function(_key, _arguments) {
-        prop = (new __bag_class_properties(_key, _arguments) );
+    static SetSpecial = function(_key, _arguments) {
+        special = (new __bag_class_special(_key, _arguments) );
         
         return self;
     }
@@ -95,7 +73,10 @@ function __bag_class_item() : __mall_class_parent("BAG_ITEM") constructor {
     /// @param sell_value
     /// @param can_buy?
     /// @param can_sell?
-    static SetTrade = function(_buy, _sell, _canbuy = true, _cansell = true) {
+    static SetTrade = function(_buy, _sell, _canbuy, _cansell) {
+    	if (_cansell == undefined) _cansell = can_sell;
+    	if  (_canbuy  ==  undefined)  _canbuy  = can_buy;
+    	
     	sell = _sell;
     	buy  = _buy ;
     	
@@ -103,6 +84,42 @@ function __bag_class_item() : __mall_class_parent("BAG_ITEM") constructor {
     	can_buy  = _canbuy ;
     	
     	return self;
+    }
+    
+	/// @param stat
+	/// @param value...
+	static SetStat = function() {
+		var i = 0; repeat(argument_count - 1) {
+			sts.Set(argument[i], argument[i + 1] );
+			
+			++i;
+		}	
+		
+		return self;
+	} 
+
+	/// @param stat
+	/// @param value...    
+    static SetElement = function() {
+		var i = 0; repeat(argument_count - 1) {
+			eln.Set(argument[i], argument[i + 1] );
+			
+			++i;
+		}	
+		
+		return self;	
+    }
+
+	/// @param stat
+	/// @param value...      
+    static SetResistance = function() {
+		var i = 0; repeat(argument_count - 1) {
+			res.Set(argument[i], argument[i + 1] );
+			
+			++i;
+		}	
+		
+		return self;    	
     }
     
     /// @returns {__group_class_stats}
@@ -125,24 +142,25 @@ function __bag_class_item() : __mall_class_parent("BAG_ITEM") constructor {
 
 /// @param dark_key Puede ser una id de un hechizo de dark o una funcion nueva
 /// @param {array} arguments
-function __bag_class_properties(_spell, _arguments) : __mall_class_parent("BAG_PROP") constructor {
+function __bag_class_special(_spell, _arguments) : __mall_class_parent("BAG_PROP") constructor {
     if (dark_exists(_spell) ) _spell = dark_get(_spell);
     
-    prop_scr = _spell; 
-    prop_arg = _arguments;
+    spell = _spell;
+    arg   = _arguments;
     
     #region Metodos
     /// @returns {script}
-    static GetSpell     = function() {return prop_scr; }
+    static GetSpell     = function() {return spell; }
     
     /// @returns {array}
-    static GetArguments = function() {return prop_arg; }
+    static GetArguments = function() {return arg;   }
     
     #endregion
 }
 
 
 /// @returns {__bag_class_item}
-function bag_create_item() {
-	return (new __bag_class_item() );
+function bag_create_item(_subtype) {
+	return (new __bag_class_item(_subtype) );
 }
+

@@ -1,96 +1,85 @@
 function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") constructor {
     // Copiar estadisticas del diccionario    
-    var _order = mall_stats_get_names();
-    
-    ImportFromArray(_order);
-    
     lvl  = _lvl;
-    base =   {};
+    
+    bases = {};
+    stats = {};
     
     // Condiciones para subir de nivel
     lvl_init = undefined;   // function(self)
     lvl_end  = undefined;   // function(self)
     
     #region Metodos
-            
-        #region Base
+	static Init = function() {
+		var _names = mall_global_stats();
+		
+		repeat (each(_names) ) {
+			var in = this.value;
+			
+			variable_struct_set(bases, in, 0);
+			variable_struct_set(stats, in, 0);	
+		}
+	}
+
     /// @param stat_name
     /// @param base_value
-    static SetBase  = function(_sts_name, _base) {
-        if (mall_stats_exists(_sts_name) && (!variable_struct_get(base, _sts_name) ) ) variable_struct_set(base, _sts_name, _base);
+    static Set = function(_name, _val) {
+        // Si existe la estadistica y no posee un valor base.
+        if (mall_stat_exists(_name) ) { 
+            // Comprobar que no sea un substat
+            var _stat  = mall_get_stat(_name); /// @is {__mall_class_stat}
+            
+            var _lvlup = _stat.GetLvlUp();
+            var _range = _stat.GetRange();
+			
+			// Establecer un valor
+			variable_struct_set(stats, _name, max(_range[0], min(_range[1], _val) ) );
+        }
+        
+        return self;
+    }
+
+    /// @param stat_array
+    static SetArray = function(_array) {
+        var i = 0; repeat(array_length(_array) ) {
+            Set(_array[i], _array[i + 1] );
+            ++i;
+        }
+        
+        return self;
+    }
+
+    /// @param name
+    /// @returns {bool}
+    /// @desc Obtiene el valor del stat
+    static Get = function(_name) {
+    	return (variable_struct_get(stats, _name) ); 
+    }
+
+    /// @param stat_name
+    /// @param base_value
+    static SetBase  = function(_name, _base) {
+    	if (mall_stat_exists(_name) && variable_struct_exists(bases, _name) ) {
+    		variable_struct_set(_name, bases, _base);
+    	}
         
         return self;
     }
     
     /// @param stat_array
-    static SetBases = function(_sts_array) {
-        var i = 0; repeat(array_length(_sts_array) ) {
-            var in = _sts_array[i];
-            
-            SetBase(in[0], in[1] );
+    static SetBases = function(_array) {
+        var i = 0; repeat(array_length(_array) ) {
+            Base(_array[i], _array[i + 1] );
             ++i;
         }
         
         return self;        
     }    
     
-    static GetBase  = function(_name) {return variable_struct_get(base, _name); }
-    
-    #endregion
-                
-        #region Stats
-    /// @param stat_name
-    /// @param base_value
-    static SetStat  = function(_sts_name, _val) {
-        // Si existe la estadistica y no posee un valor base.
-        if (mall_stats_exists(_sts_name) ) { 
-            // Comprobar que no sea un substat
-            var _sub = mall_stats_is_substat(_sts_name);
-
-            if (_sub != noone) { // Si es un substat entonces esta limitado a su estadistica jefe
-                var _mstat = mall_stats_get(_sub);
-                
-                var _max = is_string(_mstat.submax) ? GetStat(_mstat.submax) : _mstat.submax;
-                var _min = is_string(_mstat.submin) ? GetStat(_mstat.submin) : _mstat.submin;
-                
-                if (_val > _max) {_val = _max; }
-                if (_val < _min) {_val = _min; }
-                
-                variable_struct_set(self, _sts_name, _val);    
-            
-            } else {
-                var _mstat = mall_stats_get(_sts_name);
- 
-                var _max = is_string(_mstat.memax) ? GetStat(_mstat.memax) : _mstat.memax;
-                var _min = is_string(_mstat.memin) ? GetStat(_mstat.memin) : _mstat.memin;
-                
-                if (_val > _max) {_val = _max; }
-                if (_val < _min) {_val = _min; } 
-                
-                variable_struct_set(self, _sts_name, _val);
-                
-            }
-        }
-        
-        return self;
-    }
-
-    /// @param stat_array
-    static SetStats = function(_sts_array) {
-        var i = 0; repeat(array_length(_sts_array) ) {
-            var in = _sts_array[i];
-            
-            SetStat(in[0], in[1] );
-            ++i;
-        }
-        
-        return self;
+    static GetBase = function(_name) {
+    	return (variable_struct_get(bases, _name) ); 
     }
     
-    static GetStat = function(_name) {return variable_struct_get(self, _name); }
-    
-    #endregion
-   
     /// @param level_init
     /// @param level_end
     static SetLevelFunctions = function(_init, _end) {
@@ -122,22 +111,31 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
         // Si no posee condiciones entonces
         if (is_undefined(lvl_init) || is_undefined(lvl_end) ) return self;
         
-        var _sts = mall_stats_get_names();
+        var _names = mall_stat_get_names();
         
         // Si es forzado o cumple las condiciones que indica "lvl_init"
         if (_force || lvl_init(self) ) {
-            var i = 0; repeat(array_length(_sts) ) {
-                var _name = _sts[i];
-                var _form = mall_stats_get_formula(_name);
-                
-                var _base = GetBase(_name); // Obtener el valor base
-                var _oval = GetStat(_name); // Obtener el valor actual
-                
-                SetStat(_name, _form(_oval, _base, lvl) );
-                
-                
-                ++i;
-            }    
+        	repeat (each(_names) ) {
+        		var in    = this.value;
+        		var _stat = mall_get_stat(in), _source = _stat.GetLvlUp();
+
+        		// Subir de nivel solo si es menor al nivel maximo de la estadistica
+        		if (lvl < _stat.lvlmax) {
+        			// Si posee un maestro
+        			var _master = _stat.GetMaster();
+        			var _mname  = _stat.GetName();
+        			
+        			if (!is_undefined(_master) ) { // Si posee maestro
+        				if (_stat.tomin) {Set(in, _stat.range_min); } else	// Devolver al minimo
+        				if (_stat.tomax) {Set(in, Get(_mname)    ); }		// Devolver al maximo
+        			} else if (!is_undefined(_source) ) {
+        				if (_stat.tomin) {Set(in, _stat.range_min); } else		// Devolver al minimo 
+        				if (_stat.tomax) {Set(in, _stat.range_max); } else	{	// Devolver al maximo
+        					Set(in, _source(GetBase(in), Get(in), lvl) );		
+        				}
+        			}
+        		}
+        	}
         }
         
         // Ejecutar funcion para finalizar evento de subir de nivel
@@ -147,164 +145,116 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
     }
     
     #endregion
+    
+    Init();
 }
 
 function __group_class_elements() : __mall_class_parent("GROUP_ELEMENTS") constructor {
-    var _order = mall_elements_get_names();
-    
-    ImportFromArray(_order);
+	elmn = {};
+	
+	#region Metodos
+	static Init = function() {
+		var _names = mall_global_elements();
+		
+		repeat (each(_names) ) {
+			var in = this.value;
+			
+			variable_struct_set(elmn, in, 1);
+		}
+	}
+	
+	static Set = function(_name, _val) {
+		if (mall_element_exists(_name) ) {
+			variable_struct_set(elmn, _name, _val);	
+		}
+		
+		return self;
+	}
+	
+	static Get = function(_name, _val) {
+		return (variable_struct_get(_name, _val) );
+	}
+	
+	#endregion
+	
+	Init();
 }
 
 function __group_class_resistances() : __mall_class_parent("GROUP_RESISTANCES") constructor {
-    var _order = mall_states_get_names();
-    
-    ImportFromArray(_order);
+	state = {}
+	
+	#region Metodos
+	static Init = function() {
+		var _names = mall_global_states();
+
+		repeat (each(_names) ) {
+			var in = this.value;
+			
+			variable_struct_set(state, in, 1);
+		}		
+	}
+	
+	static Set = function(_name, _val) {
+		if (mall_state_exists(_name) ) {
+			variable_struct_set(state, _name, _val);	
+		}
+		
+		return self;
+	}
+	
+	static Get = function(_name, _val) {
+		return (variable_struct_get(_name, _val) );
+	}
+	
+	#endregion
+	
+	Init();
 }
 
 function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUIP") constructor {
-    #region Interno
-    __copyslot    = [];
-    __copycapable = [];
-    #endregion
-
-    // Copiar slots del diccionario
-    // Slots: Tienes un tipo asignado y se puede seleccionar que sub_type quiere
-
-    capable = {};
-    
-    if (_defaults) {
-        var _slots  = mall_slots_get_names();
-        var _noname = mall_slot_get_noname();
-        
-        ImportFromArray(mall_slots_get_names, _noname);
-    }
-    
+    parts   = {};
+	capable = {};
+	
     #region Metodos
-        #region Slots
-    /// @param {string} slot_name
-    static AddSlot  = function(_slot) {
-        var _noname = mall_slot_get_noname();
-        
-        if (mall_slot_exists(_slot) && !variable_struct_exists(self, _slot) ) {   
-            variable_struct_set(self, _slot, _noname);
-            
-            array_push(__copyslot, _slot);
-        }
-        
-        return self;
+    
+    static Init = function() {
+    	var _names = mall_part_get_names();
+    	
+    	repeat (each(_names) ) {
+    		var _names  = this.value;
+    		var _noitem = (mall_get_part(_names) ).noitem;
+    		
+    		variable_struct_set(parts, _names, _noitem);
+    	}
     }
-    
-    /// @param {array} slot_array
-    static AddSlots = function(_slot_array) {
-        var i = 0; repeat(array_length(_slot_array) ) {    
-            var in = _slot_array[i];
-            
-            AddSlot(in);
-            
-            ++i;
-        }
-        
-        return self;
-    }
-    
-    /// @param {string} slot_name    
-    /// @desc Elimina un slot del equipo.
-    static DeleteSlot = function(_slot) {
-        if (variable_struct_exists(self, _slot) ) {
-            variable_struct_remove(self, _slot);
-            variable_struct_remove(self, capable);
-        }
-        
-        return self;
-    }
-    
-    /// @param {string} slot_name
-    static ExistsSlot = function(_slot) {
-        return (variable_struct_exists(self, _slot) );
-    }
-    
-    #endregion
-    
-        #region Capable
-    /// @param slot_name
-    /// @param subtype
-    static AddCapable  = function(_slot, _subtype) {
-        if (ExistsSlot(_slot) ) {
-            var _type = mall_slot_get_type(_slot);
-            
-            if (mall_itemtypes_exists_subtype(_type, _subtype) ) {
-                variable_struct_set(capable, _slot, [] );
-                
-                array_push(capable[$ _slot], _subtype);
-                array_push(__copycapable, [_slot, _subtype] );
-            }
-        }  
-        
-        return self;
-    }
-    
-    /// @param {array} capable_array
-    static AddCapables = function(_slot_array) {
-        var i = 0; repeat(array_length(_slot_array) ) {
-            var in = _slot_array[i];
-            
-            AddCapable(in[0], in[1] );
-            
-            ++i;
-        }
-        
-        return self;
-    }
-    
-    /// @param slot_name
-    /// @param subtype
-    static ExistsCapable = function(_slot, _subtype) {
-        var _cap = capable[$ _slot];
-        
-        var i = 0; repeat(array_length(_cap) ) {
-            var in = capable[$ _slot][i];
-            
-            if (in == _subtype) return true;
-            ++i;    
-        }
-        
-        return false; 
-    } 
-    
-    #endregion
-    
-    /// @param {string} slot_name
-    /// @param {string} subtype
-    /// @returns {bool}
-    static IsCapable  = function(_slot, _subtype) {
-        return (ExistsSlot(_slot) && (ExistsCapable(_slot, _subtype) ) );
-    }
-    
-    /// @param {string} slot_name
-    /// @returns {bool} 
-    static IsOcuppied = function(_slot) {
-        return (self[$ _slot] == mall_slot_get_noname);
-    }
-    
-    /// @param slot_name
-    /// @param value
-    static SetSlot = function(_slot, _val) {
-        if (is_undefined(_val) ) _val = mall_slot_get_noname();
-        
-        variable_struct_set(self, _slot, _val);
-        
-        return self;
-    }    
-    
-    /// @param slot_name
-    static GetSlot = function(_slot, _other) {
-        return (is_undefined(_other) ) ? (variable_struct_get(self, _slot) ) : _other;
-    }
-    
-    static Copy = function() {
-        return (new __group_class_equip() ).AddSlots(__copyslot).AddCapable(__copycapable);
-    }
-    
+
+	static Set = function(_name, _value) {
+		if (mall_part_exists(_name) ) {
+			var _noitem = mall_get_part(_name).noitem;
+			if (_value == undefined) _value = _noitem;
+			
+			variable_struct_set(parts  , _name, _value);	
+			variable_struct_set(capable, _name, [] );
+		}
+		
+		return self;
+	}
+	
+	static Get = function(_name) {
+		return (variable_struct_get(parts, _name) );	
+	}
+	
+	/// @desc Selecciona que subtipos puede usar
+	static SetCapable = function(_name, _array) {
+		variable_struct_set(capable, _name, _array);
+		return self;
+	}
+	
+	/// @param name
+	static GetCapable = function(_name) {
+		return (variable_struct_get(capable, _name) );
+	}
+	
     #endregion
 }
 
