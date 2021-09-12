@@ -258,33 +258,83 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
     #endregion
 }
 
-function __group_class_control(_stateForm = {}, _stsForm = [], _eleForm = [], _resForm = [] ) : __mall_class_parent("GROUP_CONTROL") constructor {
+function __group_class_control(_statuniq = true, _stateuniq = true, _eleuniq = true, _resuniq = true) : __mall_class_parent("GROUP_CONTROL") constructor {
     // Crea control de estados
-    state = mall_states_copy();
+    state = {};
     
     // Copiar elementos
-    ele = mall_elements_copy(1);    
+    ele = {}  
     
     // Copiar resistencias    
-    res = mall_states_copy(1);
+    res = {}
     
     // Copiar estadisticas
-    sts = mall_stats_copy (1);
+    sts = {}
     
     // Control
     control = {
-        state: mall_states_copy  (_stateForm),
+        state: {}, stateuniq: _stateuniq,
         
-        ele: mall_elements_copy(_stateForm),
-        sts: mall_stats_copy (_stsForm),
-        res: mall_states_copy(_resForm)        
+        ele: {}, eleuniq: _statuniq,
+        sts: {}, stsuniq: _eleuniq,
+        res: {}, resuniq: _resuniq,  
     }
     
     __control = [];
     __control_count = 0;
     
-    
     #region Metodos
+    
+    static Init = function() {
+    	var _cont = control;
+    	
+    	#region Stat
+    	var _names = mall_global_stats();
+    	
+    	repeat (each(_names) ) {
+    		var name = this.value;
+    		
+    		if (!variable_struct_exists(sts, name) ) {
+    			variable_struct_set(sts, name, 1);
+    			variable_struct_set(_cont.sts, name, (_cont.stsuniq ) ?  noone : [] );	
+    		}
+    	}    	
+    	#endregion
+ 
+    	#region State and Resistances
+    	var _names = mall_global_states();
+    	
+    	repeat (each(_names) ) {
+    		var name = this.value;
+    		
+    		if (!variable_struct_exists(state, name) ) {
+				var _state = mall_get_state(name);
+				
+    			variable_struct_set(state  , name, _state.init);
+    			variable_struct_set(_cont.state, name, (_cont.stateuniq ) ?  noone : [] );
+    		}
+
+    		if (!variable_struct_exists(res, name) ) {
+    			variable_struct_set(res, name, 1);
+    			variable_struct_set(_cont.res, name, (_cont.resuniq ) ?  noone : [] );
+    		}    		
+    	}
+    	
+    	#endregion
+   		
+   		#region Element
+    	var _names = mall_global_elements();
+    	
+    	repeat (each(_names) ) {
+    		var name = this.value;
+    		
+    		if (!variable_struct_exists(ele, name) ) {
+    			variable_struct_set(ele, name, 1);
+    			variable_struct_set(_cont.ele, name, (_cont.eleuniq ) ?  noone : [] );	
+    		}
+    	}    	
+    	#endregion
+    }
     
     static SetState = function(_ste_name) {
         return self;
