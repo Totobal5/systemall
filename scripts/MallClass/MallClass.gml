@@ -1,3 +1,4 @@
+
 global._MALL_GLOBAL = {
     stats: [], statsnames:  {}, 
     state: [], statenames:  {}, 
@@ -93,23 +94,44 @@ function __mall_class_parent(_is) constructor {
         return self;
     }
     
+    /// @param struct_name
+    static GetStruct = function(_name) {
+    	return (variable_struct_get(self, _name) );
+    }
+    
     /// @param struct
     /// @param override
     /// @desc Permite sobrescribir todos los valores de una estructura
-    static Override = function(_struct, _value) {
-    	if (is_string(_struct) ) _struct = self[$ _struct];
-    	
+    static Override = function(_struct_name, _value) {
+    	var _struct = GetStruct(_struct_name);
+  
     	if (!is_struct(_struct) ) return false;
     	
-    	var _names = variable_struct_get_names(_struct);
+    	var _names = variable_struct_get_names(_struct), i = 0;
     	
-    	var i = 0; repeat(array_length(_names) ) {
-    		variable_struct_set(_struct, _names[i], _value);
-    		
-    		++i;
-    	}
+    	repeat(array_length(_names) ) {variable_struct_set(_struct, _names[i], _value); ++i; }
     	
     	return self;
+    }
+    
+    /// @param struct
+    /// @param multiply
+    static Multiply = function(_struct_name, _mult) {
+    	var _struct = GetStruct(_struct_name);
+  
+    	if (!is_struct(_struct) ) return false;
+    	
+    	var _names = variable_struct_get_names(_struct), i = 0;
+    	
+    	repeat(array_length(_names) ) {
+    		var _name = _names[i], in = variable_struct_get(_struct, _name);
+
+			if (is_numeric(in) ) variable_struct_set(_struct, _name, round(in * _mult) );
+			
+    		++i; 
+    	}
+    	
+		return self;    	
     }
     
     /// @desc Pasa los valores de un struct al contrario (1 -> -1)
@@ -121,11 +143,11 @@ function __mall_class_parent(_is) constructor {
     	var _names = variable_struct_get_names(_struct);
     	
     	var i = 0; repeat(array_length(_names) ) {
-    		var in = _name[i];
+    		var _name = _names[i], in = _struct[$ _name];
     		
     		if (is_numeric(in) ) in *= -1;
     		
-    		variable_struct_set(_struct, _names[i], in);
+    		variable_struct_set(_struct, _name, in);
     		
     		++i;
     	}
@@ -580,12 +602,12 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
     }
    
     /// @returns {struct}
-    static GetWatch  = function() {
+    static GetWatch = function() {
         return watched;
     }
     
     /// @returns {array}
-    static GetRange  = function() {
+    static GetRange = function() {
         return [range_min, range_max];
     }
     
@@ -1098,10 +1120,13 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     #region Bonus y penalty
     // BONUS O PENALIZACION PARA LAS ARMAS DEL MISMO TIPO
     
+    	#region Bonus
     /// @param item_subtype
     /// @param bonus_value
     static AddBonus   = function(_subtype, _bonus) {
-    	if (!variable_struct_exists(bonus, _subtype)  ) variable_struct_set(bonus, _subtype, _bonus);
+    	if (!variable_struct_exists(bonus, _subtype) && (!variable_struct_exists(penalty, _subtype) ) ) {
+    		variable_struct_set(bonus, _subtype, _bonus);
+    	}
     	
     	return self;
     }
@@ -1115,9 +1140,25 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     }
     
     /// @param item_subtype
+    static GetBonus = function(_subtype) {
+    	return (variable_struct_get(bonus, _subtype) ); 	
+    }
+    
+    /// @param item_subtype
+    /// @returns {bool}
+    static IsBonus  = function(_subtype) {
+    	return (variable_struct_exists(bonus, _subtype) );
+    }
+    
+    #endregion
+    
+    	#region Penalty
+    /// @param item_subtype
     /// @param penalty_value
     static AddPenalty = function(_subtype, _penalty) {
-    	if (!variable_struct_exists(penalty, _subtype) ) variable_struct_set(penalty, _subtype, _penalty);
+    	if (!variable_struct_exists(penalty, _subtype) && (!variable_struct_exists(bonus, _subtype) ) ) {
+    		variable_struct_set(penalty, _subtype, _penalty);
+    	}
     	
     	return self;    	
     }
@@ -1129,6 +1170,19 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     	var i = 0; repeat(array_length(_array) - 1) {AddPenalty(_array[i], _array[i + 1] ); ++i;}
     	return self;
     }
+	
+	/// @param item_subtype    
+    static GetPenalty = function(_subtype) {
+    	return (variable_struct_get(penalty, _subtype) );    	
+    }
+
+	/// @param item_subtype  
+	/// @returns {bool}
+    static IsPenalty = function(_subtype) {
+    	return (variable_struct_exists(penalty, _subtype) );    	
+    }
+    
+    #endregion
     
     #endregion
     

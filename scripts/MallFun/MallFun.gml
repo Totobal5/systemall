@@ -48,7 +48,7 @@ function mall_init() {
 	
 	var _parts = (new mall_part_control() );
 	
-	var _hand1 = _parts.Add("Mano izq.", ["Armas", 10], ["Espadas", 0], undefined, [_fue, _int] );
+	var _hand1 = _parts.Add("Mano izq.", ["Armas"], ["Espadas", 2.5], undefined, [_fue, _int] );
 	var _hand2 = _parts.Add("Mano der.").Inherit(_hand1);
 	
 	mall_group_add_stat   (_stat );

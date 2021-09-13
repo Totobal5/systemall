@@ -26,9 +26,12 @@ function group_get_count() {
 }
 
 /// @param level
+/// @returns {group_create}
 function group_create_player1(_lvl = 1) {
+    gc_collect();
+    
     var _stats = (new __group_class_stats(_lvl) );
-    _stats.SetBases(["ps_max", 16, "pm_max", 16, "fue", 30, "int", 30, "def", 50, "esp", 50, "exp_max", 10]);
+    _stats.SetBases(["ps_max", 24, "pm_max", 16, "fue", 1, "int", 30, "def", 50, "esp", 50, "exp_max", 10]);
     _stats.SetLevelInit(function(context) {
         var _exp = context.Get("exp"), _exp_max = context.Get("exp_max");      
         
@@ -46,4 +49,6 @@ function group_create_player1(_lvl = 1) {
     var _psj = (new group_create("Player1", _stats, _state, _equip) );
     
     group_add(_psj);
+    
+    return (_psj );
 }

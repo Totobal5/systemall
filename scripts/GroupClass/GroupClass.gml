@@ -203,19 +203,20 @@ function __group_class_elements() : __mall_class_parent("GROUP_ELEMENTS") constr
 		}
 	}
 	
+	/// @param element_name
+	/// @param value
 	static Set = function(_name, _val) {
-		if (mall_element_exists(_name) ) {
-			variable_struct_set(elmn, _name, _val);	
-		}
-		
+		if (mall_element_exists(_name) ) variable_struct_set(elmn, _name, _val);	
+
 		return self;
 	}
 	
-	static Get = function(_name, _val) {
-		return (variable_struct_get(_name, _val) );
+	/// @param element_name
+	static Get = function(_name) {
+		return (variable_struct_get(elmn, _name) );
 	}
 	
-	/// @param name
+	/// @param element_name
 	/// @returns {bool}
 	static Exists = function(_name) {
 		return (variable_struct_exists(elmn, _name) );
@@ -240,6 +241,8 @@ function __group_class_resistances() : __mall_class_parent("GROUP_RESISTANCES") 
 		}		
 	}
 	
+	/// @param state_name
+	/// @param value
 	static Set = function(_name, _val) {
 		if (mall_state_exists(_name) ) {
 			variable_struct_set(state, _name, _val);	
@@ -248,11 +251,13 @@ function __group_class_resistances() : __mall_class_parent("GROUP_RESISTANCES") 
 		return self;
 	}
 	
-	static Get = function(_name, _val) {
-		return (variable_struct_get(_name, _val) );
+	/// @param state_name
+	static Get = function(_name) {
+		return (variable_struct_get(state, _name) );
 	}
 	
-	/// @param name
+	/// @param state_name
+	/// @returns {bool}
 	static Exists = function(_name) {
 		return (variable_struct_exists(state, _name) );
 	}
@@ -454,22 +459,21 @@ function __group_class_control(_stateuniq = true, _statuniq = true,  _restuniq =
     }
     
     	#region Resistencia
-    /// @param state_name
+    /// @param resistance_name
     /// @param value
     static SetRest = function(_name, _value) {
-    	if (mall_stat_exists(_name) ) {
-    		rest[$ _name] = _value;
-    	}
+    	if (mall_stat_exists(_name) ) variable_struct_set(rest, _name, _value);
     	
     	return self;
     }
     
-    /// @param state_name
+    /// @param resistance_name
     static GetRest = function(_name) {
-		return (rest[$ _name] );    	
+		return (variable_struct_get(rest, _name) );    	
     }
     
-    /// @param name
+    /// @param resistance_name
+    /// @returns {bool}
     static ExistsRest = function(_name) {
     	return (variable_struct_exists(rest, _name) );
     }
@@ -480,7 +484,7 @@ function __group_class_control(_stateuniq = true, _statuniq = true,  _restuniq =
     /// @param element_name
     /// @param value
     static SetElemn = function(_name, _value) {
-    	if (mall_element_exists(_name) ) elem[$ _name] = _value;
+    	if (mall_element_exists(_name) )  variable_struct_set(elem, _name, _value);
 		   
     	return self;
     }
@@ -491,6 +495,7 @@ function __group_class_control(_stateuniq = true, _statuniq = true,  _restuniq =
     }
     
     /// @param element_name
+    /// @returns {bool}
     static ExistsElemn = function(_name) {
     	return (variable_struct_exists(elem, _name) );
     }
@@ -610,7 +615,7 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
             equip.Set(_part, _key);
             bag_storage_add(_key, -1);
             
-            EquipGetUpgrades();
+            EquipGetUpgrade(_part);
             
             return true;
         }
@@ -632,24 +637,26 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 		equip.Set(_name);	// Poner nada en la posicion
 		equip.SetPrevius(_name, _key);
 
-		EquipGetUpgrades(); // Obtener los buffos
+		EquipGetUpgrade(_name); // Obtener los buffos
 		
 		return true;    
     }
     
-    /// @param slot_name
+    /// @param part_name
     /// @desc Obtiene las mejoras de un slot en especifico
-    static EquipGetUpgrade  = function(_name) {
-        if (!equip.Exists(_name) ) return self; // Si no existe la parte entonces salir.
+    static EquipGetUpgrade  = function(_slot) {
+        if (!equip.Exists(_slot) ) return self; // Si no existe la parte entonces salir.
          
-        var _part = mall_get_part(_name);
-        var _key  = equip.GetSlot(_name);    
+        var _part = mall_get_part(_slot);
+        var _key  = equip.Get(_slot);    
 		
 		var _stat, _rest, _elem;
+		var _bonus	 = 0;
+		var _penalty = 0;
 		
 		if (_key == _part.noitem) {
 			#region No hay objeto
-			var _ant = equip.GetPrevius();
+			var _ant = equip.GetPrevius(_slot);
 			
 			_stat = (new __group_class_stats() ).Override("stats", 0);
 			
@@ -666,12 +673,23 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 			#endregion
 		} else {
 			#region Hay objeto
-			var _item = (bag_item_get(_key) ); /// @is {__bag_class_item}
+			var _item  = (bag_item_get(_key) ), _subtype = _item.subtype;
 			
-			_stat = _item.GetStats();
-			_rest = _item.GetResistances();
-			_elem = _item.GetElements();
+			var _bonus   = (_part.IsBonus  (_subtype) ) ? _part.GetBonus  (_subtype) : 0;
+			var _penalty = (_part.IsPenalty(_subtype) ) ? _part.GetPenalty(_subtype) : 0;
 			
+			if (_part.IsBonus(_subtype) ) {
+				var _bonus = _part.GetBonus(_subtype);
+				
+				_stat = _item.GetStats		();
+				_rest = _item.GetResistances();
+				_elem = _item.GetElements	();
+			} else {
+				_stat = _item.GetStats		();
+				_rest = _item.GetResistances();
+				_elem = _item.GetElements	();				
+			}
+		
 			#endregion
 		}
 		
@@ -679,13 +697,13 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     
         #region Estadisticas
         var i = 0; repeat(array_length(_statnames) ) {
-            var _name = _names[i];
+            var _name = _statnames[i];
             
             if (stats.Exists(_name) && _stat.Exists(_name) ) {
             	// Obtener valores
-            	var in  = stats.Get(_name), out = _stat.Get(_name);
+            	var in  = stats.Get(_name), out = _stat.Get(_name) * abs(_bonus - _penalty);
             	
-            	stats_final.Set(_name, in + out); 
+            	stats_final.Set(_name, (in + out) ); 
             }
 			
             ++i;
@@ -695,13 +713,13 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
         
         #region Resistencias
         var i = 0; repeat(array_length(_restnames) ) {
-            var _name = _names[i];
+            var _name = _restnames[i];
             
             if (state.ExistsRest(_name) && _rest.Exists(_name) ) {
             	// Obtener valores
             	var in  = state.GetRest(_name), out = _rest.Get(_name);
             	
-            	state.SetRest(_name, in + out); 
+            	state.SetRest(_name, (in + out) ); 
             }
             
             ++i;
@@ -711,13 +729,13 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
         
         #region Elementos
         var i = 0; repeat(array_length(_elemnames) ) {
-            var _name = _names[i];
+            var _name = _elemnames[i];
 			
 			if (state.ExistsElemn(_name) && _elem.Exists(_name) ) {
             	// Obtener valores
-            	var in  = state.GetElemn(_name), out = _rest.Get(_name);
+            	var in  = state.GetElemn(_name), out = _elem.Get(_name);
             	
-            	state.SetElemn(_name, in + out); 					
+            	state.SetElemn(_name, (in + out) ); 					
 			}
 			
             ++i;
@@ -730,10 +748,13 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     
     /// @desc Obtiene las mejoras del equipamiento
     static EquipGetUpgrades = function() {
-        var _slots = mall_part_get_names();  // Por si no usa los defaults
-        
-        var i = 0; repeat (array_length(_slots) ) {EquipGetUpgrade(_slot[i] ); ++i; }
-        
+    	var _names = mall_part_get_names(), i = 0;
+    	repeat (array_length(_names) ) {
+    		EquipGetUpgrade(_names[i] );
+    	
+    		++i;
+    	}
+
         return self;
     }
     
@@ -945,10 +966,11 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     stats_final = (new __group_class_stats(_stats.lvl) ); /// @is {__group_class_stats}
     
     state = _control;	/// @is {__group_class_control}
-    
-    equip = _equip; /// @is {__group_class_equip}
+    equip = _equip; 	/// @is {__group_class_equip}
     
     comands = tree_create();    /// @is {__tree_class}
+    
+    EquipGetUpgrades();
 }
 
 

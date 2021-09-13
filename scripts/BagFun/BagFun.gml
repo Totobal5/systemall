@@ -79,7 +79,7 @@ function bag_storage_add(_key, _amount = 1) {
         
         // Ya se encontraba en la bolsa
         if (in[0] == _key) {
-            // Nueva cantidad
+           // Nueva cantidad
             _amount = in[1] + _amount;
             
             if (_amount > 0) {
