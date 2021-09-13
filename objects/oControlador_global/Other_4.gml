@@ -10,3 +10,5 @@ bag_storage_add("ARM.ESPADA_VENENO", 10);
 bag_storage_add("OBJ.MANZANA", 10);
 bag_storage_add("OBJ.MANZANA", -5);
 bag_storage_add("ARM.ESPADA_VENENO" , -10);
+
+group_create_player1(irandom(100) );

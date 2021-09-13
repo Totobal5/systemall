@@ -5,7 +5,7 @@ global._MALL_GLOBAL = {
     part:  [], partnames:   {},
     
     dark:     [], darknames:     {},   
-    itemtype: [], itemtypenames: {},
+    itemtype: [], itemtypenames: {}, itemsubnames: {},
     pocket:   [], pocketnames:   {}
 }
 
@@ -20,6 +20,7 @@ global._MALL_MASTER   = -1;
 
 
 #macro MALL_ITEMTYPE		global._MALL_GLOBAL.itemtypenames
+#macro MALL_ITEMTYPE_SUB	global._MALL_GLOBAL.itemsubnames
 #macro MALL_ITEMTYPE_ORDER	global._MALL_GLOBAL.itemtype
 
 #macro MALL_DARK_TYPE  global._MALL_GLOBAL.darknames
@@ -438,8 +439,13 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
     lvlup  = function(old, base, lvl) {return old; };
     lvlmax = 100; 
     
-    tomin = false;	// Si al subir de nivel se devuelve al valor minimo
+    tomin = false;		// Si al subir de nivel se devuelve al valor minimo
+	tomin_max    = 0;
+	tomin_repeat = false;
+	
     tomax = false;	// Si al subir de nivel se devuelve al valor del maestro
+	tomax_max    = 0;
+	tomax_repeat = false;
     
     watched = {};   // Que estado es observado
     used    = {};   // Que partes lo usan
@@ -457,6 +463,8 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
             
         // Quitar la manera de subir de nivel, ya que ahora es esclavo de la otra estadistica
         SetLvlUp(_stat.GetLvlUp() );
+        
+        return self;
     }
     
     /// @param {__mall_class_stat} stat_class
@@ -499,8 +507,20 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
         return self;
     }
 
-	static ToggleToMin = function() {
+	static ToggleToMin = function(_max = 0, _repeat = true) {
 		tomin = !tomin;
+		
+		tomin_max	 = _max;
+		tomin_repeat = _repeat;
+		
+		return self;
+	}
+	
+	static ToggleToMax = function(_max = 0, _repeat = true) {
+		tomax = !tomax;
+		
+		tomax_max	 = _max;
+		tomax_repeat = _repeat; 
 		
 		return self;
 	}
@@ -1046,6 +1066,18 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
         return self;
     }
     
+    /// @returns {bool} Si el itemtype es compatible
+    static IsPossible = function(_name) {
+    	return (variable_struct_exists(possible, _name) );
+    }
+    
+    /// @returns {bool} Si el subtype es compatible
+    static IsPossibleSubtype = function(_name) {
+    	var _type = mall_get_itemtype_by_subtype(_name);
+    	
+    	return (IsPossible(_type.name) );
+    }
+    
     #endregion
     
     #region Bonus y penalty
@@ -1063,7 +1095,7 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     static AddBonusArray = function(_array) {
 		if (!is_array(_array) ) return self;
     	
-    	var i = 0; repeat(array_length(_array) ) {AddBonus(_array[i], _array[i + 1] ); ++i;}
+    	var i = 0; repeat(array_length(_array) - 1) {AddBonus(_array[i], _array[i + 1] ); ++i;}
     	return self;
     }
     
@@ -1079,7 +1111,7 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     static AddPenaltyArray = function(_array) {
 		if (!is_array(_array) ) return self;    	
     	
-    	var i = 0; repeat(array_length(_array) ) {AddPenalty(_array[i], _array[i + 1] ); ++i;}
+    	var i = 0; repeat(array_length(_array) - 1) {AddPenalty(_array[i], _array[i + 1] ); ++i;}
     	return self;
     }
     
@@ -1095,7 +1127,7 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
 		AddLinkArray(_link.elemn); 
 		AddLinkArray(_link.part);
         
-        SetDeter(_part.deter, _part.deter_min, _part.deter_min);
+        SetDeter(_part.deter_start, _part.deter_min, _part.deter_min);
         SetTexts(_part.deter_txt, _part.noitem);
         
         var _names = variable_struct_get_names(_part.possible);
@@ -1192,9 +1224,16 @@ function mall_get_part(_access) {
 	return (MALL_CONT_PARTS).Get(_access);	
 }
 
+/// @returns {array}
 function mall_part_get_names() {
 	return (MALL_CONT_PARTS.order);
 }
+
+/// @returns {number}
+function mall_part_get_count() {
+	return (array_length(mall_part_get_names() ) );
+}
+
 
 function mall_part_exists(_name) {
 	return (MALL_CONT_PARTS.Exists(_name) );
@@ -1208,22 +1247,18 @@ function mall_part_exists(_name) {
 /// @param index
 function __mall_class_itemtype(_name = "", _index = -1) : __mall_class_parent("MALL_ITEMTYPE_INTERN") constructor {
     SetBasic(_name, _index);
-    
-    subtypes = {};  // Que subtipos posee
-    order    = []; 
+
+	// Nombres
+	order = []; 
     
     #region Metodos
     
     /// @param subtype
     static Add = function(_subtype) {
-        static subtypecount = 0;
-        
-        if (!variable_struct_exists(subtypes, _subtype) ) {
-            variable_struct_set(subtypes, _subtype, subtypecount);
-            
-            array_push(order, _subtype);
-            subtypecount++;
-        }
+		if (!variable_struct_exists(MALL_ITEMTYPE_SUB, _subtype) ) {
+    		variable_struct_set(MALL_ITEMTYPE_SUB, _subtype, self);		 
+        	array_push(order, _subtype);		
+		}
         
         return self;
     }
@@ -1244,8 +1279,8 @@ function __mall_class_itemtype(_name = "", _index = -1) : __mall_class_parent("M
     #endregion
 }
 
-/// @param {string} item_type
-/// @param {array} item_subtypes
+/// @param {string} itemtype
+/// @param {array} itemsubtypes
 /// @desc Crea los distintos tipos de objetos (armas, consumibles) tambien incluye los sub-tipos (arma:Espada, armadura:Vestido)
 function mall_create_itemtypes(_itemtype, _itemsubtypes = [""]) {
     static typecount = 0;
@@ -1272,14 +1307,7 @@ function mall_get_itemtype(_access) {
 
 /// @param {string} subtype
 function mall_get_itemtype_by_subtype(_subtype) {
-	repeat (each(MALL_ITEMTYPE_ORDER) ) {
-		var in = this.value, _itemtype = mall_get_itemtype(in);
-		
-		// Obtengo los subtipos
-		if (_itemtype.ExistsSubtype(_subtype) ) return (_itemtype );
-	}	
-	
-	return noone;	
+	return (MALL_ITEMTYPE_SUB[$ _subtype] );	
 }
 
 /// @returns {array}
@@ -1287,23 +1315,21 @@ function mall_itemtypes_get_types() {
     return MALL_ITEMTYPE_ORDER;
 }
 
-/// @param item_type
-/// @returns {__mall_class_itemtype}
-function mall_itemtypes_get_subtype(_itemtype) {
-    return (variable_struct_get(MALL_ITEMTYPE, _itemtype) ).subtypes;
+/// @returns {number}
+function mall_itemtypes_get_count() {
+	return (array_length(mall_itemtypes_get_types() ) );
 }
 
-/// @param item_type
+/// @param itemtype
 /// @returns {bool}
 function mall_itemtypes_exists(_itemtype) {
     return (variable_struct_exists(MALL_ITEMTYPE, _itemtype) );
 }
 
-/// @param itemtype 
 /// @param subtype
 /// @returns {bool}
-function mall_itemtypes_exists_subtype(_itemtype, _subtype) {
-	return (MALL_ITEMTYPE[$ _itemtype].ExistsSubtype(_subtype));
+function mall_itemtypes_exists_subtype(_subtype) {
+	return (variable_struct_exists(MALL_ITEMTYPE_SUB, _subtype) );
 }
 
 #endregion

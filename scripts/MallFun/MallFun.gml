@@ -17,11 +17,11 @@ function mall_init() {
 	
 	var _stat = (new mall_stat_control() ); /// @is {mall_stat_control}
 	
-	var _psmax = _stat.Add("ps_max", undefined, function(old, base, lvl) {return (base * lvl) / max(1, (lvl - 1) ); } ).SetRange(0, 9999);
+	var _psmax = _stat.Add("ps_max", undefined, function(old, base, lvl) {return round( ((base * lvl * 3) / 2) + lvl + 10); } ).SetRange(0, 9999);
 	var _pmmax = _stat.Add("pm_max").Inherit(_psmax);
-	
-	_stat.Add("ps", _psmax);
-	_stat.Add("pm", _pmmax);
+
+	_stat.Add("ps", _psmax).ToggleToMax(0, false);
+	_stat.Add("pm", _pmmax).ToggleToMax(0, false);
 	
 	var _fue = _stat.Add("fue", undefined, function(old, base, lvl) {return round( ( (base * lvl) / 15) + 5); } ).SetRange(0, 255);
 	var _int = _stat.Add("int").Inherit(_fue);
@@ -29,7 +29,7 @@ function mall_init() {
 	var _def = _stat.Add("def").Inherit(_fue);
 	var _esp = _stat.Add("esp").Inherit(_fue);
 	
-	var _expmax = _stat.Add("exp_max", undefined, function(old, base, lvl) {return (base * lvl); } ).SetRange(0, 999999);
+	var _expmax = _stat.Add("exp_max", undefined, function(old, base, lvl) {return round( (base * lvl * 7) + (lvl * 2) + 20); } ).SetRange(0, 999999);
 	_stat.Add("exp", _expmax).ToggleToMin();
 	
 	var _state = (new mall_state_control() );
@@ -48,7 +48,7 @@ function mall_init() {
 	
 	var _parts = (new mall_part_control() );
 	
-	var _hand1 = _parts.Add("Mano izq.", ["Armas"], ["Espadas"], undefined, [_fue, _int] );
+	var _hand1 = _parts.Add("Mano izq.", ["Armas", 10], ["Espadas", 0], undefined, [_fue, _int] );
 	var _hand2 = _parts.Add("Mano der.").Inherit(_hand1);
 	
 	mall_group_add_stat   (_stat );

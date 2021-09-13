@@ -1,9 +1,11 @@
+/// @param lvl
 function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") constructor {
     // Copiar estadisticas del diccionario    
     lvl  = _lvl;
     
     bases = {};
     stats = {};
+    count = {};
     
     // Condiciones para subir de nivel
     lvl_init = undefined;   // function(self)
@@ -17,7 +19,8 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
 			var in = this.value;
 			
 			variable_struct_set(bases, in, 0);
-			variable_struct_set(stats, in, 0);	
+			variable_struct_set(stats, in, 0);
+			variable_struct_set(count, in, {c: 0, r: true} );
 		}
 	}
 
@@ -28,12 +31,13 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
         if (mall_stat_exists(_name) ) { 
             // Comprobar que no sea un substat
             var _stat  = mall_get_stat(_name); /// @is {__mall_class_stat}
-            
-            var _lvlup = _stat.GetLvlUp();
             var _range = _stat.GetRange();
 			
+			if (_val < _range[0]) {_val = _range[0]; }
+			if (_val > _range[1]) {_val = _range[1]; }
+			
 			// Establecer un valor
-			variable_struct_set(stats, _name, max(_range[0], min(_range[1], _val) ) );
+			variable_struct_set(stats, _name, _val);
         }
         
         return self;
@@ -60,7 +64,7 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
     /// @param base_value
     static SetBase  = function(_name, _base) {
     	if (mall_stat_exists(_name) && variable_struct_exists(bases, _name) ) {
-    		variable_struct_set(_name, bases, _base);
+    		variable_struct_set(bases, _name, _base);
     	}
         
         return self;
@@ -68,8 +72,8 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
     
     /// @param stat_array
     static SetBases = function(_array) {
-        var i = 0; repeat(array_length(_array) ) {
-            Base(_array[i], _array[i + 1] );
+        var i = 0; repeat(array_length(_array) - 1) {
+            SetBase(_array[i], _array[i + 1] );
             ++i;
         }
         
@@ -115,26 +119,56 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
         
         // Si es forzado o cumple las condiciones que indica "lvl_init"
         if (_force || lvl_init(self) ) {
-        	repeat (each(_names) ) {
-        		var in    = this.value;
-        		var _stat = mall_get_stat(in), _source = _stat.GetLvlUp();
+        	var i = 0; repeat (array_length(_names) ) {
+        		var in = _names[i];
+
+        		var _count = count[$ in]; 
+        		var _stat  = mall_get_stat(in);
 
         		// Subir de nivel solo si es menor al nivel maximo de la estadistica
         		if (lvl < _stat.lvlmax) {
-        			// Si posee un maestro
-        			var _master = _stat.GetMaster();
-        			var _mname  = _stat.GetName();
+        			var _source = _stat.GetLvlUp(), _master = _stat.GetMaster();
+
+        			var _min = _stat.tomin	  , _max   = _stat.tomax;
+        			var _low = _stat.tomin_max, _upper = _stat.tomax_max;
         			
+        			var _rep = _count.r;
+			
         			if (!is_undefined(_master) ) { // Si posee maestro
-        				if (_stat.tomin) {Set(in, _stat.range_min); } else	// Devolver al minimo
-        				if (_stat.tomax) {Set(in, Get(_mname)    ); }		// Devolver al maximo
+        				#region Posee maestro
+        				var _mname  = _master.GetName();
+						
+						if (_rep) {	// Solo hacerlo si es que puede repetir
+	        				if (_min && !(_max) ) {
+	        					if (_count.c >= _low) {
+									Set(in, _stat.range_min); 
+									_count.c = 0;
+									
+									if (!_stat.tomin_repeat) _count.r = false;
+	        					}
+	        				} else {
+	        					if (_count.c >= _upper) {
+	        						Set(in, Get(_mname) );
+	        						_count.c = 0;
+	        						
+	        						if (!_stat.tomax_repeat) _count.r = false;
+	        					}
+	        				}
+	        				// Aumentar cuenta si es que puede
+	        				_count.c++;
+						}
+        				#endregion
         			} else if (!is_undefined(_source) ) {
         				if (_stat.tomin) {Set(in, _stat.range_min); } else		// Devolver al minimo 
         				if (_stat.tomax) {Set(in, _stat.range_max); } else	{	// Devolver al maximo
-        					Set(in, _source(GetBase(in), Get(in), lvl) );		
+        					var _old = Get(in), _base = GetBase(in);
+        				
+        					Set(in, _source(_old, _base, lvl) );		
         				}
         			}
         		}
+        		
+        		++i;
         	}
         }
         
@@ -224,17 +258,16 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
     		var _names  = this.value;
     		var _noitem = (mall_get_part(_names) ).noitem;
     		
-    		variable_struct_set(parts, _names, _noitem);
+    		variable_struct_set(parts  , _names, _noitem);
+    		variable_struct_set(capable, _names, [] );
     	}
     }
 
 	static Set = function(_name, _value) {
 		if (mall_part_exists(_name) ) {
-			var _noitem = mall_get_part(_name).noitem;
-			if (_value == undefined) _value = _noitem;
+			if (_value == undefined) _value = (mall_get_part(_name) ).noitem;
 			
-			variable_struct_set(parts  , _name, _value);	
-			variable_struct_set(capable, _name, [] );
+			parts[$ _name] = _value;
 		}
 		
 		return self;
@@ -244,9 +277,23 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
 		return (variable_struct_get(parts, _name) );	
 	}
 	
+	/// @param part_name
+	/// @param itemsubtypes
 	/// @desc Selecciona que subtipos puede usar
 	static SetCapable = function(_name, _array) {
-		variable_struct_set(capable, _name, _array);
+		var _capable = capable[$ _name];
+		
+		var i = 0; repeat(array_length(_array) ) {
+			var in = _array[i];
+			
+			if (mall_itemtypes_exists_subtype(in) ) {
+				array_push(_capable, in);
+				
+			} else {show_debug_message("MALL GROUP - CLASS EQUIP: NO EXISTE EL SUBTIPO"); }
+
+			++i;
+		}
+
 		return self;
 	}
 	
@@ -256,29 +303,29 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
 	}
 	
     #endregion
+    
+    Init();
 }
 
-function __group_class_control(_statuniq = true, _stateuniq = true, _eleuniq = true, _resuniq = true) : __mall_class_parent("GROUP_CONTROL") constructor {
-    // Crea control de estados
-    state = {};
+function __group_class_control(_stateuniq = true, _statuniq = true,  _restuniq = true, _elemuniq = true) : __mall_class_parent("GROUP_CONTROL") constructor {
+    state = {};	// Que valor posee un estado (generalmente booleano)
     
-    // Copiar elementos
-    ele = {}  
-    
-    // Copiar resistencias    
-    res = {}
+    stat = {}; // Bonus o sanción en las estadisticas
+    elem = {}; // Bonus o sanción en los elementos  
+    rest = {}; // Bonus o sanción en las resistencias    
     
     // Copiar estadisticas
-    sts = {}
+    stats = {}
     
     // Control
-    control = {
-        state: {}, stateuniq: _stateuniq,
-        
-        ele: {}, eleuniq: _statuniq,
-        sts: {}, stsuniq: _eleuniq,
-        res: {}, resuniq: _resuniq,  
-    }
+    control = {state: {}, elem: {}, stat: {}, rest: {} };
+    
+    // Si puede haber 1 o más
+    control_stateuniq = _stateuniq;
+    
+    control_statuniq = _statuniq; 
+    control_restuniq = _restuniq;
+    control_elemuniq = _elemuniq;
     
     __control = [];
     __control_count = 0;
@@ -286,53 +333,59 @@ function __group_class_control(_statuniq = true, _stateuniq = true, _eleuniq = t
     #region Metodos
     
     static Init = function() {
-    	var _cont = control;
+    	var _cstate = control.state;
+		var _cstat = control.stat, _celem = control.elem, _crest = control.rest;
+
+    	#region State and Resistances
+    	var _names = mall_global_states();	// Obtiene todos los estados
+    	
+    	var i = 0; repeat(array_length(_names) ) {
+    		var _name = _names[i];
+    		
+    		// States
+    		if (!variable_struct_exists(state, _name) ) {
+    			var _state = mall_get_state(_name);	// Obtener propiedades del estado 
+    			
+    			variable_struct_set(state  , _name, _state.init);
+    			variable_struct_set(_cstate, _name, (control_stateuniq) ? noone : [] );
+    		
+    			variable_struct_set(rest  , _name, 1);
+    			variable_struct_set(_crest, _name,  (control_stateuniq) ? noone : [] );
+    		}
+    		
+    		++i;
+    	}
+
+    	#endregion
     	
     	#region Stat
     	var _names = mall_global_stats();
     	
-    	repeat (each(_names) ) {
-    		var name = this.value;
+    	var i = 0; repeat (array_length(_names) ) {
+    		var _name = _names[i];
     		
-    		if (!variable_struct_exists(sts, name) ) {
-    			variable_struct_set(sts, name, 1);
-    			variable_struct_set(_cont.sts, name, (_cont.stsuniq ) ?  noone : [] );	
+    		if (!variable_struct_exists(stat, _name) ) {
+    			variable_struct_set(stat  , _name, 1);
+    			variable_struct_set(_cstat, _name, (control_statuniq) ?  noone : [] );	
     		}
+    		
+    		++i;
     	}    	
     	#endregion
  
-    	#region State and Resistances
-    	var _names = mall_global_states();
-    	
-    	repeat (each(_names) ) {
-    		var name = this.value;
-    		
-    		if (!variable_struct_exists(state, name) ) {
-				var _state = mall_get_state(name);
-				
-    			variable_struct_set(state  , name, _state.init);
-    			variable_struct_set(_cont.state, name, (_cont.stateuniq ) ?  noone : [] );
-    		}
-
-    		if (!variable_struct_exists(res, name) ) {
-    			variable_struct_set(res, name, 1);
-    			variable_struct_set(_cont.res, name, (_cont.resuniq ) ?  noone : [] );
-    		}    		
-    	}
-    	
-    	#endregion
-   		
    		#region Element
     	var _names = mall_global_elements();
     	
-    	repeat (each(_names) ) {
-    		var name = this.value;
+    	var i = 0; repeat (array_length(_names) ) {
+    		var _name = _names[i];
     		
-    		if (!variable_struct_exists(ele, name) ) {
-    			variable_struct_set(ele, name, 1);
-    			variable_struct_set(_cont.ele, name, (_cont.eleuniq ) ?  noone : [] );	
+    		if (!variable_struct_exists(elem, _name) ) {
+    			variable_struct_set(elem  , _name, 1);
+    			variable_struct_set(_celem, _name, (control_elemuniq) ?  noone : [] );	
     		}
-    	}    	
+    		
+    		++i;
+    	}    
     	#endregion
     }
     
@@ -361,6 +414,8 @@ function __group_class_control(_statuniq = true, _stateuniq = true, _eleuniq = t
     }
     
     #endregion
+    
+    Init();
 }
 
 /// @param {string} name
@@ -725,6 +780,16 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
         } 
         
         return _value;
+    }
+    
+    /// @param lvl*
+    /// @desc Aumenta el nivel 1 en 1
+    static LevelUp = function(_lvl = 1) {
+    	_lvl += stats.lvl;
+    	
+    	stats.LevelUp(_lvl);
+    	
+    	return self;
     }
         
     #endregion
