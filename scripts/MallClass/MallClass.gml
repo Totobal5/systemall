@@ -93,30 +93,45 @@ function __mall_class_parent(_is) constructor {
         return self;
     }
     
-        #region Import
-    /// @param array
-    /// @param set_value
-    static ImportFromArray = function(_array, _setval = 0) {
-        var i = 0; repeat(array_length(_array ) ) {        
-            var in    = _array[i];
-
-            if (!variable_struct_exists(self, in) ) variable_struct_set(self, in, _setval);  
-            
-            ++i;
-        }        
-    }
-
-    static ImportFromArrayTo = function(_var_name, _array, _setval = 0) {
-        var i = 0; repeat(array_length(_array ) ) {        
-            var in    = _array[i];
-
-            if (!variable_struct_exists(_var_name, in) ) variable_struct_set(_var_name, in, _setval);  
-            
-            ++i;
-        }        
+    /// @param struct
+    /// @param override
+    /// @desc Permite sobrescribir todos los valores de una estructura
+    static Override = function(_struct, _value) {
+    	if (is_string(_struct) ) _struct = self[$ _struct];
+    	
+    	if (!is_struct(_struct) ) return false;
+    	
+    	var _names = variable_struct_get_names(_struct);
+    	
+    	var i = 0; repeat(array_length(_names) ) {
+    		variable_struct_set(_struct, _names[i], _value);
+    		
+    		++i;
+    	}
+    	
+    	return self;
     }
     
-    #endregion
+    /// @desc Pasa los valores de un struct al contrario (1 -> -1)
+    static Turn = function(_struct) {
+    	if (is_string(_struct) ) _struct = self[$ _struct];
+    	
+    	if (!is_struct(_struct) ) return false;
+    	
+    	var _names = variable_struct_get_names(_struct);
+    	
+    	var i = 0; repeat(array_length(_names) ) {
+    		var in = _name[i];
+    		
+    		if (is_numeric(in) ) in *= -1;
+    		
+    		variable_struct_set(_struct, _names[i], in);
+    		
+    		++i;
+    	}
+    	
+    	return self;
+    }
     
     static GetName  = function() {
     	return name;

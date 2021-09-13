@@ -59,7 +59,13 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
     static Get = function(_name) {
     	return (variable_struct_get(stats, _name) ); 
     }
-
+	
+	/// @param name
+	/// @returns {bool}
+	static Exists = function(_name) {
+		return (variable_struct_exists(stats, _name) );
+	}
+	
     /// @param stat_name
     /// @param base_value
     static SetBase  = function(_name, _base) {
@@ -209,6 +215,12 @@ function __group_class_elements() : __mall_class_parent("GROUP_ELEMENTS") constr
 		return (variable_struct_get(_name, _val) );
 	}
 	
+	/// @param name
+	/// @returns {bool}
+	static Exists = function(_name) {
+		return (variable_struct_exists(elmn, _name) );
+	}
+	
 	#endregion
 	
 	Init();
@@ -240,6 +252,11 @@ function __group_class_resistances() : __mall_class_parent("GROUP_RESISTANCES") 
 		return (variable_struct_get(_name, _val) );
 	}
 	
+	/// @param name
+	static Exists = function(_name) {
+		return (variable_struct_exists(state, _name) );
+	}
+	
 	#endregion
 	
 	Init();
@@ -247,6 +264,8 @@ function __group_class_resistances() : __mall_class_parent("GROUP_RESISTANCES") 
 
 function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUIP") constructor {
     parts   = {};
+    previus = {};	// Que equipo habia antes en la parte
+    
 	capable = {};
 	
     #region Metodos
@@ -259,22 +278,33 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
     		var _noitem = (mall_get_part(_names) ).noitem;
     		
     		variable_struct_set(parts  , _names, _noitem);
+    		variable_struct_set(previus, _names, _noitem);
+    		
     		variable_struct_set(capable, _names, [] );
     	}
     }
-
+	
+	/// @param {string} part_name
+	/// @param value
 	static Set = function(_name, _value) {
 		if (mall_part_exists(_name) ) {
 			if (_value == undefined) _value = (mall_get_part(_name) ).noitem;
 			
-			parts[$ _name] = _value;
+			variable_struct_set(parts, _name, _value);
 		}
 		
 		return self;
 	}
 	
+	/// @param {string} part_name
 	static Get = function(_name) {
 		return (variable_struct_get(parts, _name) );	
+	}
+	
+	/// @param {string} part_name
+	/// @returns {bool}
+	static Exists = function(_name) {
+		return (variable_struct_exists(parts, _name) );
 	}
 	
 	/// @param part_name
@@ -300,6 +330,40 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
 	/// @param name
 	static GetCapable = function(_name) {
 		return (variable_struct_get(capable, _name) );
+	}
+	
+	/// @param name
+	/// @param value
+	static SetPrevius = function(_name, _value) {
+		if (mall_part_exists(_name) ) variable_struct_set(previus, _name, _value);
+
+		return self;
+	}
+	
+	/// @param name
+	static GetPrevius = function(_name) {
+		return (variable_struct_get(previus, _name) );
+	}
+	
+	/// @param part_name
+	/// @param subtype
+	static IsCapable  = function(_name, _subtype) {
+		var _capable = GetCapable(_name);
+		
+		var i = 0; repeat(array_length(_capable) ) {
+			if (_capable[i] == _subtype) return true;
+			
+			++i;	
+		}
+		
+		return false;
+	}
+	
+	/// @param part_name
+	static IsOccupied = function(_name) {
+		var _noitem = (mall_get_part(_name) ).noitem;
+		
+		return (Get(_name) != _noitem);
 	}
 	
     #endregion
@@ -388,6 +452,50 @@ function __group_class_control(_stateuniq = true, _statuniq = true,  _restuniq =
     	}    
     	#endregion
     }
+    
+    	#region Resistencia
+    /// @param state_name
+    /// @param value
+    static SetRest = function(_name, _value) {
+    	if (mall_stat_exists(_name) ) {
+    		rest[$ _name] = _value;
+    	}
+    	
+    	return self;
+    }
+    
+    /// @param state_name
+    static GetRest = function(_name) {
+		return (rest[$ _name] );    	
+    }
+    
+    /// @param name
+    static ExistsRest = function(_name) {
+    	return (variable_struct_exists(rest, _name) );
+    }
+    
+    #endregion
+    
+    	#region Elements
+    /// @param element_name
+    /// @param value
+    static SetElemn = function(_name, _value) {
+    	if (mall_element_exists(_name) ) elem[$ _name] = _value;
+		   
+    	return self;
+    }
+    
+    /// @param element_name
+    static GetElemn = function(_name) {
+		return (variable_struct_get(elem, _name) ); 	
+    }
+    
+    /// @param element_name
+    static ExistsElemn = function(_name) {
+    	return (variable_struct_exists(elem, _name) );
+    }
+    
+    #endregion
     
     static SetState = function(_ste_name) {
         return self;
@@ -490,16 +598,16 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     #endregion
         
         #region Equipamiento
-    /// @param slot_name
+    /// @param part_name
     /// @param item_key
-    static EquipPut = function(_slot, _key) {
+    static EquipPut = function(_part, _key) {
         var _item = bag_item_get(_key);
         
-        if (equip.IsCapable(_slot, _item.subtype) ) {
+        if (equip.IsCapable(_part, _item.subtype) ) {
             // Si esta ocupado sacar el objeto
-            if (equip.IsOcuppied(_slot) )  EquipTake(_slot);
+            if (equip.IsOccupied(_part) )  EquipTake(_part);
             
-            equip.SetSlot(_slot, _key);
+            equip.Set(_part, _key);
             bag_storage_add(_key, -1);
             
             EquipGetUpgrades();
@@ -510,17 +618,19 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
         return false;
     }    
     
-    /// @param slot_name
-    static EquipTake = function(_slot) {
-		var _key = equip.GetSlot(_slot);
+    /// @param part_name
+    static EquipTake = function(_name) {
+    	var _part = mall_get_part(_name);
+		var _key = equip.Get(_name);
 		
-		if (_key == mall_slot_get_noname() ) return false;
+		// Si no posee objeto salir
+		if (_key == _part.noitem) return false;
 
 		// Recuperar el objeto
 		bag_storage_add(_key, 1);
-
-		// Poner nada en la posicion.
-		equip.SetSlot(_slot);
+		
+		equip.Set(_name);	// Poner nada en la posicion
+		equip.SetPrevius(_name, _key);
 
 		EquipGetUpgrades(); // Obtener los buffos
 		
@@ -529,43 +639,70 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     
     /// @param slot_name
     /// @desc Obtiene las mejoras de un slot en especifico
-    static EquipGetUpgrade  = function(_slot) {
-        var _key  = equip.GetSlot(_slot);    
-
-        if (_key == mall_slot_get_noname() ) return self;
-
-        var _item = bag_item_get(_key); /// @is {__bag_class_item}
-        
-        var _stats = _item.GetStats();
-        var _res   = _item.GetResistances();
-        var _elem  = _item.GetElements();
-        
-        var _names = mall_states_get_names();
-        var _res_names   = mall_states_get_names();
-        var _elem_names  = mall_elements_get_names();
-        
+    static EquipGetUpgrade  = function(_name) {
+        if (!equip.Exists(_name) ) return self; // Si no existe la parte entonces salir.
+         
+        var _part = mall_get_part(_name);
+        var _key  = equip.GetSlot(_name);    
+		
+		var _stat, _rest, _elem;
+		
+		if (_key == _part.noitem) {
+			#region No hay objeto
+			var _ant = equip.GetPrevius();
+			
+			_stat = (new __group_class_stats() ).Override("stats", 0);
+			
+			/// comprobar que anteriormente habia o no un objeto
+			if (_ant == _part.noitem) {
+				_rest = (new __group_class_resistances() )	.Override("state", 0);
+				_elem = (new __group_class_elements() )		.Override("elmn" , 0);
+			} else {
+				var _previus = bag_item_get(_ant);
+				
+				_rest = _previus.GetResistances().Turn("state");
+				_elem = _previus.GetElements   ().Turn("elmn" );
+			}
+			#endregion
+		} else {
+			#region Hay objeto
+			var _item = (bag_item_get(_key) ); /// @is {__bag_class_item}
+			
+			_stat = _item.GetStats();
+			_rest = _item.GetResistances();
+			_elem = _item.GetElements();
+			
+			#endregion
+		}
+		
+		var _statnames = mall_global_stats(), _restnames = mall_global_states(), _elemnames = mall_global_elements();
+    
         #region Estadisticas
-        var i = 0; repeat(array_length(_names) ) {
+        var i = 0; repeat(array_length(_statnames) ) {
             var _name = _names[i];
             
-            var _o1 = stats [$ _name];
-            var _o2 = _stats[$ _name];
-            
-            stats_final[$ _name] +=  (_o2 > 0 && _o2 <= 1) ? (_o1 * _o2) : _o2;
-            
+            if (stats.Exists(_name) && _stat.Exists(_name) ) {
+            	// Obtener valores
+            	var in  = stats.Get(_name), out = _stat.Get(_name);
+            	
+            	stats_final.Set(_name, in + out); 
+            }
+			
             ++i;
         }
         
         #endregion
         
         #region Resistencias
-        var _mres = state.res;
-        
-        var i = 0; repeat(array_length(_res_names) ) {
+        var i = 0; repeat(array_length(_restnames) ) {
             var _name = _names[i];
-            var _o1   = _res[$ _name];
             
-            _mres[$ _name] +=  (_o1 > 0 && _o1 <= 1) ? (_o1 * _mres) : _o1;
+            if (state.ExistsRest(_name) && _rest.Exists(_name) ) {
+            	// Obtener valores
+            	var in  = state.GetRest(_name), out = _rest.Get(_name);
+            	
+            	state.SetRest(_name, in + out); 
+            }
             
             ++i;
         }  
@@ -573,14 +710,16 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
         #endregion
         
         #region Elementos
-        var _melem = state.ele;
-        
-        var i = 0; repeat(array_length(_res_names) ) {
+        var i = 0; repeat(array_length(_elemnames) ) {
             var _name = _names[i];
-            var _o1   = _elem[$ _name];
-            
-            _melem[$ _name] +=  (_o1 > 0 && _o1 <= 1) ? (_o1 * _melem) : _o1;
-            
+			
+			if (state.ExistsElemn(_name) && _elem.Exists(_name) ) {
+            	// Obtener valores
+            	var in  = state.GetElemn(_name), out = _rest.Get(_name);
+            	
+            	state.SetElemn(_name, in + out); 					
+			}
+			
             ++i;
         }          
         
@@ -591,7 +730,7 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     
     /// @desc Obtiene las mejoras del equipamiento
     static EquipGetUpgrades = function() {
-        var _slots = equip.__copyslot;  // Por si no usa los defaults
+        var _slots = mall_part_get_names();  // Por si no usa los defaults
         
         var i = 0; repeat (array_length(_slots) ) {EquipGetUpgrade(_slot[i] ); ++i; }
         
@@ -805,7 +944,7 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     stats = _stats; /// @is {__group_class_stats}
     stats_final = (new __group_class_stats(_stats.lvl) ); /// @is {__group_class_stats}
     
-    state = _control;
+    state = _control;	/// @is {__group_class_control}
     
     equip = _equip; /// @is {__group_class_equip}
     
