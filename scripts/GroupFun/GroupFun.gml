@@ -52,3 +52,31 @@ function group_create_player1(_lvl = 1) {
     
     return (_psj );
 }
+
+/// @param level
+/// @returns {group_create}
+function group_create_player2(_lvl = 1) {
+    gc_collect();
+    
+    var _stats = (new __group_class_stats(_lvl) );
+    _stats.SetBases(["ps_max", 18, "pm_max", 18, "fue", 30, "int", 1, "def", 24, "esp", 24, "exp_max", 24]);
+    _stats.SetLevelInit(function(context) {
+        var _exp = context.Get("exp"), _exp_max = context.Get("exp_max");      
+        
+        return (_exp == _exp_max);
+    });
+    _stats.SetLevelEnd (function(context) {});
+    _stats.LevelUp(_lvl, true);
+    
+    var _state = (new __group_class_control(true, false, false, false) );
+    
+    var _equip = (new __group_class_equip() );
+    _equip.SetCapable("Mano der.", ["Espadas", "Arcos", "Escudos"]);
+    _equip.SetCapable("Mano izq.", ["Espadas"] );
+    
+    var _psj = (new group_create("Player2", _stats, _state, _equip) );
+    
+    group_add(_psj);
+    
+    return (_psj );
+}

@@ -40,14 +40,13 @@ function __mall_class_parent(_is) constructor {
     #endregion
 	
 	key = "";
+	index = -1;
 	
 	// Para trabajar con una gui
     name = "";
     des  = "";
     ext  = [];
-    
-    index = -1;
-    
+
     txt    = name;
     symbol = "";
     
@@ -1020,21 +1019,28 @@ function mall_element_get_reduce(_access) {
 /// @param name
 /// @param index
 function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_PART_INTERN") constructor {
+    SetBasic(_name, _index);
+    
+    noitem = "noitem";	// Si no hay objeto equipado
+    
     // Deterioro
     deter_start = 0;
     deter_min = noone;
     deter_max = noone;
     
     deter_txt = "n";
-    noitem = "noitem";    // Si no hay objeto equipado
-        
+    
+    // Diccionarios
     possible = {};  // Que objetos puede llevar esta parte.
     
-    bonus   = {};
-    penalty = {};
+    bonus   = {};	// Bonus a los subtipos de armas
+    penalty = {};	// Penalizacion a los subtipos de armas 
     
     // Componentes que lo afectan
     link = (new __mall_class_group("", -1) ).AllSetArray();   /// @is {__mall_class_group}
+    
+    // En link se pueden linkear otras partes que pueden se afectadas por esta. Se plantea en un inicio por las armas a 2 manos.
+    handed = noone;	// a cuantos links afectan siendo el primero que se agrega el que posee más prioridad
     
     #region Metodos
     
@@ -1068,7 +1074,11 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
             case "MALL_STAT_INTERN"   : array_push(link.stat , _class); break;
             case "MALL_STATE_INTERN"  : array_push(link.state, _class); break;
             case "MALL_ELEMENT_INTERN": array_push(link.elemn, _class); break;
-            case "MALL_PART_INTERN"   : array_push(link.part , _class); break;
+            case "MALL_PART_INTERN"   : 
+            	array_push(link.part , _class);
+            	handed = array_length(link.part);
+            	
+            	break;
         }
         
         return self;
@@ -1082,7 +1092,7 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
         
         return self;
     }
-    
+
     #region Itemtypes
     /// @param item_type
     /// @param item_subtypes
@@ -1191,11 +1201,12 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     static Inherit = function(_part) {
         var _link = _part.link;
         
-        AddLinkArray(_link.stat); 
+        AddLinkArray(_link.stat ); 
 		AddLinkArray(_link.state); 
-		AddLinkArray(_link.elemn); 
-		AddLinkArray(_link.part);
-        
+		AddLinkArray(_link.elemn);
+		
+		if (_link.part != self) AddLinkArray(_link.part);
+
         SetDeter(_part.deter_start, _part.deter_min, _part.deter_min);
         SetTexts(_part.deter_txt, _part.noitem);
         
@@ -1220,7 +1231,8 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
         
         return self;
     }
- 
+	
+	#region Getter´s
     /// @returns {array}
     static GetLinkStat    = function() {
         return link.stat;
@@ -1240,6 +1252,8 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     static GetLinkPart    = function() {
         return link.part;
     }
+    
+    #endregion
     
     #endregion
 }
