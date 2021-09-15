@@ -36,20 +36,19 @@ function mall_init() {
 	
 	_state.Add("vivo", true);
 	
-	var _ven = _state.Add("veneno"    , false, [_fue, .2] );
-	var _qem = _state.Add("quemadura" , false, [_fue, .5] );
-	
-	_state.Add("melancolia", false, [_int, .5] );
-	
+	var _ven = _state.Add("veneno"    , false, [_fue, Data("20%") ] );
+	var _qem = _state.Add("quemadura" , false, [_fue, Data("50%") ] );
+	var _mel = _state.Add("melancolia", false, [_int, Data("50%") ] );
+
 	var _elemn = (new mall_element_control() );
 	
-	_elemn.Add("fuego"   , [_ven, .2] );
-	_elemn.Add("polucion", [_qem, .5] );
+	_elemn.Add("fuego"   , [_ven, Data("20%") ] );
+	_elemn.Add("polucion", [_qem, Data("50%") ] );
 	
 	var _parts = (new mall_part_control() );
 	
-	var _hand1 = _parts.Add("Mano izq.", ["Armas"], ["Espadas", 2.5], undefined, [_fue, _int] );
-	var _hand2 = _parts.Add("Mano der.").Inherit(_hand1);
+	var _hand1 = _parts.Add("Mano izq.", ["Armas"], ["Espadas", Data("25%")], [_fue, _int] );
+	var _hand2 = _parts.Add("Mano der.").Inherit(_hand1, true);
 	
 	mall_group_add_stat   (_stat );
 	mall_group_add_state  (_state);

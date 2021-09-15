@@ -1,4 +1,3 @@
-
 global._MALL_GLOBAL = {
     stats: [], statsnames:  {}, 
     state: [], statenames:  {}, 
@@ -180,6 +179,53 @@ function __mall_class_parent(_is) constructor {
     #endregion
     
     #endregion
+}
+
+function __mall_class_data(_value, _proccess = "+") constructor {
+	#region Metodos
+	__isdata = "MALL_DATA";
+	
+	static IsPorcent = function(_value) {
+		return ( (is_string(_value) ) && (string_char_at(_value, string_length(_value) + 1) == "%") );
+	}
+	
+	static ConvertPorcent = function(_value) {
+		if (IsPorcent(_value) ) {
+			return real( (string_delete(_value, string_length(_value) + 1, 1) ) ) / 100;	
+		}	
+		
+		return 0;
+	}
+	
+	static Set = function(_value) {
+		value = (IsPorcent(_value) ) ? ConvertPorcent(_value) : _value;
+	}
+	
+	/// @param proceso
+	static Change = function(_proccess) {
+		proccess = _proccess;
+	}
+	
+	// "200%"
+	
+	#endregion
+	
+	num = (IsPorcent (_value) ) ? ConvertPorcent(_value) : _value;	// Si es string lo pasa a numero
+	str = (is_numeric(_value) ) ? string(_value) : _value;			// Si es numero lo pasa a string
+	
+	pro = _proccess;	// Que funcion realizar
+	
+	gc_collect();
+}
+
+/// @returns {__mall_class_data}
+function Data(_value) {
+	return (new __mall_class_data(_value) );
+}
+
+/// @param data_struct
+function is_data(_data) {
+	return (is_struct(_data) && variable_struct_exists(_data, "__isdata") );	
 }
 
 /// @returns {array} all_stats
@@ -1024,60 +1070,93 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     noitem = "noitem";	// Si no hay objeto equipado
     
     // Deterioro
-    deter_start = 0;
-    deter_min = noone;
-    deter_max = noone;
+    use_damage = false;	// Si utiliza la caracteriztica del damage
     
-    deter_txt = "n";
+    damage_start = 0;	
+    damage_min = noone;	// Si es noone entonces no posee un valor minimo del daño
+    damage_max = 0;		// Si es noone entonces no posee un valor maximo del daño
+    
+    damage_txt = "dañado!";
     
     // Diccionarios
-    possible = {};  // Que objetos puede llevar esta parte.
-    
-    bonus   = {};	// Bonus a los subtipos de armas
-    penalty = {};	// Penalizacion a los subtipos de armas 
+    possible = {};  // Que tipo de objetos puede llevar esta parte.
+    prop = {};
     
     // Componentes que lo afectan
     link = (new __mall_class_group("", -1) ).AllSetArray();   /// @is {__mall_class_group}
-    
-    // En link se pueden linkear otras partes que pueden se afectadas por esta. Se plantea en un inicio por las armas a 2 manos.
-    handed = noone;	// a cuantos links afectan siendo el primero que se agrega el que posee más prioridad
-    
+
     #region Metodos
-    
-    /// @param {string} deter_txt
-    /// @param {string} noitem_txt
-    static SetTexts = function(_detertxt, _noitem) {
-        deter_txt = _detertxt;
-        noitem = _noitem;
+	
+	/// @param {string} no_item
+	static SetNoItem = function(_noitem) {
+		noitem = _noitem;
+		return self;
+	}
+	
+	/// @returns {string}
+	static GetNoItem = function() {
+		return noitem;
+	}
+	
+    /// @param damage
+    /// @param damage_min
+    /// @param damage_max
+    /// @param damage_txt
+    static SetDamage = function(_start, _min, _max, _txt) {
+        damage_start = _start;
+        
+        damage_min = _min;
+        damage_max = _max;
+        
+        damage_txt = _txt;
         
         return self;
     }
     
-    /// @param deterior
-    /// @param range_min
-    /// @param range_max
-    static SetDeter = function(_start, _min, _max) {
-        deter_start = _start;
+    /// @param {__mall_class_part} part_class
+    static SetDamageOther = function(_partclass) {
+        damage_start = _partclass.damage_start;
         
-        deter_min = _min;
-        deter_max = _max;
+        damage_min = _partclass.damage_min;
+        damage_max = _partclass.damage_max;
         
-        return self;
+        damage_txt = _partclass.damage_txt;
+        
+        return self;    		
     }
     
-    /// @param mall_class
+    /// @param {__mall_class_part} mall_class
     /// @desc Crea un link a otra clase de mall
     static AddLink = function(_class) {
         if (!is_struct(_class) ) return self;
+        
+        // No poder crear link a el mismo
+        if (_class == self) return self;
         
         switch (_class.GetType() ) {
             case "MALL_STAT_INTERN"   : array_push(link.stat , _class); break;
             case "MALL_STATE_INTERN"  : array_push(link.state, _class); break;
             case "MALL_ELEMENT_INTERN": array_push(link.elemn, _class); break;
-            case "MALL_PART_INTERN"   : 
-            	array_push(link.part , _class);
-            	handed = array_length(link.part);
+            case "MALL_PART_INTERN"   :
+            	// Vincular entre ambos
+            	var _link = GetLinkPartAll();
+            	var _name = _class.GetName();
             	
+            	if (!ExistsLinkPart(_name) ) {
+            		array_push(_link, _class);
+            		
+            		UpdateComplement ();
+            	}
+            	/*
+            	var _link = _class.GetLinkPartAll();
+            	var _name = GetName();
+            	
+            	if (!_class.ExistsLinkPart(_name) ) {
+            		array_push(_link, self);
+            		
+            		_class.UpdateComplement();
+            	}
+            	*/
             	break;
         }
         
@@ -1092,12 +1171,36 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
         
         return self;
     }
-
-    #region Itemtypes
+	
+	static ExistsLinkPart = function(_name) {
+		var _array = link.part;
+		var i = 0; repeat(array_length(_array) ) {
+			var in = _array[i].GetName();
+			
+			if (in == _name) return true;
+			
+			++i;
+		}
+		
+		return false;
+	}
+	
+	static GetLinkPartNames = function() {
+		return (variable_struct_get_names(link.part) );
+	}
+	
+	static ResetLink = function() {
+		link.AllSetArray();
+		link.part = {};
+		
+		complement = min(1, variable_struct_names_count(link.part) );
+	}
+	
+    #region Possible
     /// @param item_type
     /// @param item_subtypes
     /// @desc Se debe de asegurar que los objetos hayan sido creado antes!!
-    static AddItemtypes = function(_itemtype) {
+    static AddPossible = function(_itemtype) {
         if (mall_itemtypes_exists(_itemtype) ) variable_struct_set(possible, _itemtype, true);
         
         return self;
@@ -1105,19 +1208,27 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
 
     /// @param itemtype_array
     /// @desc Se debe de asegurar que los objetos hayan sido creado antes!!
-    static AddItemtypesArray = function(_array) {
+    static AddPossibleArray = function(_array) {
     	if (!is_array(_array) ) return self;
     	
-		repeat(each(_array) ) AddItemtypes(this.value);
+		repeat(each(_array) ) AddPossible(this.value);
 		
         return self;
     }
     
+    static AddPossibleOther = function(_possible) {
+    	var _names = variable_struct_get_names(_possible);
+		
+		return (AddPossibleArray(_names) );
+    }
+    
+    /// @param name
     /// @returns {bool} Si el itemtype es compatible
     static IsPossible = function(_name) {
     	return (variable_struct_exists(possible, _name) );
     }
     
+    /// @param name
     /// @returns {bool} Si el subtype es compatible
     static IsPossibleSubtype = function(_name) {
     	var _type = mall_get_itemtype_by_subtype(_name);
@@ -1127,107 +1238,84 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     
     #endregion
     
-    #region Bonus y penalty
-    // BONUS O PENALIZACION PARA LAS ARMAS DEL MISMO TIPO
-    
-    	#region Bonus
-    /// @param item_subtype
-    /// @param bonus_value
-    static AddBonus   = function(_subtype, _bonus) {
-    	if (!variable_struct_exists(bonus, _subtype) && (!variable_struct_exists(penalty, _subtype) ) ) {
-    		variable_struct_set(bonus, _subtype, _bonus);
-    	}
-    	
-    	return self;
-    }
-
-	/// @param bonus_array
-    static AddBonusArray = function(_array) {
-		if (!is_array(_array) ) return self;
-    	
-    	var i = 0; repeat(array_length(_array) - 1) {AddBonus(_array[i], _array[i + 1] ); ++i;}
-    	return self;
-    }
-    
-    /// @param item_subtype
-    static GetBonus = function(_subtype) {
-    	return (variable_struct_get(bonus, _subtype) ); 	
-    }
-    
-    /// @param item_subtype
-    /// @returns {bool}
-    static IsBonus  = function(_subtype) {
-    	return (variable_struct_exists(bonus, _subtype) );
-    }
-    
-    #endregion
-    
-    	#region Penalty
-    /// @param item_subtype
-    /// @param penalty_value
-    static AddPenalty = function(_subtype, _penalty) {
-    	if (!variable_struct_exists(penalty, _subtype) && (!variable_struct_exists(bonus, _subtype) ) ) {
-    		variable_struct_set(penalty, _subtype, _penalty);
-    	}
-    	
-    	return self;    	
-    }
-    
-    /// @param penalty_array
-    static AddPenaltyArray = function(_array) {
-		if (!is_array(_array) ) return self;    	
-    	
-    	var i = 0; repeat(array_length(_array) - 1) {AddPenalty(_array[i], _array[i + 1] ); ++i;}
-    	return self;
-    }
+    #region Propiedades
 	
-	/// @param item_subtype    
-    static GetPenalty = function(_subtype) {
-    	return (variable_struct_get(penalty, _subtype) );    	
-    }
-
-	/// @param item_subtype  
-	/// @returns {bool}
-    static IsPenalty = function(_subtype) {
-    	return (variable_struct_exists(penalty, _subtype) );    	
+    /// @param property_name
+    /// @param property_value
+    static AddProperty = function(_propname, _value) {
+    	if (!ExistsProperty(_propname) ) variable_struct_set(prop, _propname, _value);	
+    	
+    	return self;
     }
     
-    #endregion
+    /// @param property_array
+    static AddPropertyArray = function(_array) {
+    	var i = 0; repeat(array_length(_array) - 1) {
+    		AddProperty(_array[i], _array[i + 1] );
+    		
+    		++i;
+    	}
+    	
+    	return self;
+    }
+    
+    static AddPropertyOther = function(_prop) {
+		var _names = variable_struct_get_names(_prop);
+
+		var i = 0; repeat(array_length(_names) ) {
+			var _name = _names[i], in = _part.GetProperty(_name);
+			
+			AddProperty(_name, in);
+	
+			++i;
+		}
+		
+		return self;
+    }
+    
+    /// @param property_name
+    /// @param property_value
+    static SetProperty = function(_propname, _value) {
+    	if (ExistsProperty(_propname) ) variable_struct_set(prop, _propname, _value);
+    	return self;
+    }
+    
+    /// @param property_name
+    static GetProperty = function(_propname) {
+    	return (variable_struct_get(prop, _propname) );	
+    }
+    
+    /// @param property_name
+    /// @returns {bool}
+    static ExistsProperty = function(_propname) {
+    	return (variable_struct_exists(prop, _propname) );
+    }
     
     #endregion
     
     /// @param {__mall_class_part} part_class
+    /// @param link?
     /// @desc Hereda las propiedades de otra parte
-    static Inherit = function(_part) {
+    static Inherit = function(_part, _linked = false) {
         var _link = _part.link;
         
+        ResetLink();
+        
+        #region Links
         AddLinkArray(_link.stat ); 
 		AddLinkArray(_link.state); 
 		AddLinkArray(_link.elemn);
+		AddLinkArray(_link.part );
 		
-		if (_link.part != self) AddLinkArray(_link.part);
-
-        SetDeter(_part.deter_start, _part.deter_min, _part.deter_min);
-        SetTexts(_part.deter_txt, _part.noitem);
-        
-        var _names = variable_struct_get_names(_part.possible);
-        AddItemtypesArray(_names);
-        
-        var _names = variable_struct_get_names(_part.bonus);
-        var i = 0; repeat(array_length(_names) ) {
-    		var _name = _names[i], in = _part.bonus[$ _name];
-    		AddBonus(_name, in);
-        
-        	++i;
-        }
-        
-        var _names = variable_struct_get_names(_part.penalty);
-        var i = 0; repeat(array_length(_names) ) {
-    		var _name = _names[i], in = _part.penalty[$ _name];
-    		AddPenalty(_name, in);
-        
-        	++i;
-        }        
+		#endregion
+		
+		SetDamageOther(_part);
+		SetNoItem(_part.noitem);
+		
+		AddPossibleOther(_part.possible);
+		AddPropertyOther(_part.prop);
+		
+        if (_linked) AddLink(_part);
         
         return self;
     }
@@ -1247,9 +1335,9 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     static GetLinkElement = function() {
         return link.elemn;
     }
-    
+
     /// @returns {array}
-    static GetLinkPart    = function() {
+    static GetLinkPartAll = function() {
         return link.part;
     }
     
@@ -1266,18 +1354,17 @@ function mall_part_control() : __mall_class_parent("MALL_PART") constructor {
     #region Metodos
     /// @param part_name
     /// @param item_types
+    /// @param bonus_array
     /// @param link_array    
-    static Add = function(_name, _itemtype, _bonusitem, _penaltyitem, _link_array) {
+    static Add = function(_name, _itemtype, _propertyarray, _link_array) {
         static partcount = 0;
         
         if (!variable_struct_exists(part, _name) ) {
-            var _part = (new __mall_class_part(_name, partcount) ).AddItemtypesArray(_itemtype);
+            var _part = (new __mall_class_part(_name, partcount) ).AddPossibleArray(_itemtype);
 
-        	_part.AddBonusArray  (_bonusitem  );
-        	_part.AddPenaltyArray(_penaltyitem);
-           
 			_part.AddLinkArray(_link_array);
-           
+			_part.AddPropertyArray(_propertyarray);
+			           
             variable_struct_set(part, _name, _part);
             
             array_push(order, _name);
@@ -1292,7 +1379,8 @@ function mall_part_control() : __mall_class_parent("MALL_PART") constructor {
     }
     
     static GetIndex = function(_index) {
-    	return part[$ order[_index] ];
+    	var _name = order[_index];
+    	return part[$ _name];
     }
     
     static Exists = function(_name) {
@@ -1308,6 +1396,7 @@ function mall_get_part(_access) {
 }
 
 /// @returns {array}
+/// @desc Obtiene las "part" del grupo seleccionado
 function mall_part_get_names() {
 	return (MALL_CONT_PARTS.order);
 }
@@ -1316,7 +1405,6 @@ function mall_part_get_names() {
 function mall_part_get_count() {
 	return (array_length(mall_part_get_names() ) );
 }
-
 
 function mall_part_exists(_name) {
 	return (MALL_CONT_PARTS.Exists(_name) );

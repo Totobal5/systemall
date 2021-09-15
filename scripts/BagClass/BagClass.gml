@@ -8,9 +8,9 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
     special = {};
     
     // Datos
-    sts = (new __group_class_stats() ); 		 // Crear estadisticas
-    res = (new __group_class_resistances() );    // Crea las resistencias
-    eln = (new __group_class_elements() );  	 // Crear elementos
+    stat = (new __group_class_stats() )		 .Override("stat", 0);	// Crear estadisticas
+    rest = (new __group_class_resistances() ).Override("rest", 0);	// Crea las resistencias
+    elem = (new __group_class_elements() )	 .Override("elem", 0);	// Crear elementos
     
     // Trade
     can_sell = true;
@@ -18,6 +18,8 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
     
     sell = _sell;
     buy  = _buy;
+    
+    use = 1;	// Cuantas partes necesita para ser equipado.
     
     #region Metodos
     
@@ -90,7 +92,7 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
 	/// @param value...
 	static SetStat = function() {
 		var i = 0; repeat(argument_count - 1) {
-			sts.Set(argument[i], argument[i + 1] );
+			stat.Set(argument[i], argument[i + 1] );
 			
 			++i;
 		}	
@@ -102,19 +104,19 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
 	/// @param value...    
     static SetElement = function() {
 		var i = 0; repeat(argument_count - 1) {
-			eln.Set(argument[i], argument[i + 1] );
+			elem.Set(argument[i], argument[i + 1] );
 			
 			++i;
 		}	
 		
 		return self;	
     }
-
+	
 	/// @param stat
 	/// @param value...      
     static SetResistance = function() {
 		var i = 0; repeat(argument_count - 1) {
-			res.Set(argument[i], argument[i + 1] );
+			rest.Set(argument[i], argument[i + 1] );
 			
 			++i;
 		}	
@@ -122,19 +124,28 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
 		return self;    	
     }
     
+    static SetUse = function(_value) {
+		use = _value;
+		return self;
+    } 
+    
+    static GetUse = function(_name) {
+    	return (use);
+    }
+    
     /// @returns {__group_class_stats}
     static GetStats = function() {
-    	return sts;
+    	return (stat);
     }
     
     /// @returns {__group_class_elements}
     static GetElements = function() {
-    	return eln;
+    	return (elem);
     }
     
     /// @returns {__group_class_resistances}
     static GetResistances = function() {
-    	return res;
+    	return (rest);
     }
     
     #endregion

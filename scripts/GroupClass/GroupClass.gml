@@ -1,10 +1,10 @@
 /// @param lvl
-function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") constructor {
+function __group_class_stats(_lvl = 0) : __mall_class_parent("GROUP_STATS") constructor {
     // Copiar estadisticas del diccionario    
     lvl  = _lvl;
     
-    bases = {};
-    stats = {};
+    base = {};
+    stat = {};
     count = {};
     
     // Condiciones para subir de nivel
@@ -18,8 +18,8 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
 		repeat (each(_names) ) {
 			var in = this.value;
 			
-			variable_struct_set(bases, in, 0);
-			variable_struct_set(stats, in, 0);
+			variable_struct_set(base, in, 0);
+			variable_struct_set(stat, in, 0);
 			variable_struct_set(count, in, {c: 0, r: true} );
 		}
 	}
@@ -37,7 +37,7 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
 			if (_val > _range[1]) {_val = _range[1]; }
 			
 			// Establecer un valor
-			variable_struct_set(stats, _name, _val);
+			variable_struct_set(stat, _name, _val);
         }
         
         return self;
@@ -57,20 +57,20 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
     /// @returns {bool}
     /// @desc Obtiene el valor del stat
     static Get = function(_name) {
-    	return (variable_struct_get(stats, _name) ); 
+    	return (variable_struct_get(stat, _name) ); 
     }
 	
 	/// @param name
 	/// @returns {bool}
 	static Exists = function(_name) {
-		return (variable_struct_exists(stats, _name) );
+		return (variable_struct_exists(stat, _name) );
 	}
 	
     /// @param stat_name
     /// @param base_value
     static SetBase  = function(_name, _base) {
-    	if (mall_stat_exists(_name) && variable_struct_exists(bases, _name) ) {
-    		variable_struct_set(bases, _name, _base);
+    	if (mall_stat_exists(_name) && variable_struct_exists(base, _name) ) {
+    		variable_struct_set(base, _name, _base);
     	}
         
         return self;
@@ -87,7 +87,7 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
     }    
     
     static GetBase = function(_name) {
-    	return (variable_struct_get(bases, _name) ); 
+    	return (variable_struct_get(base, _name) ); 
     }
     
     /// @param level_init
@@ -189,8 +189,11 @@ function __group_class_stats(_lvl) : __mall_class_parent("GROUP_STATS") construc
     Init();
 }
 
-function __group_class_elements() : __mall_class_parent("GROUP_ELEMENTS") constructor {
-	elmn = {};
+function __group_class_elements(_lvl = 0) : __mall_class_parent("GROUP_ELEMENTS") constructor {
+	lvl  = _lvl;
+	
+	elem = {};
+	base = {};
 	
 	#region Metodos
 	static Init = function() {
@@ -199,27 +202,73 @@ function __group_class_elements() : __mall_class_parent("GROUP_ELEMENTS") constr
 		repeat (each(_names) ) {
 			var in = this.value;
 			
-			variable_struct_set(elmn, in, 1);
+			variable_struct_set(elem, in, 0);
+			variable_struct_set(base, in, 0);
 		}
 	}
 	
 	/// @param element_name
 	/// @param value
 	static Set = function(_name, _val) {
-		if (mall_element_exists(_name) ) variable_struct_set(elmn, _name, _val);	
+		if (mall_element_exists(_name) ) variable_struct_set(elem, _name, _val);	
 
 		return self;
 	}
 	
 	/// @param element_name
 	static Get = function(_name) {
-		return (variable_struct_get(elmn, _name) );
+		return (variable_struct_get(elem, _name) );
 	}
 	
 	/// @param element_name
 	/// @returns {bool}
 	static Exists = function(_name) {
-		return (variable_struct_exists(elmn, _name) );
+		return (variable_struct_exists(elem, _name) );
+	}
+	
+	/// @param base_name
+	/// @param base_value
+	static SetBase = function(_name, _val) {
+		if (!variable_struct_exists(base, _name) ) variable_struct_set(base, _name, _val);
+		return self;
+	}
+	
+	static SetBaseArray = function(_array) {
+		var i = 0; repeat(array_length(_array) - 1) {
+			SetBase(_array[i], _array[i + 1] );
+			
+			++i;
+		}
+		return self;
+	}
+	
+	/// @param base_name
+	static GetBase = function(_name) {
+		return (variable_struct_get(base, _name) );	
+	} 
+	
+	static LevelUp = function(_lvl, _force = false) {
+		if (!is_undefined(_lvl) ) lvl = _lvl;
+		
+		var _names = mall_element_get_names();
+		
+		var i = 0; repeat(array_length(_names) ) {
+			var _name  = _names[i];
+			var _elemn = mall_get_element(_name);
+			
+			if (lvl < _elemn.lvl_max) {
+				var source = _elemn.GetLvlUp();
+				
+				if (!is_undefined(source) ) {
+					var old = Get(in);
+					var cal = GetBase(in);
+				
+					Set(in, source(old, cal, lvl) );
+				}
+			}
+			
+			++i;
+		}
 	}
 	
 	#endregion
@@ -227,8 +276,11 @@ function __group_class_elements() : __mall_class_parent("GROUP_ELEMENTS") constr
 	Init();
 }
 
-function __group_class_resistances() : __mall_class_parent("GROUP_RESISTANCES") constructor {
-	state = {}
+function __group_class_resistances(_lvl = 0) : __mall_class_parent("GROUP_RESISTANCES") constructor {
+	lvl  = _lvl; 
+	
+	rest = {};
+	base = {};
 	
 	#region Metodos
 	static Init = function() {
@@ -245,7 +297,7 @@ function __group_class_resistances() : __mall_class_parent("GROUP_RESISTANCES") 
 	/// @param value
 	static Set = function(_name, _val) {
 		if (mall_state_exists(_name) ) {
-			variable_struct_set(state, _name, _val);	
+			variable_struct_set(rest, _name, _val);	
 		}
 		
 		return self;
@@ -253,13 +305,13 @@ function __group_class_resistances() : __mall_class_parent("GROUP_RESISTANCES") 
 	
 	/// @param state_name
 	static Get = function(_name) {
-		return (variable_struct_get(state, _name) );
+		return (variable_struct_get(rest, _name) );
 	}
 	
 	/// @param state_name
 	/// @returns {bool}
 	static Exists = function(_name) {
-		return (variable_struct_exists(state, _name) );
+		return (variable_struct_exists(rest, _name) );
 	}
 	
 	#endregion
@@ -268,40 +320,76 @@ function __group_class_resistances() : __mall_class_parent("GROUP_RESISTANCES") 
 }
 
 function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUIP") constructor {
-    parts   = {};
-    previus = {};	// Que equipo habia antes en la parte
+    #region Interno
+    static __ClassPart = function(_noitem, _deterstart = 0) constructor {
+    	noitem = _noitem;	// Acceso rapido al noitem
+    	
+    	equipped = noitem; // Objeto equipado actualmente
+    	previous = noitem; // Objeto anterior
+    	
+    	damage = _deterstart;  	// Daño de la parte. Al llegar al minimo de la parte global entonces no se podrá usar.
+    	use  = true;	// Se se puede usar o no esta parte
+    	
+    	link	 = [];		// Links a otras partes
+    	fromlink = false;	// Si es equipado por algun link
+    	__link	 = {};		// Busqueda	
+    	
+    	capable = [];
+    	
+    	#region Metodos
+    	static set = function(_value, _fromlink = false) {
+    		previous = equipped;
+    		equipped = _value;
+    		
+    		fromlink = _fromlink;
+    	}
+    	
+    	static get = function() {
+    		return (equipped);
+    	}
+    	#endregion
+    }
     
-	capable = {};
+    #endregion
+    
+    parts   = {};	// Diccionario de partes
 	
     #region Metodos
     
     static Init = function() {
     	var _names = mall_part_get_names();
     	
-    	repeat (each(_names) ) {
-    		var _names  = this.value;
-    		var _noitem = (mall_get_part(_names) ).noitem;
+    	var i = 0; repeat (array_length(_names) ) {
+    		var _names  = _names[i], _globalpart  = (mall_get_part(_names) );
+    		var _noitem = _globalpart.GetNoItem(), _deterstart = _globalpart.deter_start;
+
+    		variable_struct_set(parts, _name, (new __ClassPart(_noitem, _deterstart) ) );
+    		Link(_name); // Linkear así mismo
     		
-    		variable_struct_set(parts  , _names, _noitem);
-    		variable_struct_set(previus, _names, _noitem);
-    		
-    		variable_struct_set(capable, _names, [] );
+    		++i;
     	}
+    	
+    	// Limpiar!
+    	gc_collect();
     }
 	
 	/// @param {string} part_name
 	/// @param value
-	static Set = function(_name, _value) {
+	/// @param linked?
+	static Set = function(_name, _value, _linked = false) {
+		if (_value == undefined) _value = _part.noitem;
+		
 		if (mall_part_exists(_name) ) {
-			if (_value == undefined) _value = (mall_get_part(_name) ).noitem;
+			var _part = Get(_name);
 			
-			variable_struct_set(parts, _name, _value);
+			_part.set(_value, _linked);
 		}
 		
 		return self;
 	}
-	
+
 	/// @param {string} part_name
+	/// @returns {__ClassPart}
 	static Get = function(_name) {
 		return (variable_struct_get(parts, _name) );	
 	}
@@ -312,11 +400,19 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
 		return (variable_struct_exists(parts, _name) );
 	}
 	
+	static GetEquipped = function(_name) {
+		return (Get(_name).equipped);
+	}
+	
+	static GetPrevious = function(_name) {
+		return (Get(_name).previous);	
+	}
+	
 	/// @param part_name
 	/// @param itemsubtypes
 	/// @desc Selecciona que subtipos puede usar
 	static SetCapable = function(_name, _array) {
-		var _capable = capable[$ _name];
+		var _capable = GetCapable(_name);
 		
 		var i = 0; repeat(array_length(_array) ) {
 			var in = _array[i];
@@ -334,21 +430,63 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
 	
 	/// @param name
 	static GetCapable = function(_name) {
-		return (variable_struct_get(capable, _name) );
+		return (Get(_name).capable);
 	}
 	
-	/// @param name
-	/// @param value
-	static SetPrevius = function(_name, _value) {
-		if (mall_part_exists(_name) ) variable_struct_set(previus, _name, _value);
-
+	#region Misq
+	
+	/// @param part_name
+	static UpdateDamage = function(_name) {	
+		var _gpart = mall_get_part(_name);
+		var _part  = Get(_name);
+		
+		if (_part.damage <= _gpart.damage_min) {
+			_part.use	 = false;
+			_part.damage = _gpart.damage_min;
+		} else {
+			_part.use = true;
+		}
+		
 		return self;
 	}
 	
-	/// @param name
-	static GetPrevius = function(_name) {
-		return (variable_struct_get(previus, _name) );
+	/// @param part_name
+	/// @desc Linkea otras partes con esta (0 mayor prioridad)
+	static Link = function(_name) {
+		static _1_linkcount = 0;
+		
+		var _part = Get(_name);
+		var _link = _part.link, _search = _part.__link;
+		
+		if (!ExistsLink(_name) ) {
+			array_push(_link, _name);
+			variable_struct_set(_search, _name, _1_linkcount);
+			
+			_1_linkcount++;
+		}
+		
+		return self;
 	}
+	
+	/// @param part_name
+	static ExistsLink = function(_name) {
+		return (variable_struct_exists(Get(_name).__link, _name) );
+	}
+	
+	/// @param part_name
+	static GetLink = function(_name, _access) {
+		var _part = Get(_name), _ret = _access;
+
+		if (is_string(_access) ) _ret = _part.__link[$ _access]; 
+		
+		return (_part.link[_ret] );
+	}
+	
+	static IsLinked = function(_name) {
+		return (Get(_name).fromlink);
+	}
+	
+	#endregion
 	
 	/// @param part_name
 	/// @param subtype
@@ -366,9 +504,9 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
 	
 	/// @param part_name
 	static IsOccupied = function(_name) {
-		var _noitem = (mall_get_part(_name) ).noitem;
+		var _part = Get(_name);
 		
-		return (Get(_name) != _noitem);
+		return !(_part.equipped == _part.noitem);
 	}
 	
     #endregion
@@ -533,9 +671,11 @@ function __group_class_control(_stateuniq = true, _statuniq = true,  _restuniq =
 
 /// @param {string} name
 /// @param {__group_class_stats} stats
-/// @param {__group_class_control} state_control
+/// @param {__group_class_resistances} resistances
+/// @param {__group_class_elements} elements
+/// @param {__group_class_control} control
 /// @param {__group_class_equip} equip
-function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GROUP_ID") constructor {
+function group_create(_name, _stats, _rests, _elems, _control, _equip) : __mall_class_parent("GROUP_ID") constructor {
     #region Metodos
         #region Setter´s
     static SetName = function(_name, _desc) {
@@ -605,39 +745,53 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
         #region Equipamiento
     /// @param part_name
     /// @param item_key
-    static EquipPut = function(_part, _key) {
-        var _item = bag_item_get(_key);
+    static EquipPut = function(_name, _key) {
+        var _item = bag_item_get(_key), _subtype = _item.subtype;
         
-        if (equip.IsCapable(_part, _item.subtype) ) {
-            // Si esta ocupado sacar el objeto
-            if (equip.IsOccupied(_part) )  EquipTake(_part);
-            
-            equip.Set(_part, _key);
-            bag_storage_add(_key, -1);
-            
-            EquipGetUpgrade(_part);
-            
-            return true;
-        }
-        
-        return false;
+        var _gpart = mall_get_part(_name);
+        var _part  = equip.Get(_name);
+		var _link  = _part.link;
+		
+		// Si el objeto necesita muchas partes para usarse
+		if (array_length(_link) + 1 <= _item.use) return false;
+		
+		// 0 es siempre el.
+		var i = 0; repeat(_item.use) {
+			var _linked = _link[i];
+			
+			// Comprobar si es posible
+			if (equip.IsCapable(_linked, _subtype) ) {
+				if (equip.IsOccupied(_linked) ) EquipTake(_linked);
+
+				// Si el objeto no fue equipado por los links regresar el objeto al almacenamiento
+				if (!equip.IsLinked(_linked) ) bag_storage_add(_key, -1);
+				
+				equip.Set(_linked, _key, !(i == 0) );
+			}
+			
+			++i;
+		}
+		
+		EquipGetUpgrade(_name); // Obtener los buffos
+		
+		return true;	
     }    
     
     /// @param part_name
     static EquipTake = function(_name) {
-    	var _part = mall_get_part(_name);
-		var _key = equip.Get(_name);
-		
 		// Si no posee objeto salir
-		if (_key == _part.noitem) return false;
+		if (!equip.IsOccupied(_name) ) return false;
+
+		var _key  = equip.GetEquipped(_name);
+
+		// Desequipar
+		equip.Set(_name);
 
 		// Recuperar el objeto
-		bag_storage_add(_key, 1);
-		
-		equip.Set(_name);	// Poner nada en la posicion
-		equip.SetPrevius(_name, _key);
-
-		EquipGetUpgrade(_name); // Obtener los buffos
+		if (!equip.IsLinked(_name) ) {
+			bag_storage_add(_key, 1);
+			EquipGetUpgrade(_name); // Obtener los buffos
+		}
 		
 		return true;    
     }
@@ -647,49 +801,30 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     static EquipGetUpgrade  = function(_slot) {
         if (!equip.Exists(_slot) ) return self; // Si no existe la parte entonces salir.
          
-        var _part = mall_get_part(_slot);
-        var _key  = equip.Get(_slot);    
-		
+        var _mallpart = mall_get_part(_slot), _part = equip.Get(_slot);
+
 		var _stat, _rest, _elem;
-		var _bonus	 = 0;
-		var _penalty = 0;
+		var _item, _subtype = ".", bonus = 0;
 		
-		if (_key == _part.noitem) {
+		if (_part.equipped == _part.noitem) {
 			#region No hay objeto
-			var _ant = equip.GetPrevius(_slot);
-			
-			_stat = (new __group_class_stats() ).Override("stats", 0);
-			
-			/// comprobar que anteriormente habia o no un objeto
-			if (_ant == _part.noitem) {
-				_rest = (new __group_class_resistances() )	.Override("state", 0);
-				_elem = (new __group_class_elements() )		.Override("elmn" , 0);
-			} else {
-				var _previus = bag_item_get(_ant);
-				
-				_rest = _previus.GetResistances().Turn("state");
-				_elem = _previus.GetElements   ().Turn("elmn" );
-			}
+			_stat = (new __group_class_stats() )	  .Override("stat", 0);
+			_rest = (new __group_class_resistances() ).Override("rest", 0);
+			_elem = (new __group_class_elements() )	  .Override("elem", 0);
+
 			#endregion
 		} else {
 			#region Hay objeto
-			var _item  = (bag_item_get(_key) ), _subtype = _item.subtype;
+			_item	 = (bag_item_get(_part.equipped) );
+			_subtype = _item.subtype;
 			
-			var _bonus   = (_part.IsBonus  (_subtype) ) ? _part.GetBonus  (_subtype) : 0;
-			var _penalty = (_part.IsPenalty(_subtype) ) ? _part.GetPenalty(_subtype) : 0;
+			// Bonus al equipar cierto tipo de objeto
+			if (_mallpart.ExistsProperty(_subtype) ) bonus = _mallpart.GetProperty(_subtype);
 			
-			if (_part.IsBonus(_subtype) ) {
-				var _bonus = _part.GetBonus(_subtype);
-				
-				_stat = _item.GetStats		();
-				_rest = _item.GetResistances();
-				_elem = _item.GetElements	();
-			} else {
-				_stat = _item.GetStats		();
-				_rest = _item.GetResistances();
-				_elem = _item.GetElements	();				
-			}
-		
+			_stat = _item.GetStats		();
+			_rest = _item.GetResistances();
+			_elem = _item.GetElements	();				
+
 			#endregion
 		}
 		
@@ -700,10 +835,19 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
             var _name = _statnames[i];
             
             if (stats.Exists(_name) && _stat.Exists(_name) ) {
-            	// Obtener valores
-            	var in  = stats.Get(_name), out = _stat.Get(_name) * abs(_bonus - _penalty);
+            	var old  = stats.Get(_name);
+            	var item = _stat.Get(_name);
             	
-            	stats_final.Set(_name, (in + out) ); 
+            	if (is_data(old)  ) old  = old .num;
+            	if (is_data(item) ) item = item.num;
+            	
+            	if (is_data(bonus) ) {
+            		item = item + (bonus.num * item);
+            	} else if (is_numeric(bonus) ) {
+            		item += bonus;
+            	}
+            	
+            	stats_final.Set(_name, old + item); 
             }
 			
             ++i;
@@ -715,11 +859,20 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
         var i = 0; repeat(array_length(_restnames) ) {
             var _name = _restnames[i];
             
-            if (state.ExistsRest(_name) && _rest.Exists(_name) ) {
-            	// Obtener valores
-            	var in  = state.GetRest(_name), out = _rest.Get(_name);
+            if (rests.ExistsRest(_name) && _rest.Exists(_name) ) {
+            	var old  = rests.Get(_name);
+            	var item = _rest.Get(_name);
             	
-            	state.SetRest(_name, (in + out) ); 
+            	if (is_data(old)  ) old  = old .num;
+            	if (is_data(item) ) item = item.num;
+        		
+            	if (is_data(bonus) ) {
+            		item = item + (bonus.num * item);
+            	} else if (is_numeric(bonus) ) {
+            		item += bonus;
+            	}
+            	
+            	rests_final.Set(_name, old + item);
             }
             
             ++i;
@@ -731,18 +884,29 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
         var i = 0; repeat(array_length(_elemnames) ) {
             var _name = _elemnames[i];
 			
-			if (state.ExistsElemn(_name) && _elem.Exists(_name) ) {
-            	// Obtener valores
-            	var in  = state.GetElemn(_name), out = _elem.Get(_name);
+			if (elems.ExistsElemn(_name) && _elem.Exists(_name) ) {
+              	var old  = elems.Get(_name);
+            	var item = _elem.Get(_name);
             	
-            	state.SetElemn(_name, (in + out) ); 					
+            	if (is_data(old)  ) old  = old .num;
+            	if (is_data(item) ) item = item.num;
+        		
+            	if (is_data(bonus) ) {
+            		item = item + (bonus.num * item);
+            	} else if (is_numeric(bonus) ) {
+            		item += bonus;
+            	}
+            	
+            	elems_final.Set(_name, old + item); 					
 			}
 			
             ++i;
         }          
         
         #endregion
-    
+    	
+    	gc_collect();
+    	
         return self;
     }
     
@@ -963,12 +1127,21 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     state_text = "";
     
     stats = _stats; /// @is {__group_class_stats}
-    stats_final = (new __group_class_stats(_stats.lvl) ); /// @is {__group_class_stats}
+    rests = _rests;	/// @is {__group_class_resistances}
+    elems = _elems;	/// @is {__group_class_elements}
     
-    state = _control;	/// @is {__group_class_control}
-    equip = _equip; 	/// @is {__group_class_equip}
+    var _lvl = _stats.lvl;
+    
+    stats_final = (new __group_class_stats		(stats.lvl) );	/// @is {__group_class_stats}
+    rests_final = (new __group_class_resistances(rests.lvl) );	/// @is {__group_class_resistances}
+    elems_final = (new __group_class_elements	(elems.lvl) );	/// @is {__group_class_elements}
+    
+	control = _control;	/// @is {__group_class_control}
+    equip   = _equip; 	/// @is {__group_class_equip}
     
     comands = tree_create();    /// @is {__tree_class}
+    comands.add("Pasive");
+    
     
     EquipGetUpgrades();
 }
