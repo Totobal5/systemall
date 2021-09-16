@@ -141,10 +141,11 @@ function __mall_class_parent(_is) constructor {
     	var _names = variable_struct_get_names(_struct);
     	
     	var i = 0; repeat(array_length(_names) ) {
-    		var _name = _names[i], in = _struct[$ _name];
+    		var _name = _names[i];
+    		var in	  = _struct[$ _name];
     		
-    		if (is_numeric(in) ) in *= -1;
-    		
+    		if (is_dataext(in) ) {in.Turn(); } else {in *= -1; }
+
     		variable_struct_set(_struct, _name, in);
     		
     		++i;
@@ -186,32 +187,83 @@ function __mall_class_data(_value, _proccess = "+") constructor {
 	__isdata = "MALL_DATA";
 	
 	static IsPorcent = function(_value) {
-		return ( (is_string(_value) ) && (string_char_at(_value, string_length(_value) + 1) == "%") );
+		var _len = string_length (_value);
+		var _str = string_char_at(_value, _len);
+		
+		return ( (is_string(_value) ) && (_str == "%") );
 	}
 	
 	static ConvertPorcent = function(_value) {
 		if (IsPorcent(_value) ) {
-			return real( (string_delete(_value, string_length(_value) + 1, 1) ) ) / 100;	
-		}	
+			var _len	= string_length (_value); 
+			var _bun	= string_delete (_value, _len, 1);
+			
+			return (real(_bun) );
+		} else if (is_numeric(_value) ) return (_value);
+	}
+	
+	static ToString = function(_value) {
+		if (is_numeric(_value) ) {
+			return (string(_value) + "%");
+		} else {
+			var _len = string_length (_value);
+			var _str = string_char_at(_value, _len);
+			
+			if (_str != "%") return (_value + "%");
+		}
 		
-		return 0;
+		return (_value);	
 	}
 	
 	static Set = function(_value) {
-		value = (IsPorcent(_value) ) ? ConvertPorcent(_value) : _value;
+		num = ConvertPorcent(_value);
+		str = ToString(_value);
+		
+		return self;
 	}
 	
-	/// @param proceso
-	static Change = function(_proccess) {
-		proccess = _proccess;
+	/// @desc Suma o resta
+	static Operate  = function(_value) {
+		if (is_numeric(_value) ) {
+			num += _value;
+			str = string(num) + "%";
+		} else {
+			num += ConvertPorcent(_value);
+			str = string(num) + "%";
+		}
+		
+		return self;
+	}
+		
+	static Operated = function(_value) {
+		return (new __mall_class_data(1) );
 	}
 	
-	// "200%"
+	static Multiply = function(_value) {
+		if (is_numeric(_value) ) {
+			num *= _value;
+			str = string(num) + "%";
+		} else {
+			num *= ConvertPorcent(_value);
+			str = string(num) + "%";
+		}
+		
+		return self;		
+	}
+		
+	static Same = function(_other) {
+		return Set(_other.num);
+	}
+		
+	static Turn = function() {
+		num *= -1;
+		str  = ToString(num);
+	}
 	
 	#endregion
 	
-	num = (IsPorcent (_value) ) ? ConvertPorcent(_value) : _value;	// Si es string lo pasa a numero
-	str = (is_numeric(_value) ) ? string(_value) : _value;			// Si es numero lo pasa a string
+	num = ConvertPorcent(_value);	// Si es string lo pasa a numero
+	str = ToString(_value);			// Si es numero lo pasa a string
 	
 	pro = _proccess;	// Que funcion realizar
 	
@@ -228,6 +280,10 @@ function is_data(_data) {
 	return (is_struct(_data) && variable_struct_exists(_data, "__isdata") );	
 }
 
+function is_dataext(_data) {
+	if (is_data(_data) ) {return true; } else if (is_numeric(_data) ) {return false; } else {return noone; }
+}
+
 /// @returns {array} all_stats
 function mall_global_stats  () {
     return (global._MALL_GLOBAL.stats);   
@@ -238,14 +294,14 @@ function mall_global_states () {
     return (global._MALL_GLOBAL.state);
 }
 
-/// @returns {array} all_elements
-function mall_global_elements() {
-    return (global._MALL_GLOBAL.elmn);
+/// @returns {array} all_parts
+function mall_global_parts	() {
+    return (global._MALL_GLOBAL.part);
 }
 
-/// @returns {array} all_parts
-function mall_global_parts() {
-    return (global._MALL_GLOBAL.part);
+/// @returns {array} all_elements
+function mall_global_elements () {
+    return (global._MALL_GLOBAL.elmn);
 }
 
 #region Is
@@ -314,6 +370,26 @@ function __mall_class_group(_name, _index) : __mall_class_parent("MALL_GROUP_INT
         
         return self;
     }
+    
+    	#region Array
+    static AddStat  = function(_value) {
+    	if (is_array(stat) ) array_push(stat, _value);
+    }
+    
+    static AddState = function(_value) {
+    	if (is_array(state) ) array_push(state, _value);	
+    }
+    
+    static AddPart  = function(_value) {
+    	if (is_array(part) )  array_push(part, _value);	
+    } 
+    
+    static AddElement = function(_value) {
+    	if (is_array(elemn) ) array_push(elemn, _value);	
+    }
+
+    
+    #endregion
     
     #endregion
 }
@@ -515,6 +591,8 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
     master = undefined;
     master_name = "";
     
+    start = 0;	// Valor inicial
+    
     range_max = 0;
     range_min = 0;
     
@@ -546,6 +624,8 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
         // Quitar la manera de subir de nivel, ya que ahora es esclavo de la otra estadistica
         SetLvlUp(_stat.GetLvlUp() );
         
+        start = _stat.start;
+    	
         return self;
     }
     
@@ -604,6 +684,12 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
 		tomax_max	 = _max;
 		tomax_repeat = _repeat; 
 		
+		return self;
+	}
+	
+	/// @param value
+	static SetStart = function(_value) {
+		start = _value;
 		return self;
 	}
 	
@@ -672,17 +758,17 @@ function mall_stat_control () : __mall_class_parent("MALL_STAT") constructor {
     #region Variables
     order = []; // Estadisticas agregadas
     stats = {};
-    
+  
     #endregion
     
     #region Metodos
-    static Add = function(_name, _master, _formula) {
+    static Add = function(_name, _master, _formula, _startvalue = 0) {
         static statcount = 0;
         
         if (!variable_struct_exists(stats, _name) ) {
-            var _stat = (new __mall_class_stat(_name, statcount) );
+            var _stat = (new __mall_class_stat(_name, statcount) ).SetStart(_startvalue);
             _stat.outside = self;
-
+			
             // Si no se establecio un master entonces agregar la formula
             if (!_stat.SetMaster(_master) ) _stat.SetLvlUp(_formula);
             
@@ -768,7 +854,9 @@ function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_cla
     
     watch_stat = [];    // Que estadistica lo vigilan
     watch_part = [];    // Que partes lo vigilan    
-    
+		
+	link = (new __mall_class_group("", -1) ).AllSetArray();	/// @is {__mall_class_group}
+	
     #region Metodos
     static Get = function() {
         return init;
@@ -781,6 +869,7 @@ function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_cla
         return self;
     }
     
+    	#region Processes
     static SetProcess = function(_name, _values) {
         if (!variable_struct_exists(processes, _name) ) {
             variable_struct_set(processes, _name, {value: _values, name: _name} );
@@ -799,6 +888,8 @@ function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_cla
     static GetProcesses = function() {
         return processes;
     }
+    
+    #endregion
     
     	#region Watch
     /// @param stat_class
@@ -831,7 +922,57 @@ function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_cla
     }
     
     #endregion
-   
+
+		#region Links
+    /// @param {__mall_class_part} mall_class
+    /// @desc Crea un link a otra clase de mall
+    static AddLink = function(_class) {
+        if (!is_struct(_class) ) return self;
+        
+        // No poder crear link a el mismo
+        if (_class == self) return self;
+        
+        switch (_class.GetType() ) {
+            case "MALL_STAT_INTERN"   : link.AddStat (_class); break;
+            case "MALL_STATE_INTERN"  : link.AddState(_class); break;
+            case "MALL_PART_INTERN"   :	link.AddPart (_class); break;
+            
+            case "MALL_ELEMENT_INTERN": link.AddElement(_class); break;
+        }
+        
+        return self;
+    }	
+	
+	static AddLinkArray = function(_array) {
+		var i = 0; repeat(array_length(_array) - 1) {
+			AddLink(_array[i]);
+			
+			++i;
+		}	
+		return self;
+	}
+	
+	static AddLinkArgument = function() {
+		var i = 0; repeat(argument_count - 1) {
+			AddLink(argument[i]);
+			
+			++i;
+		}
+		
+		return self;
+	}
+	
+	static GetLinkStat = function(_index) {
+		return (link.stat[_index] );
+	}
+	
+	#endregion
+	
+	/// @param state_class
+	static Inherit = function(_other) {
+		return self;
+	}
+	 
 	static Copy = function() {}
    
     #endregion
@@ -842,14 +983,16 @@ function mall_state_control() : __mall_class_parent("MALL_STATE") constructor {
     state = {};
     
     #region Metodos
+    /// @returns {__mall_class_state}
     static Add = function(_name, _init, _watch) {
         static statecount = 0;
         
         if (!variable_struct_exists(state, _name) ) {
-            var _state = (new __mall_class_state(_name, statecount, _init) ).SetWatchStatArray(_watch);
+            var _state = (new __mall_class_state(_name, statecount, _init) );
+			_state.SetWatchStatArray(_watch);
+			
+		    variable_struct_set(state, _name, _state);
 
-            variable_struct_set(state, _name, _state);
-            
             array_push(order, _name);
             statecount++;
             
@@ -919,12 +1062,18 @@ function __mall_class_element(_name = "", _index = -1) : __mall_class_parent("MA
     SetBasic(_name, _index);
     
     absorb = []; // Una estadistica se puede beneficiar del elemento
+    absorb_threshold = 0;
+
     reduce = []; // Una estadistica se puede perjudiciar del elemento
+    reduce_threshold = 0;
     
     produce = {}; // Probabilidad de producirlos estados
-    
+	
+	link = (new __mall_class_group("", -1) ).AllSetArray();	/// @is {__mall_class_group}
+	
     #region Metodos
-    
+   
+    	#region Produce
     /// @param state_name
     /// @param value
     static AddProduce = function(_state, _values) {
@@ -943,6 +1092,17 @@ function __mall_class_element(_name = "", _index = -1) : __mall_class_parent("MA
         return self;
     }
     
+    static GetProduce = function(_state_name) {
+        return (is_undefined(_state_name) ) ? produce : produce[$ _state_name];
+    }
+    
+    static GetProduceAll = function() {
+        return produce;
+    }
+	
+    #endregion
+    
+    	#region Absorb && Reduce
     static AddAbsorb = function(_stat) {
         array_push(absorb, _stat.name);
         _stat.AddAbsorb(self);
@@ -969,27 +1129,73 @@ function __mall_class_element(_name = "", _index = -1) : __mall_class_parent("MA
         return self;          
     }
     
-    static GetProduce = function(_state_name) {
-        return (is_undefined(_state_name) ) ? produce : produce[$ _state_name];
-    }
+    #endregion
     
-    static GetProduceAll = function() {
-        return produce;
-    }
+		#region Links
+    /// @param {__mall_class_part} mall_class
+    /// @desc Crea un link a otra clase de mall
+    static AddLink = function(_class) {
+        if (!is_struct(_class) ) return self;
+        
+        // No poder crear link a el mismo
+        if (_class == self) return self;
+        
+        switch (_class.GetType() ) {
+            case "MALL_STAT_INTERN"   : link.AddStat (_class); break;
+            case "MALL_STATE_INTERN"  : link.AddState(_class); break;
+            case "MALL_PART_INTERN"   :	link.AddPart (_class); break;
+            
+            case "MALL_ELEMENT_INTERN": link.AddElement(_class); break;
+        }
+        
+        return self;
+    }	
+	
+	static AddLinkArray = function(_array) {
+		var i = 0; repeat(array_length(_array) - 1) {
+			AddLink(_array[i]);
+			
+			++i;
+		}	
+		return self;
+	}
+	
+	static AddLinkArgument = function() {
+		var i = 0; repeat(argument_count - 1) {
+			AddLink(argument[i]);
+			
+			++i;
+		}
+		
+		return self;
+	}
+	
+	static GetLinkStat = function(_index) {
+		return (link.stat[_index] );
+	}
+	
+	#endregion    
     
+	static Inherit = function(_other) {
+	
+	}
+    
+  
     #endregion
 }
 
 function mall_element_control() : __mall_class_parent("MALL_ELEMENT") constructor {
     order = [];
-    elemn = {};
     
+    elemn = {};
+
     #region Metodos
     static Add = function(_name, _produce) {
         static elmncount = 0;
         
         if (!variable_struct_exists(elemn, _name) ) {
-            var _elemn = (new __mall_class_element(_name, elmncount) ).AddProduceArray(_produce);
+            var _elemn = (new __mall_class_element(_name, elmncount) );
+            _elemn.AddProduceArray(_produce);
 
             variable_struct_set(elemn, _name, _elemn);
             
@@ -1056,6 +1262,10 @@ function mall_element_get_absorb(_access) {
 /// @returns {array}
 function mall_element_get_reduce(_access) {
     return (mall_get_element(_access) ).reduce;    
+}
+
+function mall_element_get_sub(_access) {
+	return (mall_get_element(_access).GetSub() );
 }
 
 #endregion
@@ -1142,21 +1352,8 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
             	var _link = GetLinkPartAll();
             	var _name = _class.GetName();
             	
-            	if (!ExistsLinkPart(_name) ) {
-            		array_push(_link, _class);
-            		
-            		UpdateComplement ();
-            	}
-            	/*
-            	var _link = _class.GetLinkPartAll();
-            	var _name = GetName();
-            	
-            	if (!_class.ExistsLinkPart(_name) ) {
-            		array_push(_link, self);
-            		
-            		_class.UpdateComplement();
-            	}
-            	*/
+            	if (!ExistsLinkPart(_name) ) array_push(_link, _class);
+
             	break;
         }
         
@@ -1191,9 +1388,6 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
 	
 	static ResetLink = function() {
 		link.AllSetArray();
-		link.part = {};
-		
-		complement = min(1, variable_struct_names_count(link.part) );
 	}
 	
     #region Possible
@@ -1250,6 +1444,8 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
     
     /// @param property_array
     static AddPropertyArray = function(_array) {
+    	if (!is_array(_array) ) return self;
+    	
     	var i = 0; repeat(array_length(_array) - 1) {
     		AddProperty(_array[i], _array[i + 1] );
     		
@@ -1263,7 +1459,7 @@ function __mall_class_part(_name = "", _index = -1) : __mall_class_parent("MALL_
 		var _names = variable_struct_get_names(_prop);
 
 		var i = 0; repeat(array_length(_names) ) {
-			var _name = _names[i], in = _part.GetProperty(_name);
+			var _name = _names[i], in = _prop[$ _name];
 			
 			AddProperty(_name, in);
 	

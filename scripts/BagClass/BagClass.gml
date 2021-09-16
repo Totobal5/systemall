@@ -8,10 +8,8 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
     special = {};
     
     // Datos
-    stat = (new __group_class_stats() )		 .Override("stat", 0);	// Crear estadisticas
-    rest = (new __group_class_resistances() ).Override("rest", 0);	// Crea las resistencias
-    elem = (new __group_class_elements() )	 .Override("elem", 0);	// Crear elementos
-    
+    stat = (new __group_class_stats() );	// Crear estadisticas
+
     // Trade
     can_sell = true;
     can_buy  = true;

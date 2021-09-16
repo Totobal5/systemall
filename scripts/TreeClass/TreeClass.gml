@@ -53,7 +53,7 @@ function __tree_class(_root_val) constructor {
 		var _new = new __tree_class(_val, _id);
 		
 		// Establecer la profundidad de la rama y el arbol a que pertenece
-		_new.depht += (1 + _from.depth);
+		_new.depth += (1 + _from.depth);
 	    _new.trunk  = _from.trunk;  // Establecer quien es el tronco de esta rama
 	    _new.branch = (tree_is_trunk(_from) ) ? noone : _from; // Establece de que rama proviene
 	    
