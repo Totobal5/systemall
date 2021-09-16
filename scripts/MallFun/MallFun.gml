@@ -19,34 +19,37 @@ function mall_init() {
 	
 	var _stat = (new mall_stat_control() ); /// @is {mall_stat_control}
 	
+	#region Estadisticas
 	var _psmax = _stat.Add("ps_max", undefined, MALL_FUN {return round( ((base * lvl * 3) / 2) + lvl + 10); } ).SetRange(0, 9999);
-	var _pmmax = _stat.Add("pm_max").Inherit(_psmax);
+	var _pmmax = _stat.Add("pm_max").Inherit(_psmax);	// No maestro si hijos (_max)
 
-	_stat.Add("ps", _psmax).ToggleToMax(0, false);
-	_stat.Add("pm", _pmmax).ToggleToMax(0, false);
+	_stat.Add("ps", _psmax).ToggleToMax(0, false).ToggleIgnore();	// Maestro no hijos
+	_stat.Add("pm", _pmmax).ToggleToMax(0, false).ToggleIgnore();
 	
-	var _fue = _stat.Add("fue", undefined, MALL_FUN {return round( ( (base * lvl) / 15) + 5); } ).SetRange(0, 255);
+	var _fue = _stat.Add("fue", undefined, MALL_FUN {return round( ( (base * lvl) / 15) + 5); } ).SetRange(0, 999);
 	var _int = _stat.Add("int").Inherit(_fue);
 	
-	var _def = _stat.Add("def").Inherit(_fue);
+	var _def = _stat.Add("def").Inherit(_fue);	// No maestro no hijos
 	var _esp = _stat.Add("esp").Inherit(_fue);
 	
 	var _expmax = _stat.Add("exp_max", undefined, MALL_FUN {return round( (base * lvl * 7) + (lvl * 2) + 20); } ).SetRange(0, 999999);
-	_stat.Add("exp", _expmax).ToggleToMin();
+	_stat.Add("exp", _expmax).ToggleToMin().ToggleIgnore();
 	
 	// Unir resistencias a los elementos y estadisticas en las estadisticas ya que la clase de "stat" ya posee todo lo necesario!
 	var _resfire = _stat.Add("fuego_rest", undefined, MALL_FUN {if (is_dataext(old) && is_dataext(base) ) return (old.Same(base) ); }, Data("0%") ).SetRange(0, 255);
 	
-	var _atkfire = _stat.Add("fuego_atak", undefined, MALL_FUN {return ( (base + lvl) * lvl / 2); } ).SetRange(0, 255);
+	var _atkfire = _stat.Add("fuego_atak", undefined, MALL_FUN {return ( (base + lvl) * lvl / 2); } ).SetRange(0, 999);
 	
 	var _respolu = _stat.Add("polucion_rest").Inherit(_resfire); 
 	var _atkpolu = _stat.Add("polucion_atak").Inherit(_atkfire);
 	
-	var _resvivo = _stat.Add("vivo_rest").Inherit(_resfire);
+	var _resvivo = _stat.Add("vivo_rest").Inherit(_resfire).ToggleIgnore();
 	
 	var _restven = _stat.Add("veneno_rest")		.Inherit(_resfire);
 	var _restqem = _stat.Add("quemadura_rest")	.Inherit(_resfire);
 	var _restmel = _stat.Add("melancolia_rest")	.Inherit(_resfire);
+	
+	#endregion
 	
 	var _state = (new mall_state_control() );
 

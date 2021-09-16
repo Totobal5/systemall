@@ -31,9 +31,9 @@ function group_create_player1(_lvl = 1) {
     gc_collect();
     
     var _stats = (new __group_class_stats(_lvl) );
-    _stats.SetBases(["ps_max", 18, "pm_max", 18, "fue", 30, "int", 1, "def", 24, "esp", 24, "exp_max", 24]);
-    _stats.SetBases(["fuego_atak", 0, "polucion_atak", 0] );
-    _stats.SetBases([
+    _stats.SetBaseArray(["ps_max", 18, "pm_max", 18, "fue", 30, "int", 1, "def", 24, "esp", 24, "exp_max", 24]);
+    _stats.SetBaseArray(["fuego_atak", 0, "polucion_atak", 0] );
+    _stats.SetBaseArray([
         "fuego_rest"     , Data("0%"),
         "polucion_rest"  , Data("0%"),
         
@@ -70,9 +70,9 @@ function group_create_player2(_lvl = 1) {
     gc_collect();
     
     var _stats = (new __group_class_stats(_lvl) );
-    _stats.SetBases(["ps_max", 18, "pm_max", 18, "fue", 30, "int", 1, "def", 24, "esp", 24, "exp_max", 24]);
-    _stats.SetBases(["fuego_atak", 68, "polucion_atak", 136] );
-    _stats.SetBases([
+    _stats.SetBaseArray(["ps_max", 18, "pm_max", 18, "fue", 30, "int", 1, "def", 24, "esp", 24, "exp_max", 24]);
+    _stats.SetBaseArray(["fuego_atak", 68, "polucion_atak", 136] );
+    _stats.SetBaseArray([
         "fuego_rest"     , Data("0%"),
         "polucion_rest"  , Data("0%"),
         

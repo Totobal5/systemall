@@ -81,7 +81,7 @@ function __group_class_stats(_lvl = 0) : __mall_class_parent("GROUP_STATS") cons
     }
     
     /// @param stat_array
-    static SetBases = function(_array) {
+    static SetBaseArray = function(_array) {
 		for (var i = 0, len = array_length(_array) - 1; i < len; i += 2) SetBase(_array[i], _array[i + 1] );
 
         return self;        
@@ -185,6 +185,69 @@ function __group_class_stats(_lvl = 0) : __mall_class_parent("GROUP_STATS") cons
         
         return self;
     }
+    
+    #region Misq
+    
+    /// @returns {struct}
+    /// @desc Convierte los stat en un string y los pasa en un struct
+    static ToStringStruct = function() {
+    	var _names = mall_global_stats(), _ret = {};
+    	var _last = "";
+    	
+    	var i = 0; repeat(array_length(_names) ) {
+    		var _name = _names[i], in, one, two, _str = "";
+    		var _stat = mall_get_stat(_name); /// @is {__mall_class_stat}
+    		
+    		if (!_stat.ignore_txt) {
+	    		var _len = array_length(_stat.children);
+
+	    		if (is_undefined(_stat.master) ) {
+	    			var in = Get(_name);	// Obtener valor
+	    			
+		    		if (_len > 0) { // Si posee hijos
+		    			var j = 0; repeat(_len) {
+		    				var _childname  = _stat.children[j], _childvalue = Get(_childname);
+		    				
+		    				_str += string(_childvalue) + " / ";
+		    				
+		    				j++;	
+		    			}
+		    			
+		    			_str += string(in);
+		    			_name = _childname;
+	  			
+		    		} else {	// Otras estadisticas
+		    			_str = (is_data(in) ) ? in.str : string(in);
+		    		}
+		    		
+		    		// Agregar al struct
+		    		var _structname = _stat.GetTxt();
+		    		variable_struct_set(_ret, _structname, _str);
+	    		}
+    		}
+    		++i;
+    	}
+    	
+    	return (_ret );
+    }
+    
+    /// @returns {array}
+    /// @desc Convierte los stat en un string y los pasa a un array
+    static ToStringArray  = function() {
+    	var _names = mall_global_stats(), _ret = [];
+    	
+    	var i = 0; repeat(array_length(_names) ) {
+    		var _name = _names[i], in = stat[$ _name];
+    		
+    		array_push(_ret, (is_dataext(in) ) ? in.str : string(in) );
+    		
+    		++i;
+    	}
+    	
+    	return (_ret );    	
+    }
+    
+    #endregion
     
     #endregion
     

@@ -49,7 +49,8 @@ function __mall_class_parent(_is) constructor {
     txt    = name;
     symbol = "";
     
-    is_porcent = false; // Si es basado en porcentaje     
+    ignore_gbl = false;	// Si se ignora globalmente en la mayoria de funciones (por si acaso lol)
+    ignore_txt = false;	// Si se ignora en alguna funcion para textos
     
     #region Metodos
     static SetBasic  = function(_name, _index) {
@@ -73,12 +74,13 @@ function __mall_class_parent(_is) constructor {
         
         return self;
     }
-    
-    static TogglePorcent = function() {
-        is_porcent = !is_porcent;
-        return self;
-    }
-    
+	
+	static ToggleIgnore = function() {
+		ignore_txt = !ignore_txt;
+		return self;
+	}
+	
+		#region Basico
     /// @param name
     /// @param class
     /// @desc Permite vincular una clase de mall a alguna estructura de otro sistema
@@ -154,6 +156,9 @@ function __mall_class_parent(_is) constructor {
     	return self;
     }
     
+    	#endregion
+    
+    	#region Getter´s
     static GetName  = function() {
     	return name;
     }
@@ -162,17 +167,19 @@ function __mall_class_parent(_is) constructor {
         return [name, index];
     }
     
+    static GetTxt	= function() {
+    	return (txt );
+    }
+    
     static GetString = function() {
         return [txt, symbol];
     }
-    
-    static IsPorcent = function() {
-        return is_porcent;
-    }
-    
+
     static GetType   = function() {
         return __is;
     }
+    
+    #endregion
     
     	#region Misq
     static Copy = function() {}
@@ -588,8 +595,11 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
     outside = undefined;
     
     // Master : Otra estadistica, no puede ser mayor que esta y solo master puede aumentar sus atributos mediante lvlup
+    //	Así mismo no son tomados en cuenta para ser dibujados directamente.
     master = undefined;
     master_name = "";
+    
+    children = [];
     
     start = 0;	// Valor inicial
     
@@ -632,6 +642,8 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
     /// @param {__mall_class_stat} stat_class
     static SetMaster = function(_stat) {
         if (is_struct(_stat) ) {
+        	array_push(_stat.children, name); // Agregar hijos
+        	
             master      = _stat;
             master_name = _stat.name;
             

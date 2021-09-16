@@ -16,3 +16,11 @@ _psj1.EquipPut ("Mano der.", "ARM.ESPADA_COBRE" );
 _psj1.EquipPut ("Mano izq.", "ARM.ESPADA_VENENO");
 _psj1.EquipTake("Mano der.");
 var _psj2 = group_create_player2(irandom(100) ); /// @is {group_create}
+
+To1 = _psj1.stats_final; /// @is {group_create}
+To2 = _psj2.stats_final;
+
+Stat1 = To1.ToStringStruct();
+Stat2 = To2.ToStringStruct();
+
+Names = mall_global_stats();
