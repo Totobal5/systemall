@@ -659,6 +659,15 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
         return false;
     }
     
+    static GetChildren = function(_index) {
+    	return (children[_index] );
+    }
+    
+    /// @returns {number}
+    static GetChildrenCount = function() {
+    	return (array_length(children) );
+    }
+    
     /// @param lvlup
     static SetLvlUp  = function(_lvlup, _max = 100) {
         lvlup  = _lvlup;

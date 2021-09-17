@@ -199,23 +199,26 @@ function __group_class_stats(_lvl = 0) : __mall_class_parent("GROUP_STATS") cons
     		var _stat = mall_get_stat(_name); /// @is {__mall_class_stat}
     		
     		if (!_stat.ignore_txt) {
-	    		var _len = array_length(_stat.children);
+	    		var _len = _stat.GetChildrenCount();
 
 	    		if (is_undefined(_stat.master) ) {
 	    			var in = Get(_name);	// Obtener valor
 	    			
-		    		if (_len > 0) { // Si posee hijos
+		    		if (_len > 0) {
+		    			#region Posee hijos
 		    			var j = 0; repeat(_len) {
-		    				var _childname  = _stat.children[j], _childvalue = Get(_childname);
-		    				
-		    				_str += string(_childvalue) + " / ";
+		    				var _childname  = _stat.GetChildren(j);
+		    				var _childvalue = Get(_childname);
+		    	
+		    				_str += ( (is_data(_childvalue) ) ? _childvalue.str : string(_childvalue) ) + " / ";
 		    				
 		    				j++;	
 		    			}
 		    			
-		    			_str += string(in);
+		    			_str += (is_data(in) ) ? in.str : string(in);
 		    			_name = _childname;
-	  			
+		    			
+	  					#endregion
 		    		} else {	// Otras estadisticas
 		    			_str = (is_data(in) ) ? in.str : string(in);
 		    		}
@@ -225,6 +228,7 @@ function __group_class_stats(_lvl = 0) : __mall_class_parent("GROUP_STATS") cons
 		    		variable_struct_set(_ret, _structname, _str);
 	    		}
     		}
+    		
     		++i;
     	}
     	
@@ -252,95 +256,6 @@ function __group_class_stats(_lvl = 0) : __mall_class_parent("GROUP_STATS") cons
     #endregion
     
     Init();
-}
-
-function __group_class_elements() : __mall_class_parent("GROUP_ELEMENTS") constructor {
-	elem = {};
-
-	#region Metodos
-	static Init = function() {
-		var _names = mall_global_elements();
-		
-		var j = 0; repeat (array_length(_names) ) {
-			var _name = _names[i];
-			var _sub  = mall_element_get_sub(_name);
-			
-			var i = 0; repeat(array_length(_sub) ) {
-				var two = _sub[i];
-
-				variable_struct_set(elem, _name + two, 0);
-				variable_struct_set(base, _name + two, 0);
-				
-				++i;
-			}
-			
-			j++;
-		}
-	}
-	
-	/// @param element_name
-	/// @param value
-	static Set = function(_name, _val) {
-		if (mall_element_exists(_name) ) variable_struct_set(elem, _name, _val);	
-
-		return self;
-	}
-	
-	/// @param element_name
-	static Get = function(_name) {
-		return (variable_struct_get(elem, _name) );
-	}
-	
-	/// @param element_name
-	/// @returns {bool}
-	static Exists = function(_name) {
-		return (variable_struct_exists(elem, _name) );
-	}
-
-	#endregion
-	
-	Init();
-}
-
-function __group_class_resistances() : __mall_class_parent("GROUP_RESISTANCES") constructor {
-	rest = {};
-
-	#region Metodos
-	static Init = function() {
-		var _names = mall_global_states();
-
-		repeat (each(_names) ) {
-			var in = this.value;
-			
-			variable_struct_set(rest, in, 0);
-			variable_struct_set(base, in, 0);
-		}		
-	}
-	
-	/// @param state_name
-	/// @param value
-	static Set = function(_name, _val) {
-		if (mall_state_exists(_name) ) {
-			variable_struct_set(rest, _name, _val);	
-		}
-		
-		return self;
-	}
-	
-	/// @param state_name
-	static Get = function(_name) {
-		return (variable_struct_get(rest, _name) );
-	}
-	
-	/// @param state_name
-	/// @returns {bool}
-	static Exists = function(_name) {
-		return (variable_struct_exists(rest, _name) );
-	}
-
-	#endregion
-	
-	Init();
 }
 
 function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUIP") constructor {
