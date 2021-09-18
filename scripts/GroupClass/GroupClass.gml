@@ -204,25 +204,27 @@ function __group_class_stats(_lvl = 0) : __mall_class_parent("GROUP_STATS") cons
 	    		if (is_undefined(_stat.master) ) {
 	    			var in = Get(_name);	// Obtener valor
 	    			
-		    		if (_len > 0) {
-		    			#region Posee hijos
-		    			var j = 0; repeat(_len) {
-		    				var _childname  = _stat.GetChildren(j);
-		    				var _childvalue = Get(_childname);
-		    	
-		    				_str += ( (is_data(_childvalue) ) ? _childvalue.str : string(_childvalue) ) + " / ";
-		    				
-		    				j++;	
-		    			}
-		    			
-		    			_str += (is_data(in) ) ? in.str : string(in);
-		    			_name = _childname;
-		    			
-	  					#endregion
-		    		} else {	// Otras estadisticas
-		    			_str = (is_data(in) ) ? in.str : string(in);
-		    		}
-		    		
+	    			if (!is_array(in) ) {
+			    		if (_len > 0) {
+			    			#region Posee hijos
+			    			var j = 0; repeat(_len) {
+			    				var _childname  = _stat.GetChildren(j);
+			    				var _childvalue = Get(_childname);
+			    				
+			    				_str += ( (is_data(_childvalue) ) ? _childvalue.str : string(_childvalue) ) + " / ";
+			    				
+			    				j++;	
+			    			}
+			    			
+			    			_str += (is_data(in) ) ? in.str : string(in);
+			    			_name = _childname;
+			    			
+		  					#endregion
+			    		} else {	// Otras estadisticas
+			    			_str = (is_data(in) ) ? in.str : string(in);
+			    		}
+	    			} else _str = in;
+	    			
 		    		// Agregar al struct
 		    		var _structname = _stat.GetTxt();
 		    		variable_struct_set(_ret, _structname, _str);
@@ -453,158 +455,73 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
     Init();
 }
 
-function __group_class_control(_stateuniq = true, _statuniq = true,  _restuniq = true, _elemuniq = true) : __mall_class_parent("GROUP_CONTROL") constructor {
-    state = {};	// Que valor posee un estado (generalmente booleano)
-    
-    stat = {}; // Bonus o sanción en las estadisticas
-    elem = {}; // Bonus o sanción en los elementos  
-    rest = {}; // Bonus o sanción en las resistencias    
-    
-    // Copiar estadisticas
-    stats = {}
-    
+function __group_class_control(_statsuniq = false, _stateuniq = true) : __mall_class_parent("GROUP_CONTROL") constructor {
+	
+	// Valores 
+	stats = {};
+	state = {};
+		
     // Control
-    control = {state: {}, elem: {}, stat: {}, rest: {} };
+    control = {
+    	state: {},
+    	stats: {}
+    };
     
-    // Si puede haber 1 o más
-    control_stateuniq = _stateuniq;
-    
-    control_statuniq = _statuniq; 
-    control_restuniq = _restuniq;
-    control_elemuniq = _elemuniq;
-    
-    __control = [];
-    __control_count = 0;
+    // Cantidades
+    stats_uniq = _statsuniq;
+    state_uniq = _stateuniq;
     
     #region Metodos
-    
     static Init = function() {
-    	var _cstate = control.state;
-		var _cstat = control.stat, _celem = control.elem, _crest = control.rest;
-
-    	#region State and Resistances
-    	var _names = mall_global_states();	// Obtiene todos los estados
-    	
-    	var i = 0; repeat(array_length(_names) ) {
-    		var _name = _names[i];
-    		
-    		// States
-    		if (!variable_struct_exists(state, _name) ) {
-    			var _state = mall_get_state(_name);	// Obtener propiedades del estado 
-    			
-    			variable_struct_set(state  , _name, _state.init);
-    			variable_struct_set(_cstate, _name, (control_stateuniq) ? noone : [] );
-    		
-    			variable_struct_set(rest  , _name, 1);
-    			variable_struct_set(_crest, _name,  (control_stateuniq) ? noone : [] );
-    		}
-    		
-    		++i;
-    	}
-
-    	#endregion
-    	
-    	#region Stat
-    	var _names = mall_global_stats();
-    	
-    	var i = 0; repeat (array_length(_names) ) {
-    		var _name = _names[i];
-    		
-    		if (!variable_struct_exists(stat, _name) ) {
-    			variable_struct_set(stat  , _name, 1);
-    			variable_struct_set(_cstat, _name, (control_statuniq) ?  noone : [] );	
-    		}
-    		
-    		++i;
-    	}    	
-    	#endregion
- 
-   		#region Element
-    	var _names = mall_global_elements();
-    	
-    	var i = 0; repeat (array_length(_names) ) {
-    		var _name = _names[i];
-    		
-    		if (!variable_struct_exists(elem, _name) ) {
-    			variable_struct_set(elem  , _name, 1);
-    			variable_struct_set(_celem, _name, (control_elemuniq) ?  noone : [] );	
-    		}
-    		
-    		++i;
-    	}    
-    	#endregion
+    	#region Estadisticas
+		var _mall	 = mall_global_stats(), _name, i = 0;
+		var _control = control.stats;
+		
+		var inside = (stats_uniq) ? undefined : [];
+			
+		repeat(array_length(_mall) ) {
+			_name = _mall[i];
+			
+			variable_struct_set(stats   , _name, mall_get_stat(_name).start);
+			variable_struct_set(_control, _name, inside);	
+			
+			++i;
+		}
+		
+		#endregion
+		
+		#region States
+		_mall	 = mall_global_states();
+		_control = control.state;
+		i = 0;
+		
+		var inside = (state_uniq) ? undefined : [];
+		
+		repeat(array_length(_mall) ) {
+			_name = _mall[i];
+			
+			variable_struct_set(state	, _name, mall_get_state(_name).init);
+			variable_struct_set(_control, _name, inside);	
+			
+			++i;
+		}
+		
+		#endregion
     }
     
-    	#region Resistencia
-    /// @param resistance_name
-    /// @param value
-    static SetRest = function(_name, _value) {
-    	if (mall_stat_exists(_name) ) variable_struct_set(rest, _name, _value);
-    	
-    	return self;
+    /// @param state_name
+    static GetState = function(_name) {
+    	return (variable_struct_get(state, _name) );
     }
-    
-    /// @param resistance_name
-    static GetRest = function(_name) {
-		return (variable_struct_get(rest, _name) );    	
-    }
-    
-    /// @param resistance_name
-    /// @returns {bool}
-    static ExistsRest = function(_name) {
-    	return (variable_struct_exists(rest, _name) );
-    }
-    
-    #endregion
-    
-    	#region Elements
-    /// @param element_name
-    /// @param value
-    static SetElemn = function(_name, _value) {
-    	if (mall_element_exists(_name) )  variable_struct_set(elem, _name, _value);
-		   
-    	return self;
-    }
-    
-    /// @param element_name
-    static GetElemn = function(_name) {
-		return (variable_struct_get(elem, _name) ); 	
-    }
-    
-    /// @param element_name
-    /// @returns {bool}
-    static ExistsElemn = function(_name) {
-    	return (variable_struct_exists(elem, _name) );
-    }
-    
-    #endregion
-    
-    static SetState = function(_ste_name) {
-        return self;
-    }
-    
-    static GetState = function(_ste_name) {
-        return state[$ _ste_name];
-    }
-    
-    /// @param control_name
-    static GetControl = function(_cont_name) {    
-        return (control[$ _cont_name] );
-    }
-    
-    /// @param dark_id
-    static AddController = function(_dark_id) {
-        var _afects = _dark_id;
-        
-        return self;
-    }
-    
-    static Update = function() {
-        
-    }
-    
-    #endregion
-    
+	
+	static SetState = function(_name, _value) {
+		variable_struct_set(stats, _name, _value);
+		
+		return self;
+	}
+	
+	#endregion
+	 
     Init();
 }
 
@@ -817,191 +734,160 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     
     /// @desc Obtiene las estadisticas que posee sin el objeto equipado
     static EquipGetDifference  = function(_slot) {
-        var _sts   = (new __group_class_stats() ); /// @is {__group_class_stats}
-        var _names = mall_states_get_names(); 
+		var _ret  = (new __group_class_stats() ); /// @is {__group_class_stats}
+        
+        // Si no posee objetos salir
+        if (!equip.IsOccupied(_slot) ) return (_ret);
+
+        var _key  = equip.Get(_slot);
+        var _part = mall_get_part(_slot);	// Obtener parte
+        var _item = bag_item_get(_key);		// Obtener objeto
+        
+        var _subt = _item.GetSubtype();
+        var bonus = (_part.ExistsProperty(_subt) ) ? _part.GetProperty(_subt) : 0;	// Obtener bonus!
+		
+		var _stat = _item.GetStats();	// Obtener estadisticas del objeto
+		
+        var _names = mall_global_stats(); 
         
         var i = 0; repeat(array_length(_names) ) {
             var _name = _names[i];
-            
-            var _o1 = stats      .GetStat(_name);
-            var _o2 = stats_final.GetStat(_name);
-            
-            _sts.SetStat(_name, _o2 - _o1);
-            
-            ++i;
+			var in  = _ret.Get(_name); 
+			var one = stats_final.Get(_name), two = _stat.Get(_name);
+			
+			if (is_data(one) ) one = one.num;
+			if (is_data(two) ) two = two.num;
+			
+			two += (is_dataext(bonus) ) ? (bonus.num * two) / 100 : bonus;
+			
+			_ret.Set(_name, one - two);
         }
         
-        return _sts;
+        return _ret;
     }
     
     /// @desc Comprueba si un objeto mantiene, aumenta o baja las caracteristicas
-    static EquipGetComparacion = function(_slot, _key, _stsreturn, _resreturn, _elmreturn) {
-        #region Comparacion default
-        
-        if (_stsreturn == undefined) _stsreturn = function(v1, v2) {
-            var _inter = (!is_undefined(v2) ) ? string(v2 - v1) : v1;   
-            
-            if (_inter == 0) {return [""  + _inter, c_white]; } else
-            if (_inter <  0) {return ["-" + _inter, c_red  ]; } else 
-            if (_inter >  0) {return ["+" + _inter, c_green]; }
-        }
-        
-        if (_resreturn == undefined) _resreturn = function(v1, v2) {
-            var _inter = (!is_undefined(v2) ) ? string(v2 - v1) : v1;   
-            
-            if (_inter == 0) {return [""  + _inter, c_white]; } else
-            if (_inter <  0) {return ["-" + _inter, c_red  ]; } else 
-            if (_inter >  0) {return ["+" + _inter, c_green]; }                
-        }
-        
-        if (_elmreturn == undefined) _elmreturn = function(v1, v2) {
-            var _inter = (!is_undefined(v2) ) ? string(v2 - v1) : v1;   
-            
-            if (_inter == 0) {return [""  + _inter, c_white]; } else
-            if (_inter <  0) {return ["-" + _inter, c_red  ]; } else 
-            if (_inter >  0) {return ["+" + _inter, c_green]; }                
-        }
-        
-        #endregion
-        
-        var i = 0;
-        
-        var _sts = (new __group_class_stats() );
-        var _res = (new __group_class_resistances() );
-        var _elm = (new __group_class_elements() );
-        
-        var _sts_names = mall_slots_get_names (), _res_names = mall_states_get_names(), _elm_names = mall_elements_get_names();
-        
-        var _item = bag_item_get(_key); /// @is {__bag_class_item}
-        var _ists = _item.GetStats(), _ielm = _item.GetElements(), _ires = _item.GetResistances();
-        
-        if (equip.IsOcuppied(_slot) ) {
-            #region Si esta ocupado
-            var _oitem = bag_item_get(equip.GetSlot(_slot) );
-            
-            var _osts  = _oitem.GetStats();
-            i = 0; repeat(array_length(_sts_names) ) {
-                var _name = _sts_names[i];
-                var in = _ists.GetStat(_name), out = _osts.GetStat(_name);
-                
-                _sts.SetStat(_name, _stsreturn(in, out) );
-                
-                ++i;
-            }
-            
-            var _oelm = _oitem.GetElements();
-            i = 0; repeat(array_length(_res_names) ) {
-                var _name = _res_names[i];
-                var in = _ists.GetRes(_name), out = _osts.GetRes(_name);
-                
-                _res.SetRes(_name, _resreturn(in, out) );
-                
-                ++i;
-            }
-            
-            var _ores = _oitem.GetResistances();
-            i = 0; repeat(array_length(_elm_names) ) {
-                var _name = _elm_names[i];
-                var in = _ists.GetElement(_name), out = _osts.GetElement(_name);
-                
-                _elm.SetElement(_name, _elmreturn(in, out) );
-                
-                ++i;
-            }
+    static EquipGetComparacion = function(_slot, _key, _form) {
+		if (_form == undefined) _form = function(in, name, i) {
+			if (in > 0) {return ["+" + in, c_green]; } else 
+			if (in < 0) {return ["-" +in, c_red  ]; } else 
+			
+			return ["=" + in, c_white];
+		}
+		
+		var _ret = (new __group_class_stats() ); /// @is {__group_class_stats}
+		
+		var part = mall_get_part(_slot);
+		var prop = part.ExistsProperty;
+		
+		var item1 , item2 ;
+		var stat1 , stat2 ;
+		var bonus1 = 0, bonus2 = 0;
+		
+		var val1, val2, org;
+		
+		if (equip.IsOccupied(_slot) ) {
+			item1 = bag_item_get(equip.Get(_slot) ); 
+			stat1 = item1.GetStats();
+			
+			if (prop(item1.subtype) ) bonus1 = part.GetProperty(item1.subtype);			
 
-            #endregion
-        } else {
-            #region Si no esta ocupado
-            i = 0; repeat(array_length(_sts_names) ) {
-                var _name = _sts_names[i], in = _ists.GetStat(_name);
-                
-                _sts.SetStat(_name, _stsreturn(in) );
-                
-                ++i;
-            }
-            
-            i = 0; repeat(array_length(_res_names) ) {
-                var _name = _res_names[i], in = _ists.GetRes(_name);
+		} else stat1 = (new __group_class_stats() );
+		
+		// Objeto a comparar
+		item2 = bag_item_get(_key);
+		stat2 = item2.GetStats();
+		
+		if (prop(item2.subtype) ) bonus2 = part.GetProperty(item2.subtype);
+	
+        var _names = mall_global_stats();
+        
+        var i = 0; repeat(array_length(_names) ) {
+        	_name = _names[i];
+        	
+        	org = _ret.Get(_name);
+        	
+        	val1 = stat1.Get(_name);
+        	val2 = stat2.Get(_name);
+        	
+			if (is_data(val1) ) val1 = val1.num;
+			if (is_data(val2) ) val2 = val2.num;
 
-                _res.SetRes(_name, _resreturn(in) );
-                
-                ++i;
-            }
-            
-            i = 0; repeat(array_length(_elm_names) ) {
-                var _name = _elm_names[i], in = _ists.GetElement(_name);
-                
-                _elm.SetElement(_name, _elmreturn(in) );
-                
-                ++i;
-            }
-            
-            #endregion
+			val1 += (is_dataext(bonus1) ) ? (bonus1.num * val1) / 100 : bonus1;
+			val2 += (is_dataext(bonus2) ) ? (bonus2.num * val2) / 100 : bonus2;
+			 
+			if (val1 == 0) val2 *= -1;			 
+			
+			_ret.Set(_name, _form(val1 - val2) );	
         }
         
-        return [_sts, _res, _elm];
+        return _ret;
     }
     
     #endregion
     
         #region Stats
     
+    /// @param stat_name
+    /// @param restore
     /// @desc Recupera una estadistica sin pasarse de un limite. funciona para quienes tengan un sub_stat (hpmax / hp)
-    static StatsRestore = function(_statname, _restore, _mode = true) {
-        if (!_condition(__context) ) return false;
+    static StatRestore = function(_name, _val)	{
+		var _master = (mall_get_stat(_name) ).GetMaster(), _restore;
+		var _stat   = stats_final.Get(_name);
 
-        _restore = StatAffect(_statname, _restore);
-        
-        var o = (_mode) ? _restore : (stats_final.GetStat(_statname) * _restore / 100);        
-        var f = stats_final.GetStat(_statname) + o;
-        
-        stats_final.SetStat(_statname, f);
-        
-		return f;        
+		_restore = StatAffect(_name, (is_dataext(_val) ) ? (_val.num * _stat) + _stat : _val);
+		
+		if (is_undefined(_master[0] ) ) { //  Si posee maestro
+			var _mstat = stats_final.Get(_master[1] );	// Obtener estadistica maestra.
+			
+			if (_restore > _mstat) _restore = _mstat;
+		}
+		
+		// Si un estado afecta a esta estadistica.
+		stats_final.Set(_name, _stat + _restore);
+
+		return _restore;     
     }
     
-    /// @desc Utiliza una estadistica
-    static StatsUse = function(_statname, _use, _condition, _mode = true, _all = false) {
-        
-        if (!_condition(__context) ) return false;
-        
-        // Buscar si posee un estado que aumente el consumo
-        _use  = StatAffect(_statname, _use);
-        
-        var o = (_mode) ? _use : (_use * stats_final.GetStat(_statname) / 100);
-        var f = stats_final.GetStat(_statname) - o;
-        
-        if (!_all) f = max(1, f);
-        
-		stats_final.SetStat(_statname, f);
-
-		return f;       
-    }
-    
+    /// @param stat_name
+    /// @param pass_value
     /// @desc Pasa un valor de un estado y revisa que estados activos lo afectan. Dando el resultado nuevo al final
-    static StatAffect = function(_statname, _value) {
-        var _deb = mall_states_get_affect_stat(_statname);
-        
-        var i = 0; repeat(array_length(_deb) ) {
-            var _ste_name = _deb[i];
-            
-            // Solo si es afectado por este estado
-            if (state.GetState(_ste_name) ) {
-                var _mall = mall_states_get(_ste_name);
-                
-                    
-                _value = _mall.form(_value, _mall.val);    
-            }
-            
-            i++;
-        } 
-        
-        return _value;
+    static StatAffect  = function(_name, _val)	{
+		var _watch = (mall_get_stat(_name) ).GetWatch(), _watchnames = variable_struct_get_names(_watch);
+
+		var i = 0; repeat(array_length(_watchnames) ) {
+			var _watchname = _watchnames[i];
+			
+			if (control.GetState(_watchname) ) {
+				var in = _watch[$ _watchname];
+				
+				_val += (is_data(in) ) ? (in.num * _val) + _val : _val;
+			} 
+			
+			++i;
+		}
+		
+		return _val;
     }
     
-    /// @param lvl*
+    /// @param stat_name
+    /// @param use
+    /// @desc Utiliza una estadistica
+    static StatUse = function(_name, _val)	{
+		var _master = (mall_get_stat(_name) ).GetMaster(), _use;
+		var _stat	= stats_final.Get(_name);
+    	
+    	_use = StatAffect(_name, (is_dataext(_val) ) ? (_val.num + _stat) + _stat : _val);
+    	
+		// Si un estado afecta a esta estadistica.
+		stats_final.Set(_name, _stat - _use);
+
+		return _use;    	
+    }
+
+    /// @param {number} lvl*
     /// @desc Aumenta el nivel 1 en 1
-    static LevelUp = function(_lvl = 1) {
+    static LevelUp = function(_lvl = 1)	{
     	_lvl += stats.lvl;
     	
     	stats.LevelUp(_lvl);
@@ -1010,6 +896,21 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     }
         
     #endregion
+
+		#region Batallas
+	
+	/// @param target
+	/// @param dark_key
+	/// @param base_damage
+	/// @param use_slot
+	static BattleTarget = function(_target, _dark_key, _base = 90, _slot = "Mano der.") {
+		var _dark = dark_get(_dark_key).spell;
+		
+		return ( _dark(self, _target, {base: _base, slot: _slot} ) );
+	}
+		#endregion
+		
+	#endregion
 
     name = _name;
     desc = "";

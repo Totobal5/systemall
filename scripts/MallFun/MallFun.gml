@@ -21,15 +21,15 @@ function mall_init() {
 	
 	#region Estadisticas
 	var _psmax = _stat.Add("ps_max", undefined, MALL_FUN {return round( ((base * lvl * 3) / 2) + lvl + 10); } ).SetRange(0, 9999);
-	var _pmmax = _stat.Add("pm_max").Inherit(_psmax);	// No maestro si hijos (_max)
+	var _pmmax = _stat.Add("pm_max").Inherit(_psmax);
 
-	_stat.Add("ps", _psmax).ToggleToMax(0, false).ToggleIgnore();	// Maestro no hijos
-	_stat.Add("pm", _pmmax).ToggleToMax(0, false).ToggleIgnore();
+	var _ps = _stat.Add("ps", _psmax).ToggleToMax(0, false).ToggleIgnore();
+	var _pm = _stat.Add("pm", _pmmax).ToggleToMax(0, false).ToggleIgnore();
 	
 	var _fue = _stat.Add("fue", undefined, MALL_FUN {return round( ( (base * lvl) / 15) + 5); } ).SetRange(0, 999);
 	var _int = _stat.Add("int").Inherit(_fue);
 	
-	var _def = _stat.Add("def").Inherit(_fue);	// No maestro no hijos
+	var _def = _stat.Add("def").Inherit(_fue);
 	var _esp = _stat.Add("esp").Inherit(_fue);
 	
 	var _expmax = _stat.Add("exp_max", undefined, MALL_FUN {return round( (base * lvl * 7) + (lvl * 2) + 20); } ).SetRange(0, 999999);
@@ -55,7 +55,7 @@ function mall_init() {
 
 	_state.Add("vivo", true).AddLinkArgument(_resvivo);
 	
-	var _ven = _state.Add("veneno"	  , false, [_fue, Data("-20%") ] ).AddLinkArgument(_restven);
+	var _ven = _state.Add("veneno"	  , false, [_fue, Data("-20%"), _ps, Data("-20%") ] ).AddLinkArgument(_restven);
 	var _qem = _state.Add("quemadura" , false, [_fue, Data("-50%") ] ).AddLinkArgument(_restqem);
 	var _mel = _state.Add("melancolia", false, [_int, Data("-50%") ] ).AddLinkArgument(_restmel);
 

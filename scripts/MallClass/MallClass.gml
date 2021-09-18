@@ -720,7 +720,7 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
         var _name = _state.name;
         
         if (!variable_struct_exists(watched, _name) ) {
-            variable_struct_set(watched, _name, {state: _name, val: _values} );
+            variable_struct_set(watched, _name, _values);
         }
         
         return self;
@@ -825,6 +825,7 @@ function mall_stat_control () : __mall_class_parent("MALL_STAT") constructor {
     #endregion
 }
 
+/// @returns {__mall_class_stat}
 function mall_get_stat(_access) {
     return (MALL_CONT_STATS.Get(_access) );
 }
@@ -927,7 +928,7 @@ function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_cla
     
     /// @param watch_array
     static SetWatchStatArray = function(_array = []) {
-        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) SetWatchStat(_array[i], _array[i + 1] );        
+        for (var i = 0, _len = array_length(_array) - 1; i < _len; i+=2) SetWatchStat(_array[i], _array[i + 1] );        
 
         return self;          
     }

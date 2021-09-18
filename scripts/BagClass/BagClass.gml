@@ -5,7 +5,7 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
 	pocket = (mall_pocket_get_itemtype(type) );
 	
     // Si posee algo en especial (envenena, +daño a un enemigo etc)
-    special = {};
+    special = undefined;
     
     // Datos
     stat = (new __group_class_stats() );	// Crear estadisticas
@@ -67,6 +67,11 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
         special = (new __bag_class_special(_key, _arguments) );
         
         return self;
+    }
+    
+    /// @returns {__bag_class_item}
+    static GetSpecial = function() {
+    	return (special);
     }
     
     /// @param buy_value
@@ -135,17 +140,7 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
     static GetStats = function() {
     	return (stat);
     }
-    
-    /// @returns {__group_class_elements}
-    static GetElements = function() {
-    	return (elem);
-    }
-    
-    /// @returns {__group_class_resistances}
-    static GetResistances = function() {
-    	return (rest);
-    }
-    
+
     #endregion
 }
 

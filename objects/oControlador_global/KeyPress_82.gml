@@ -1,15 +1,4 @@
-/// @desc
-mall_init();
-
-dark_init();
-bag_init ();
-
-bag_storage_add("OBJ.MANZANA", 10);
-bag_storage_add("ARM.ESPADA_COBRE" , 10);
-bag_storage_add("ARM.ESPADA_VENENO", 10);
-bag_storage_add("OBJ.MANZANA", 10);
-bag_storage_add("OBJ.MANZANA", -5);
-bag_storage_add("ARM.ESPADA_VENENO" , -10);
+/// @description Reiniciar
 
 var _psj1 = group_create_player1(irandom(100) ); /// @is {group_create}
 _psj1.EquipPut ("Mano der.", "ARM.ESPADA_COBRE" );
@@ -26,4 +15,4 @@ To2 = _psj2.stats_final; /// @is {__group_class_stats}
 Stat1 = To1.ToStringStruct();
 Stat2 = To2.ToStringStruct();
 
-Names = mall_global_stats();
+
