@@ -94,23 +94,34 @@ function __dark_class_spell(_subtype = "", _consume = 0, _include = true, _targe
 }
 
 /// @param {string} state_type
-/// @param value
-/// @param turns
-/// @param {string} name
-function __dark_class_effect(_type, _val = 0, _turns = 3, _name = "") : __mall_class_parent("DARK_EFFECT") constructor {
-    name = _name;
+/// @param start_value
+/// @param end_value
+/// @param aument_value
+/// @param turns_min
+/// @param turns_max
+/// @param {string} effect_name
+function __dark_class_effect(_name, _type, _start, _end, _aument, _turnsmin, _turnsmax, _turnsaument = 1, _turnsiter = 1) : __mall_class_parent("DARK_EFFECT") constructor {
+    SetBasic(_name, -1);
     
-    // Obtener el state
-    state = mall_get_state(_type);
+    type = _type;
+    
+    // Turnos
+    turns = 1;
+    
+    turn_aument = _turnsaument;
+    turns_start	= _turnsmin;
+    turns_end	= _turnsmax; 
 	
-    turns = _turns;
-    turns_max = 10; 
-    turns_min =  0;
-
+	turns_count = 0;
+ 	turns_iter  = _turnsiter;
+	
     // Valores
-    effect = _val;
+    effect = _start;
     
-    effect_reset = _val;
+    effect_aument = _aument;	
+    effect_start  = _start;
+    effect_end    = _end;    
+ 
     effect_oper  = undefined;
 
 	// Funciones
@@ -126,10 +137,20 @@ function __dark_class_effect(_type, _val = 0, _turns = 3, _name = "") : __mall_c
 		[2]: Al terminar su efecto
 		[3]: Mensaje especial ¡ES UN ARRAY OBLIGATORIAMENTE!
 	*/
+	
     msg = ["", "", "", ""];
     
     #region Metodos
-    static SetTurnsLimits = function(_min = 0, _max = 10) {
+    static SetEffectLimits = function(_min, _max) {
+    	effect_min = _min;
+    	effect_max = _max;
+    	
+    	return self;
+    }
+    
+    static SetTurnsLimits = function(_iter = 2, _min = 0, _max = 10) {
+    	turns_iter = _iter;
+    	
     	turns_max = _max;
     	turns_min = _min;
     	
@@ -138,29 +159,35 @@ function __dark_class_effect(_type, _val = 0, _turns = 3, _name = "") : __mall_c
     
     /// @desc Actualiza el valor del effecto
     static Update = function() {
-        if (!is_undefined(effect_oper) ) effect += effect_oper;
-    
-        return self;
+		if (turns_count >= turns_iter) {
+			if (effect < effect_end) EffectUpdate();
+		}
+		
+        return (effect);
     }
     
     /// @desc Devuelve el effecto a su valor original
     static Reset  = function() {
-        effect = effect_reset;
+		
         return self;
     }
     
     /// @param raise_value
-    static Raise = function(_val = 1) {
-    	turns += _val;
-    	
-    	return (turns >= turns_max);        
+    static Turns = function() {
+		if (turns < turns_end) {
+			turns++;
+			turns_count = (turns_count > turns_iter) ? 0 : turns_count++;
+		}
+		
+		return (turns >= turns_end);
     }
     
-    /// @param lower_value
-    static Lower = function(_val = 1) {
-		turns -= _val;
-		
-		return (turns <= turns_min); 
+    static EffectUpdate = function() {
+		if (is_undefined(effect_oper) ) {
+			effect  = effect_oper(effect, turns);
+		} else {
+			effect += effect_aument;
+		}
     }
     
         #region Messages

@@ -11,11 +11,11 @@ function bag_init() {
     repeat(array_length(MALL_POCKET_ORDER) ) array_push(BAG, [] ); 
     
     #region Crear objetos
-    bag_item_add("OBJ.MANZANA", (bag_create_item("Comida" , 100, 80) ).SetSpecial("DARK.WSPEEL.HEAL1", [250 , false] ) );
-    bag_item_add("OBJ.PESCADO", (bag_create_item("Comida" , 800, 80) ).SetSpecial("DARK.WSPEEL.HEAL1", [999 , false] ) );
+    bag_item_add("OBJ.MANZANA", (bag_create_item("Comida" , 100, 80) ).SetSpecial("DARK.GSPELL.HEAL1", [250 , false] ) );
+    bag_item_add("OBJ.PESCADO", (bag_create_item("Comida" , 800, 80) ).SetSpecial("DARK.GSPELL.HEAL1", [999 , false] ) );
     
     bag_item_add("ARM.ESPADA_COBRE" , (bag_create_item("Espadas", 2000, 1250) ).SetStat("fue", 10, "int",  20) );
-	bag_item_add("ARM.ESPADA_VENENO", (bag_create_item("Espadas", 5000, 1250) ).SetStat("fue", 30, "int", -20) );
+	bag_item_add("ARM.ESPADA_VENENO", (bag_create_item("Espadas", 5000, 1250) ).SetStat("fue", 30, "int", -20) ).SetSpecial("DARK.GSPELL.BASIC", {state:"veneno", porcent: Data("30%") } );
 	
     #endregion
 }

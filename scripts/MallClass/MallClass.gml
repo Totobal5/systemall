@@ -62,16 +62,14 @@ function __mall_class_parent(_is) constructor {
         return self;
     }
     
-    static SetString = function(_txt, _symbol, _porcent = false) {
+    static SetString = function(_txt, _symbol) {
         var _scr = MALL_LOCAL.GetTranslate();
         
         var _new = (!is_undefined(_scr) ) ? _scr(_txt) : _txt;
 
         txt     = _new;
         symbol  = _symbol;
-        
-        is_porcent = _porcent;
-        
+
         return self;
     }
 	
@@ -268,6 +266,8 @@ function __mall_class_data(_value, _proccess = "+") constructor {
 	}
 	
 	#endregion
+	
+	bereal = 0;	// Segundo numerico que se encuentra
 	
 	num = ConvertPorcent(_value);	// Si es string lo pasa a numero
 	str = ToString(_value);			// Si es numero lo pasa a string
@@ -872,7 +872,7 @@ function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_cla
     
     init = _init;
     
-    processes = {}; // Procesos que puede ejecutar.
+    processes = {};	// Procesos que puede ejecutar.
     
     watch_stat = [];    // Que estadistica lo vigilan
     watch_part = [];    // Que partes lo vigilan    

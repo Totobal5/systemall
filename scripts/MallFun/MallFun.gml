@@ -55,7 +55,19 @@ function mall_init() {
 
 	_state.Add("vivo", true).AddLinkArgument(_resvivo);
 	
-	var _ven = _state.Add("veneno"	  , false, [_fue, Data("-20%"), _ps, Data("-20%") ] ).AddLinkArgument(_restven);
+	// State Proccess
+	/*
+		reduce: No se usará "data"
+			->	start : 20%
+			->	end   : 40%
+			->	aument: 5%
+			->	iter  : 2
+			->  turnmin: 3
+			->  turnmax: 8
+	*/
+	var _ven = _state.Add("veneno"	  , false, [_fue, Data("-20%"), _ps, Data("-20%") ] ).AddLinkArgument(_restven)
+	.SetProcess("reduce", [20, 40, 5, 2, 3, 8] ).SetString("Envenenado");
+	
 	var _qem = _state.Add("quemadura" , false, [_fue, Data("-50%") ] ).AddLinkArgument(_restqem);
 	var _mel = _state.Add("melancolia", false, [_int, Data("-50%") ] ).AddLinkArgument(_restmel);
 

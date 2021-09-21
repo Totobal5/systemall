@@ -458,14 +458,11 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
 function __group_class_control(_statsuniq = false, _stateuniq = true) : __mall_class_parent("GROUP_CONTROL") constructor {
 	
 	// Valores 
-	stats = {};
-	state = {};
-		
+	bonus  = {}
+	__bonus_names	= [];
     // Control
-    control = {
-    	state: {},
-    	stats: {}
-    };
+    control = {};
+    __control_names = {};
     
     // Cantidades
     stats_uniq = _statsuniq;
@@ -474,35 +471,32 @@ function __group_class_control(_statsuniq = false, _stateuniq = true) : __mall_c
     #region Metodos
     static Init = function() {
     	#region Estadisticas
-		var _mall	 = mall_global_stats(), _name, i = 0;
-		var _control = control.stats;
-		
+		var _mall  = mall_global_stats(), _name, i = 0;
 		var inside = (stats_uniq) ? undefined : [];
 			
 		repeat(array_length(_mall) ) {
 			_name = _mall[i];
 			
-			variable_struct_set(stats   , _name, mall_get_stat(_name).start);
-			variable_struct_set(_control, _name, inside);	
+			variable_struct_set(bonus  , _name, mall_get_stat(_name).start);
+			variable_struct_set(control, _name, inside);	
 			
+			array_push(__bonus_names, _name);
 			++i;
 		}
 		
 		#endregion
 		
 		#region States
-		_mall	 = mall_global_states();
-		_control = control.state;
-		i = 0;
-		
-		var inside = (state_uniq) ? undefined : [];
+		_mall  = mall_global_states(); i = 0;
+		inside = (state_uniq) ? undefined : [];
 		
 		repeat(array_length(_mall) ) {
 			_name = _mall[i];
 			
-			variable_struct_set(state	, _name, mall_get_state(_name).init);
-			variable_struct_set(_control, _name, inside);	
+			variable_struct_set(bonus  , _name, mall_get_state(_name).init);
+			variable_struct_set(control, _name, inside);	
 			
+			array_push(__bonus_names, _name);
 			++i;
 		}
 		
@@ -510,15 +504,137 @@ function __group_class_control(_statsuniq = false, _stateuniq = true) : __mall_c
     }
     
     /// @param state_name
-    static GetState = function(_name) {
-    	return (variable_struct_get(state, _name) );
+    static Get = function(_name) {
+    	return (variable_struct_get(bonus, _name) );
     }
 	
-	static SetState = function(_name, _value) {
-		variable_struct_set(stats, _name, _value);
+	/// @param state_name
+	/// @param value
+	static Set = function(_name, _value) {
+		variable_struct_set(bonus, _name, _value);
 		
 		return self;
 	}
+	
+	static Basic = function(_name, _oper) {
+		var _back = Get(_name);
+		
+		variable_struct_set(bonus, _name, _back + _oper);
+		
+		return _back;
+	}
+	
+	/// @param state_name
+	static Reset = function(_name) {
+		var _init = 0;
+		
+		if (mall_state_exists(_name) ) {_init = mall_get_state(_name).init ;} else 
+		if (mall_stat_exists (_name) ) {_init = mall_get_stat (_name).start;}
+		
+		return (Set(_name, _init) );
+	}
+	
+	// Devuelve a su valor original
+	static ResetAll = function() {
+		var i = 0; repeat(array_length(__bonus_names) ) {Reset(__bonus_names[i] ); ++i; }
+		
+		return self;
+	}
+	
+		#region Control
+	static AddControl = function(_class) {
+		var _type = _class.type;
+		var _name = _class.name;
+		
+		var _inside = GetControl(_type);
+		
+		if (!ControlExists(_name) ) {
+			if (is_array(inside) ) {	// Acepta muchos
+				array_push(_inside, _class);
+				variable_struct_set(__control_names, _type, 0);
+				
+				Basic(_type, _class.effect);
+				
+			} else if (!is_struct(_inside) ) {	// Solo 1 activo
+				SetControl(_type, _class);	// Establecer
+				variable_struct_set(__control_names, _type, 0);			
+				
+				Set(_type, _class.effect);
+			}
+		}
+		
+		return self;
+	}
+	
+	static UpdateControlAll = function() {
+		var i = 0; repeat(array_length(__bonus_names) ) {
+			var _name  = __bonus_names[i], inside = GetControl(_name);
+			
+			if (is_struct(inside) ) {
+				UpdateControl(inside);
+				
+			} else if (is_array(inside) ) {
+				var _final = 0;
+				var k = 0; repeat(array_length(inside) ) {
+					var in = inside[k];
+					
+					_final += UpdateControl(in);
+					
+					k++;
+				}
+				
+				Set(_name, _final);
+			}
+				
+			++i;
+		}
+	}
+	
+	static UpdateControl = function(_class) {
+		var _type  = _class.type;
+		var _value = _class.effect;
+		
+		if (!inside.Turns() ) { 
+			#region Aun quedan turnos
+			_value = inside.Update(); // Valor del efecto
+			
+			Set(_type, _value);
+			
+			#endregion	
+		} else {
+			#region Ya no quedan turnos
+			_value *= -1;	// Quitar a value
+			SetControl(_type, undefined);
+			
+			Reset(_type);
+			
+			#endregion
+		}
+		
+		return (_value);
+	} 
+	
+	/// @param name
+	static GetControl = function(_type) {
+		return (variable_struct_get(control, _type) );
+	}
+	
+	/// @param name
+	/// @param value
+	static SetControl = function(_type, _value) {
+		variable_struct_set(control, _type, _value);
+		
+		return self;
+	}
+	
+	/// @param name
+	/// @returns {bool}
+	static ControlExists = function(_type) {
+		return (variable_struct_exists(__control_names, _type) );
+	}
+	
+	
+	#endregion
 	
 	#endregion
 	 
