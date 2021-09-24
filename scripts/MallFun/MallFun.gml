@@ -10,7 +10,7 @@ function mall_init() {
 	mall_create_itemtypes("Objetos", ["Comida" , "Pociones"] );
 	
 	mall_create_dark("Batalla", ["Ataque", "Defensa", "Objeto"] );
-	mall_create_dark("Magia"  , ["Blanca", "Negra"  , "Roja"  ] );
+	mall_create_dark("Magia"  , ["Blanca", "Negra"  , "Roja"  , "Verde"] );
 	
 	mall_create_pocket("Armas"  , ["Armas"  ] );
 	mall_create_pocket("Objetos", ["Objetos"] );
@@ -55,21 +55,20 @@ function mall_init() {
 
 	_state.Add("vivo", true).AddLinkArgument(_resvivo);
 	
-	// State Proccess
-	/*
-		reduce: No se usará "data"
-			->	start : 20%
-			->	end   : 40%
-			->	aument: 5%
-			->	iter  : 2
-			->  turnmin: 3
-			->  turnmax: 8
-	*/
-	var _ven = _state.Add("veneno"	  , false, [_fue, Data("-20%"), _ps, Data("-20%") ] ).AddLinkArgument(_restven)
-	.SetProcess("reduce", [20, 40, 5, 2, 3, 8] ).SetString("Envenenado");
+	var _ven = _state.Add("veneno", false, [_fue, Data("-20%"), _ps, Data("-20%") ] )
+	.AddLinkArgument(_restven)
+	.SetProcess(20, 40, 5, 13, 1, 1,  "DARK.GSPELL.VENENO")
+	.SetString("Envenenado");
+
+	var _qem = _state.Add("quemadura" , false, [_fue, Data("-50%") ] )
+	.AddLinkArgument(_restqem)
+	.SetProcess(50, 50, 5, 6, 2, 1,  "DARK.GSPELL.QUEMADURA")
+	.SetString("Quemado");
 	
-	var _qem = _state.Add("quemadura" , false, [_fue, Data("-50%") ] ).AddLinkArgument(_restqem);
-	var _mel = _state.Add("melancolia", false, [_int, Data("-50%") ] ).AddLinkArgument(_restmel);
+	var _mel = _state.Add("melancolia", false, [_int, Data("-50%") ] )
+	.AddLinkArgument(_restmel)
+	.SetProcess(20, 50, 10, 13, 2, 1, "DARK.GSPELL.MELANCOLIA")
+	.SetString("Melancolico");
 
 	var _elemn = (new mall_element_control() );
 

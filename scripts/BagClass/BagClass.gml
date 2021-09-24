@@ -147,8 +147,6 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
 /// @param dark_key Puede ser una id de un hechizo de dark o una funcion nueva
 /// @param {array} arguments
 function __bag_class_special(_spell, _arguments) : __mall_class_parent("BAG_PROP") constructor {
-    if (dark_exists(_spell) ) _spell = dark_get(_spell);
-    
     spell = _spell;
     arg   = _arguments;
     

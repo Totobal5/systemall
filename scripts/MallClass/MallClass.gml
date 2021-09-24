@@ -203,8 +203,8 @@ function __mall_class_data(_value, _proccess = "+") constructor {
 			var _len	= string_length (_value); 
 			var _bun	= string_delete (_value, _len, 1);
 			
-			return (real(_bun) );
-		} else if (is_numeric(_value) ) return (_value);
+			return (real(_bun) / 100);
+		} else if (is_numeric(_value) ) return (_value / 100);
 	}
 	
 	static ToString = function(_value) {
@@ -222,6 +222,7 @@ function __mall_class_data(_value, _proccess = "+") constructor {
 	
 	static Set = function(_value) {
 		num = ConvertPorcent(_value);
+		nop = num * 100;
 		str = ToString(_value);
 		
 		return self;
@@ -231,10 +232,12 @@ function __mall_class_data(_value, _proccess = "+") constructor {
 	static Operate  = function(_value) {
 		if (is_numeric(_value) ) {
 			num += _value;
-			str = string(num) + "%";
+			nop = num * 100;
+			str = string(nop) + "%";
 		} else {
 			num += ConvertPorcent(_value);
-			str = string(num) + "%";
+			nop = num * 100;
+			str = string(nop) + "%";
 		}
 		
 		return self;
@@ -255,9 +258,10 @@ function __mall_class_data(_value, _proccess = "+") constructor {
 		
 		return self;		
 	}
-		
+	
+	/// @param {__mall_class_data} Data_class	
 	static Same = function(_other) {
-		return Set(_other.num);
+		return Set(_other.nop);
 	}
 		
 	static Turn = function() {
@@ -269,7 +273,9 @@ function __mall_class_data(_value, _proccess = "+") constructor {
 	
 	bereal = 0;	// Segundo numerico que se encuentra
 	
-	num = ConvertPorcent(_value);	// Si es string lo pasa a numero
+	num = ConvertPorcent(_value);	// Valor porcentaje (decimal)
+	nop = num * 100;				// Valor sin ser porcentaje (entero)
+	
 	str = ToString(_value);			// Si es numero lo pasa a string
 	
 	pro = _proccess;	// Que funcion realizar
@@ -868,11 +874,29 @@ function mall_stat_get_range(_access) {
 /// @param state_index
 /// @param state_init
 function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_class_parent("MALL_STATE_INTERN") constructor {
+    #region Interno
+    static __ClassProcess = function(_start = 0, _end = 0, _aument = 0, _turnactive = 8, _turniter = 0, _turnaument = 1, _propupdate = "", _propstart = "", _propend = "") constructor {
+    	start  = _start;
+    	ending = _end;
+    	aument = _aument;
+    	
+		turnactive  = _turnactive;
+    	turnaument	= _turnaument;
+    	turniter	= _turniter;
+    	
+		update		= _propupdate;
+    	updatestart	= _propstart;
+    	updateend   = _propend;
+    }
+
+    #endregion
+    
+    
     SetBasic(_name, _index);
     
     init = _init;
     
-    processes = {};	// Procesos que puede ejecutar.
+    process = {};	// Procesos que puede ejecutar.
     
     watch_stat = [];    // Que estadistica lo vigilan
     watch_part = [];    // Que partes lo vigilan    
@@ -892,23 +916,15 @@ function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_cla
     }
     
     	#region Processes
-    static SetProcess = function(_name, _values) {
-        if (!variable_struct_exists(processes, _name) ) {
-            variable_struct_set(processes, _name, {value: _values, name: _name} );
-        }
-        
-        return self;
-    }
+    	
+	static SetProcess = function(_start, _end, _aument, _turnmin, _turnmax, _turniter, _turnaument, _propupdate, _propstart, _propend) {
+		process = (new __ClassProcess(_start, _end, _aument, _turnmin, _turnmax, _turniter, _turnaument, _propupdate, _propstart, _propend) );
+		
+		return self;
+	}
     
-    /// @param process_array
-    static SetProcessArray = function(_array = []) {
-        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) SetProcess(_array[i], _array[i + 1] );
-
-        return self;
-    }
-
-    static GetProcesses = function() {
-        return processes;
+    static GetProcess = function() {
+    	return (process);
     }
     
     #endregion
@@ -975,7 +991,7 @@ function __mall_class_state(_name = "", _index = -1, _init = false) : __mall_cla
 	}
 	
 	static AddLinkArgument = function() {
-		var i = 0; repeat(argument_count - 1) {
+		var i = 0; repeat(argument_count) {
 			AddLink(argument[i]);
 			
 			++i;

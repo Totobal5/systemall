@@ -24,22 +24,19 @@ function dark_create_spell(_subtype = "", _consume = 0, _include = true, _target
     return (new __dark_class_spell(_subtype, _consume, _include, _target, _key) );
 }
 
-/// @param {string} state_type
-/// @param start_value
-/// @param end_value
-/// @param aument_value
-/// @param turns_min
-/// @param turns_max
-/// @param {string} effect_name
-/// @returns {__dark_class_effect}
-function dark_create_effect(_type, _start, _end, _aument, _turnsmin, _turnsmax, _name) {
-    return (new __dark_class_effect(_type, _start, _end, _aument, _turnsmin, _turnsmax, _name) );
+
+function dark_create_effect(_name, _type, _start, _end, _aument, _turnactive, _turniter, _turnaument = 1) {
+    return (new __dark_class_effect(_name, _type, _start, _end, _aument, _turnactive, _turniter, _turnaument) );
 }
 
 /// @param key
 /// @returns {__dark_class_spell}
 function dark_get(_key) {
     return (DARK[? _key] );
+}
+
+function dark_get_spell(_key) {
+	return (DARK[? _key].spell);
 }
 
 /// @param key
@@ -58,6 +55,8 @@ function dark_init() {
         var base = extra.base;
         var slot = extra.slot;
         
+        var count = (is_array(slot) ) ? array_length(slot) : 1;
+        
         var _nm1 = "fue", _nm2 = "def";
         
         #region Esto ya es personalizado a lo que YO quiero realizar con mis estados, estadisticas, etc (lol lmao)
@@ -69,8 +68,8 @@ function dark_init() {
 		var _tlvl = targets.stats.lvl;
 		var _tdef = targets.StatAffect(_nm2, _tstat.Get(_nm2) );
 
-        var atack  = (base / 8) * (_cfue * 2 + (_clvl * .3) );
-		var damage = (atack * base) / (_tdef + _tlvl * 2);
+        var atack  = ( (base / 8) * (_cfue * 2 + (_clvl * .3) ) ) / count;
+		var damage = ( atack / (_tdef + _tlvl * 2) 	) * count;
         
 		// Aplicar daño
 		targets.StatUse("ps", round(damage) );
@@ -79,11 +78,39 @@ function dark_init() {
 		if (_tstat.Get("ps") > 0) {
 			var _equip = caster.equip;
 			
-		    if (_equip.IsOccupied(slot) ) {
-		    
-		    
-		    
-		    }
+			if (count > 1) {
+				var i = 0; repeat(array_length(slot) ) {
+					var _in = slot[i];
+					
+				    if (_equip.IsOccupied(_in) ) {
+				    	var _put	 = _equip.Get(_in);
+				    	
+						var _item	 = bag_item_get(_put.equipped );	 	
+						var _special = _item .GetSpecial();
+						
+						if (!is_undefined(_special) ) {
+							var _spell = dark_get(_special.spell).spell;
+							var _extra = _special.arg;
+							
+							_spell(caster, targets, _extra);	
+						}	  
+				    }
+				    
+					++i;
+				}
+			} else {
+			    if (_equip.IsOccupied(slot) ) {
+					var _item	 = _equip.Get(slot);	 	
+					var _special = _item .GetSpecial();
+					
+					if (!is_undefined(_special) ) {
+						var _spell = _special.spell;
+						var _extra = _special.arg;
+						
+						_spell(caster, targets, _extra);	
+					}	  
+			    }				
+			}
 		}
 
 		return [
@@ -95,43 +122,65 @@ function dark_init() {
     }));
     
     dark_add("DARK.BATTLE.OBJECT", dark_create_spell("Objeto") );
-    
+
     dark_add("DARK.WSPELL.HEAL1" , (dark_create_spell("Blanca", 30, true) ).SetSpell(DARK_FUN {
         show_debug_message("DARK SPELL PRUEBA!");    
     }));
     
+    /// @desc Aplica un estado a un objetivo.
     dark_add("DARK.GSPELL.BASIC" , (dark_create_spell("Verde") ).SetSpell(DARK_FUN {
     	var _porcent = extra.porcent;
     	var _state   = extra.state;
-    	var _msj     = extra.msj;
+    	// var _msj     = extra.msj;
     	
-    	var state  = (mall_get_stat(_state) );
+    	var state  = (mall_get_state(_state) );
+    	var stat   = (state.GetLinkStat(0) ).GetName();
     	
-    	var _txt = state.GetTxt(), _proccess = state.GetProcesses()[$ "reduce"];
+    	// Probabilidad de infectar
+    	var _prob = targets.stats_final.Get(stat).nop;
     	
-    	var _start  = _proccess[0];	// Valor inicial
-    	var _end    = _proccess[1];	// Valor final
-		var _aument = _proccess[2]; // Cuanto aumenta el valor actual cada iteracion
-		var _iter = _proccess[3];	// Cada cuantos turnos aumenta el valor
-		
-		var _turnmin = _proccess[4];
-		var _turnmax = _proccess[5];
-		
-		/*    	
-		  	->	start : 20%
-			->	end   : 40%
-			->	aument: 5%
-			->	iter  : 2
-			->  turnmin: 3
-			->  turnmax: 8
-		*/  
+    	if (_prob < irandom(100) ) {
+	    	var _txt  = state.GetTxt();
+	    	var _prop = state.GetProcess();
+			
+			
+			var _turnfinal = _prop.turnactive;
+			var _rand      = irandom(_prob); // 80
+			
+			if (_rand < _prob) _turnfinal = max(2, _turnfinal * ( (100 - _rand) / 100) );
+			
+	    	var _effect  = (dark_create_effect(_txt, _state, _prop.start, _prop.ending, _prop.aument, round(_turnfinal), _prop.turniter, _prop.turnaument) )
+	    	.SetProcess(_prop.updatestart, _prop.update, _prop.updateend);
+	    		
+	    	targets.control.AddControl(_effect);
     	
-    	var _effect  = (dark_create_effect(_state, _start, _end, _aument, _turnmin, _turnmax, _txt) );
-    	var _control = targets.control; 
+    	}
     	
-    	_control.AddControl("state", _effect);
-    	
-    	return _msj[0];
+    	// return _msj[0];
     }) );
+    
+    
+    dark_add("DARK.GSPELL.VENENO", dark_create_spell("Verde").SetSpell(DARK_FUN {
+    	var control = caster.control;		
+    	var stats   	= caster.stats;
+    	var statsfinal	= caster.stats_final;
+
+    	// Si ha sido envenenado
+    	var _above  = statsfinal.Above("ps");
+    	var _exists = control	.ControlExists("Envenenado");
+    	
+    	if (_above && _exists) {
+    		caster.StatUse("ps", Data(extra), true); // Quitar un 20% de la vida base
+    	}
+    	
+		return (statsfinal.Above("ps") );    	    		
+    }) );
+    
+    
+        
+    
+    
+    
+    
     
 }

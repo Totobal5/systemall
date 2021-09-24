@@ -15,4 +15,5 @@ To2 = _psj2.stats_final; /// @is {__group_class_stats}
 Stat1 = To1.ToStringStruct();
 Stat2 = To2.ToStringStruct();
 
-
+State1 = _psj1.control.ToStringStates();
+State2 = _psj2.control.ToStringStates();

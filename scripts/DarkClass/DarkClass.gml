@@ -93,14 +93,7 @@ function __dark_class_spell(_subtype = "", _consume = 0, _include = true, _targe
     #endregion
 }
 
-/// @param {string} state_type
-/// @param start_value
-/// @param end_value
-/// @param aument_value
-/// @param turns_min
-/// @param turns_max
-/// @param {string} effect_name
-function __dark_class_effect(_name, _type, _start, _end, _aument, _turnsmin, _turnsmax, _turnsaument = 1, _turnsiter = 1) : __mall_class_parent("DARK_EFFECT") constructor {
+function __dark_class_effect(_name, _type, _effect_start = 0, _effect_end = 0, _effect_aument = 0, _turn_active = 8, _turn_iter = 0, _turn_aument = 1) : __mall_class_parent("DARK_EFFECT") constructor {
     SetBasic(_name, -1);
     
     type = _type;
@@ -108,19 +101,18 @@ function __dark_class_effect(_name, _type, _start, _end, _aument, _turnsmin, _tu
     // Turnos
     turns = 1;
     
-    turn_aument = _turnsaument;
-    turns_start	= _turnsmin;
-    turns_end	= _turnsmax; 
+    turn_aument  = _turn_aument;
+    turns_active = _turn_active;
 	
-	turns_count = 0;
- 	turns_iter  = _turnsiter;
+	turns_count = 1;
+ 	turns_iter  = _turn_iter;
 	
     // Valores
-    effect = _start;
+    effect = _effect_start;
     
-    effect_aument = _aument;	
-    effect_start  = _start;
-    effect_end    = _end;    
+    effect_aument = _effect_aument;	
+    effect_start  = _effect_start;
+    effect_end    = _effect_end;    
  
     effect_oper  = undefined;
 
@@ -141,18 +133,10 @@ function __dark_class_effect(_name, _type, _start, _end, _aument, _turnsmin, _tu
     msg = ["", "", "", ""];
     
     #region Metodos
-    static SetEffectLimits = function(_min, _max) {
-    	effect_min = _min;
-    	effect_max = _max;
-    	
-    	return self;
-    }
-    
-    static SetTurnsLimits = function(_iter = 2, _min = 0, _max = 10) {
-    	turns_iter = _iter;
-    	
-    	turns_max = _max;
-    	turns_min = _min;
+    static SetProcess = function(_start, _update, _end) {
+    	fun_start  = _start;
+    	fun_update = _update;
+    	fun_end    = _end;
     	
     	return self;
     }
@@ -174,37 +158,21 @@ function __dark_class_effect(_name, _type, _start, _end, _aument, _turnsmin, _tu
     
     /// @param raise_value
     static Turns = function() {
-		if (turns < turns_end) {
-			turns++;
-			turns_count = (turns_count > turns_iter) ? 0 : turns_count++;
+		if (turns < turns_active) {
+			turns += turn_aument;
+			
+			if (turns_count < turns_iter) {turns_count++; } else {turns_count = 1; }
 		}
 		
-		return (turns >= turns_end);
+		return (turns >= turns_active);
     }
     
     static EffectUpdate = function() {
-		if (is_undefined(effect_oper) ) {
+		if (!is_undefined(effect_oper) ) {
 			effect  = effect_oper(effect, turns);
 		} else {
 			effect += effect_aument;
 		}
-    }
-    
-        #region Messages
-    static AddMessage = function(_start, _update, _end, _misq = []) {
- 		msg = [_start, _update, _end, _misq];
-		
-		return self;       
-    }
-    
-    static GetMessage = function(_ind = 0) {
-    	return msg[_ind];
-    }
-    
-    #endregion
-    /// @returns {__mall_class_state}
-    static GetState = function() {
-    	return (state);
     }
     
     #endregion

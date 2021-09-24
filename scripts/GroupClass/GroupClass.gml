@@ -1,7 +1,7 @@
 /// @param lvl
-function __group_class_stats(_lvl = 0) : __mall_class_parent("GROUP_STATS") constructor {
+function __group_class_stats(_lvl = 1) : __mall_class_parent("GROUP_STATS") constructor {
     // Copiar estadisticas del diccionario    
-    lvl  = _lvl;
+    lvl  = max(1, _lvl);	// No puede ser menor a 0
     
     base = {};
     stat = {};
@@ -68,6 +68,10 @@ function __group_class_stats(_lvl = 0) : __mall_class_parent("GROUP_STATS") cons
 	/// @returns {bool}
 	static Exists = function(_name) {
 		return (variable_struct_exists(stat, _name) );
+	}
+	
+	static Above = function(_name, _value = 0) {
+		return (Get(_name) > _value);
 	}
 	
     /// @param stat_name
@@ -221,13 +225,13 @@ function __group_class_stats(_lvl = 0) : __mall_class_parent("GROUP_STATS") cons
 			    			
 		  					#endregion
 			    		} else {	// Otras estadisticas
-			    			_str = (is_data(in) ) ? in.str : string(in);
+			    			_str = (is_data(in) )  ? in.str : string(in);
 			    		}
 	    			} else _str = in;
 	    			
 		    		// Agregar al struct
 		    		var _structname = _stat.GetTxt();
-		    		variable_struct_set(_ret, _structname, _str);
+		    		variable_struct_set(_ret, _name, [_structname, _str] );
 	    		}
     		}
     		
@@ -456,6 +460,7 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
 }
 
 function __group_class_control(_statsuniq = false, _stateuniq = true) : __mall_class_parent("GROUP_CONTROL") constructor {
+	__context = noone;
 	
 	// Valores 
 	bonus  = {}
@@ -472,13 +477,12 @@ function __group_class_control(_statsuniq = false, _stateuniq = true) : __mall_c
     static Init = function() {
     	#region Estadisticas
 		var _mall  = mall_global_stats(), _name, i = 0;
-		var inside = (stats_uniq) ? undefined : [];
 			
 		repeat(array_length(_mall) ) {
 			_name = _mall[i];
 			
 			variable_struct_set(bonus  , _name, mall_get_stat(_name).start);
-			variable_struct_set(control, _name, inside);	
+			variable_struct_set(control, _name, (stats_uniq) ? undefined : [] );	
 			
 			array_push(__bonus_names, _name);
 			++i;
@@ -488,13 +492,12 @@ function __group_class_control(_statsuniq = false, _stateuniq = true) : __mall_c
 		
 		#region States
 		_mall  = mall_global_states(); i = 0;
-		inside = (state_uniq) ? undefined : [];
 		
 		repeat(array_length(_mall) ) {
 			_name = _mall[i];
 			
 			variable_struct_set(bonus  , _name, mall_get_state(_name).init);
-			variable_struct_set(control, _name, inside);	
+			variable_struct_set(control, _name, (state_uniq) ? undefined : [] );	
 			
 			array_push(__bonus_names, _name);
 			++i;
@@ -516,12 +519,12 @@ function __group_class_control(_statsuniq = false, _stateuniq = true) : __mall_c
 		return self;
 	}
 	
-	static Basic = function(_name, _oper) {
-		var _back = Get(_name);
+	static Basic = function(_name, _value) {
+		var _last = Get(_name);
 		
-		variable_struct_set(bonus, _name, _back + _oper);
+		variable_struct_set(bonus, _name, _last + _value);
 		
-		return _back;
+		return _last;
 	}
 	
 	/// @param state_name
@@ -546,74 +549,58 @@ function __group_class_control(_statsuniq = false, _stateuniq = true) : __mall_c
 		var _type = _class.type;
 		var _name = _class.name;
 		
+		var _start  = _class.fun_start;
 		var _inside = GetControl(_type);
 		
-		if (!ControlExists(_name) ) {
-			if (is_array(inside) ) {	// Acepta muchos
+		if (true || !ControlExists(_name) ) {
+			if (is_array(_inside) ) {	// Acepta muchos
 				array_push(_inside, _class);
-				variable_struct_set(__control_names, _type, 0);
+				variable_struct_set(__control_names, _name, 0);
 				
 				Basic(_type, _class.effect);
 				
 			} else if (!is_struct(_inside) ) {	// Solo 1 activo
 				SetControl(_type, _class);	// Establecer
-				variable_struct_set(__control_names, _type, 0);			
+				variable_struct_set(__control_names, _name, 0);			
 				
 				Set(_type, _class.effect);
 			}
+			
+			#region Ejecutar funcion de inicio
+			if (dark_exists(_start) ) {
+				var dark = dark_get_spell(_start);
+				dark(__context, noone, noone);
+			}
+			#endregion
 		}
 		
 		return self;
 	}
 	
-	static UpdateControlAll = function() {
-		var i = 0; repeat(array_length(__bonus_names) ) {
-			var _name  = __bonus_names[i], inside = GetControl(_name);
-			
-			if (is_struct(inside) ) {
-				UpdateControl(inside);
+	/// @param controller_type
+	/// @param effect_name
+	static QuitControl = function(_type, _name) {
+		var control = GetControl(_type);
+		
+		if (is_array(control) ) {
+			// Eliminar entrada
+			var _save = -1, i = 0;
+
+			repeat(array_length(control) ) {
+				var in = control[i];
 				
-			} else if (is_array(inside) ) {
-				var _final = 0;
-				var k = 0; repeat(array_length(inside) ) {
-					var in = inside[k];
-					
-					_final += UpdateControl(in);
-					
-					k++;
-				}
+				if (in.name == _name) {_save = i; break;}
 				
-				Set(_name, _final);
+				++i;
 			}
-				
-			++i;
-		}
+			
+			if (_save != -1) array_delete(control, _save, 1);
+		
+		} else SetControl(_type, undefined);
+	
+		return self;	
 	}
-	
-	static UpdateControl = function(_class) {
-		var _type  = _class.type;
-		var _value = _class.effect;
-		
-		if (!inside.Turns() ) { 
-			#region Aun quedan turnos
-			_value = inside.Update(); // Valor del efecto
-			
-			Set(_type, _value);
-			
-			#endregion	
-		} else {
-			#region Ya no quedan turnos
-			_value *= -1;	// Quitar a value
-			SetControl(_type, undefined);
-			
-			Reset(_type);
-			
-			#endregion
-		}
-		
-		return (_value);
-	} 
-	
+
 	/// @param name
 	static GetControl = function(_type) {
 		return (variable_struct_get(control, _type) );
@@ -632,12 +619,131 @@ function __group_class_control(_statsuniq = false, _stateuniq = true) : __mall_c
 	static ControlExists = function(_type) {
 		return (variable_struct_exists(__control_names, _type) );
 	}
+
+	static UpdateControlAll = function() {
+		var i = 0; repeat(array_length(__bonus_names) ) {
+			var _name  = __bonus_names[i], inside = GetControl(_name);
+			
+			if (is_struct(inside) ) {
+				UpdateControl(inside);
+				
+			} else if (is_array(inside) ) {
+				var _total = Get(_name), summer = 0, k = 0;
+				var _len   = array_length(inside);
+				
+				repeat(_len) {
+					var in = inside[k], update = UpdateControl(in, true);
+			
+					// Se elimino 1
+					k = max(0, (update[1] ) ? k - 1 : k + 1);
+					
+					summer += update[0];
+				}
+				
+				if (_len > 0) _total = summer;
+				
+				Set(_name, _total);
+			}
+				
+			++i;
+		}
+	}
 	
+	static UpdateControl = function(_class, _ignore = false) {
+		var _type  = _class.type;
+		var _value = _class.effect;
+		
+		var _update = _class.fun_update;
+		var _end    = _class.fun_end;
+		
+		if (!_class.Turns() ) { 
+			#region Aun quedan turnos
+			_value = _class.Update(); // Valor del efecto
+
+			if (dark_exists(_update) ) {
+				#region Ejecutar funcion de update
+				var dark = dark_get_spell(_update);
+				
+				dark(__context, noone, _value);
+				
+				#endregion
+			}
+
+			if (!_ignore) {
+				// Si posee un valor importante
+				Set(_type, _value);
+				
+				return (_value); 
+				
+			} else return [_value, false];
+			
+			#endregion	
+		} else {
+			#region Ya no quedan turnos
+			
+			if (dark_exists(_end) ) {
+				#region Ejecutar funcion de despedida
+				var dark = dark_get_spell(_end);
+				
+				dark(__context, noone, _value);
+				
+				#endregion
+			}			
+			
+			// Quitar controlador
+			QuitControl(_type, _class.name);
+			
+			if (!_ignore) {
+				Reset(_type);
+				return (_value * -1); 
+
+			} else return [0, true];
+			
+			#endregion
+		}
+	} 
+	
+
+	#endregion
+	
+		#region Misq
+	static ToStringStates = function() {
+		var _mall = mall_global_states(), _ret = {};
+		
+		var i = 0; repeat(array_length(_mall) ) {
+			var _name = _mall[i];
+			var state = mall_get_state(_name); 
+			var inside = Get(_name);
+			
+			
+			variable_struct_set(_ret, _name, [state.txt, (is_data(inside) ) ? inside.str : string(inside) ] );
+			
+			++i;	
+		}
+		
+		return _ret;
+	}
+	
+	static ToStringStats  = function() {
+		var _mall = mall_global_stats(), _ret = {};
+		
+		var i = 0; repeat(array_length(_mall) ) {
+			var _name = _mall[i];
+			var state = mall_get_stat(_name); 
+			var inside = Get(_name);
+			
+			variable_struct_set(_ret, _name, [state.txt, (is_data(inside) ) ? inside.str : string(inside) ] );
+			
+			++i;	
+		}
+		
+		return _ret;		
+	}
 	
 	#endregion
 	
 	#endregion
-	 
+	
     Init();
 }
 
@@ -813,13 +919,13 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     
         var i = 0; repeat(array_length(_statnames) ) {
             var _name = _statnames[i];
-            
+
             if (_to.Exists(_name) && _stat.Exists(_name) ) {
             	var old  = _to.Get(_name), item = _stat.Get(_name);
 				
-            	if (is_data(item) ) item = item.num;
+            	if (is_data(item) ) item = item.nop;
             	
-            	item += (is_dataext(bonus) ) ? (bonus.num * item) / 100 : bonus;
+            	item += (is_data(bonus) ) ? (bonus.num * item) : bonus;
 				
 				if (is_dataext(old) ) {
 					stats_final.Set(_name, old.Operate(item) );
@@ -947,12 +1053,13 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     /// @param stat_name
     /// @param restore
     /// @desc Recupera una estadistica sin pasarse de un limite. funciona para quienes tengan un sub_stat (hpmax / hp)
-    static StatRestore = function(_name, _val)	{
-		var _master = (mall_get_stat(_name) ).GetMaster(), _restore;
-		var _stat   = stats_final.Get(_name);
-
-		_restore = StatAffect(_name, (is_dataext(_val) ) ? (_val.num * _stat) + _stat : _val);
+    static StatRestore = function(_name, _val, _ignore = false)	{
+		var _stat = stats_final.Get(_name), _restore = 0;
+		var _in   = (is_data(_val) ) ? (_val.num * _stat) : _val;
 		
+		_restore = (!_ignore) ? StatAffect(_name, _in) : _in;
+		
+		var _master = mall_get_stat(_name).GetMaster();
 		if (is_undefined(_master[0] ) ) { //  Si posee maestro
 			var _mstat = stats_final.Get(_master[1] );	// Obtener estadistica maestra.
 			
@@ -960,7 +1067,7 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 		}
 		
 		// Si un estado afecta a esta estadistica.
-		stats_final.Set(_name, _stat + _restore);
+		stats_final.Set(_name, round(_stat + _restore) );
 
 		return _restore;     
     }
@@ -974,10 +1081,10 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 		var i = 0; repeat(array_length(_watchnames) ) {
 			var _watchname = _watchnames[i];
 			
-			if (control.GetState(_watchname) ) {
+			if (control.Get(_watchname) ) {
 				var in = _watch[$ _watchname];
 				
-				_val += (is_data(in) ) ? (in.num * _val) + _val : _val;
+				_val += (is_data(in) ) ? (in.num * _val) : _val;
 			} 
 			
 			++i;
@@ -989,14 +1096,14 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     /// @param stat_name
     /// @param use
     /// @desc Utiliza una estadistica
-    static StatUse = function(_name, _val)	{
-		var _master = (mall_get_stat(_name) ).GetMaster(), _use;
-		var _stat	= stats_final.Get(_name);
+    static StatUse = function(_name, _val, _ignore = false)	{
+		var _stat = stats_final.Get(_name), _use = 0;
+    	var _in = (is_data(_val) ) ? (_val.num * _stat) : _val;
     	
-    	_use = StatAffect(_name, (is_dataext(_val) ) ? (_val.num + _stat) + _stat : _val);
+    	_use = (!_ignore) ? StatAffect(_name, _in) : _in;
     	
 		// Si un estado afecta a esta estadistica.
-		stats_final.Set(_name, _stat - _use);
+		stats_final.Set(_name, round(_stat - _use) );
 
 		return _use;    	
     }
@@ -1019,7 +1126,7 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 	/// @param dark_key
 	/// @param base_damage
 	/// @param use_slot
-	static BattleTarget = function(_target, _dark_key, _base = 90, _slot = "Mano der.") {
+	static BattleTarget = function(_target, _dark_key, _slot = "Mano der.", _base = 90) {
 		var _dark = dark_get(_dark_key).spell;
 		
 		return ( _dark(self, _target, {base: _base, slot: _slot} ) );
@@ -1040,6 +1147,8 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     stats_final = (new __group_class_stats(_stats.lvl) );	/// @is {__group_class_stats}
 
 	control = _control;	/// @is {__group_class_control}
+	control.__context = self;
+	
     equip   = _equip; 	/// @is {__group_class_equip}
     
     comands = tree_create();    /// @is {__tree_class}

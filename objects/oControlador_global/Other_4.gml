@@ -1,3 +1,5 @@
+randomize();
+
 /// @desc
 mall_init();
 
@@ -26,4 +28,11 @@ To2 = _psj2.stats_final; /// @is {__group_class_stats}
 Stat1 = To1.ToStringStruct();
 Stat2 = To2.ToStringStruct();
 
-Names = mall_global_stats();
+State1 = _psj1.control.ToStringStates();
+State2 = _psj2.control.ToStringStates();
+
+NamesStats = mall_global_stats ();
+NamesState = mall_global_states();
+
+Lvl1 = string(Psj1.stats.lvl);
+Lvl2 = string(Psj2.stats.lvl);

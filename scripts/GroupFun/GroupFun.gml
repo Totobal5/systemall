@@ -38,9 +38,9 @@ function group_create_player1(_lvl = 1) {
         "polucion_rest"  , Data("0%"),
         
         "vivo_rest"      , Data("0%"),
-        "veneno_rest"    , Data("0%"),
-        "quemadura_rest" , Data("0%"),
-        "melancolia_rest", Data("0%")
+        "veneno_rest"    , Data("25%"),
+        "quemadura_rest" , Data("25%"),
+        "melancolia_rest", Data("25%")
     ]);
 
     _stats.SetLevelInit(function(context) {
@@ -51,7 +51,7 @@ function group_create_player1(_lvl = 1) {
     _stats.SetLevelEnd (function(context) {});
     _stats.LevelUp(_lvl, true);
     
-    var _control = (new __group_class_control(true, false, false, false) );
+    var _control = (new __group_class_control(false, true) );
     
     var _equip = (new __group_class_equip() );
     _equip.SetCapable("Mano der.", ["Espadas", "Arcos", "Escudos"]);
@@ -76,10 +76,10 @@ function group_create_player2(_lvl = 1) {
         "fuego_rest"     , Data("0%"),
         "polucion_rest"  , Data("0%"),
         
-        "vivo_rest"      , Data("0%")   ,
-        "veneno_rest"    , Data("100%") ,
-        "quemadura_rest" , Data("100%") ,
-        "melancolia_rest", Data("100%")
+        "vivo_rest"      , Data("0%")  ,
+        "veneno_rest"    , Data("25%") ,
+        "quemadura_rest" , Data("25%") ,
+        "melancolia_rest", Data("25%")
     ]);
 
     _stats.SetLevelInit(function(context) {
@@ -90,7 +90,7 @@ function group_create_player2(_lvl = 1) {
     _stats.SetLevelEnd (function(context) {});
     _stats.LevelUp(_lvl, true);
 
-    var _control = (new __group_class_control(true, false, false, false) );
+    var _control = (new __group_class_control(false, true) );
     
     var _equip = (new __group_class_equip() );
     _equip.SetCapable("Mano der.", ["Espadas", "Arcos", "Escudos"]);
