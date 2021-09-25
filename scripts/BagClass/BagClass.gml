@@ -7,8 +7,8 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
     // Si posee algo en especial (envenena, +daño a un enemigo etc)
     special = undefined;
     
-    // Datos
-    stat = (new __group_class_stats() );	// Crear estadisticas
+    // Crear estadisticas
+    stats = mall_create_stats_reference();
 
     // Trade
     can_sell = true;
@@ -20,6 +20,24 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
     use = 1;	// Cuantas partes necesita para ser equipado.
     
     #region Metodos
+    
+    /// @param stat_name
+    /// @param value
+	static Set = function(_name, _value) {
+		variable_struct_set(stats, _name, _value);
+		
+		return self;
+	}
+	
+	/// @param stat_name
+	static Get = function(_name) {
+		return (variable_struct_get(stats, _name) );
+	}
+    
+    /// @param stat_name
+    static Exists = function(_name) {
+    	return (variable_struct_exists(stats, _name) );
+    }
     
     /// @param data_key
     static SetKey = function(_key) {
@@ -90,43 +108,7 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
     	
     	return self;
     }
-    
-	/// @param stat
-	/// @param value...
-	static SetStat = function() {
-		var i = 0; repeat(argument_count - 1) {
-			stat.Set(argument[i], argument[i + 1] );
-			
-			++i;
-		}	
-		
-		return self;
-	} 
 
-	/// @param stat
-	/// @param value...    
-    static SetElement = function() {
-		var i = 0; repeat(argument_count - 1) {
-			elem.Set(argument[i], argument[i + 1] );
-			
-			++i;
-		}	
-		
-		return self;	
-    }
-	
-	/// @param stat
-	/// @param value...      
-    static SetResistance = function() {
-		var i = 0; repeat(argument_count - 1) {
-			rest.Set(argument[i], argument[i + 1] );
-			
-			++i;
-		}	
-		
-		return self;    	
-    }
-    
     static SetUse = function(_value) {
 		use = _value;
 		return self;
@@ -136,10 +118,26 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
     	return (use);
     }
     
-    /// @returns {__group_class_stats}
-    static GetStats = function() {
-    	return (stat);
+    /// @returns {struct}
+    static GetAll = function() {
+    	return (stats);
     }
+
+		#region Misq
+	/// @param stat
+	/// @param value...
+	static SetArgument = function()	{
+		var i = 0; repeat(argument_count - 1) {
+			Set(argument[i], argument[i + 1] );
+			
+			++i;
+		}	
+		
+		return self;
+	} 
+		
+		
+	#endregion
 
     #endregion
 }

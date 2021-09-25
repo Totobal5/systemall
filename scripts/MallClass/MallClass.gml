@@ -302,6 +302,19 @@ function mall_global_stats  () {
     return (global._MALL_GLOBAL.stats);   
 }
 
+/// @returns {struct}
+function mall_create_stats_reference() {
+	var _names = mall_global_stats(), _ret = {};
+	
+	var i = 0; repeat (array_length(_names) ) {
+		variable_struct_set(_ret, _names[i], 0);
+		
+		++i;
+	}
+	
+	return (_ret);
+}
+
 /// @returns {array} all_states
 function mall_global_states () {
     return (global._MALL_GLOBAL.state);

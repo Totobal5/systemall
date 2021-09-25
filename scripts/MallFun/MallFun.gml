@@ -38,7 +38,7 @@ function mall_init() {
 	// Unir resistencias a los elementos y estadisticas en las estadisticas ya que la clase de "stat" ya posee todo lo necesario!
 	var _resfire = _stat.Add("fuego_rest", undefined, MALL_FUN {if (is_dataext(old) && is_dataext(base) ) return (old.Same(base) ); }, Data("0%") ).SetRange(0, 255);
 	
-	var _atkfire = _stat.Add("fuego_atak", undefined, MALL_FUN {return ( (base + lvl) * lvl / 2); } ).SetRange(0, 999);
+	var _atkfire = _stat.Add("fuego_atak", undefined, MALL_FUN {return ( (base * lvl) / (max(1, lvl - 1) ) ); } ).SetRange(0, 999);
 	
 	var _respolu = _stat.Add("polucion_rest").Inherit(_resfire); 
 	var _atkpolu = _stat.Add("polucion_atak").Inherit(_atkfire);
@@ -57,7 +57,7 @@ function mall_init() {
 	
 	var _ven = _state.Add("veneno", false, [_fue, Data("-20%"), _ps, Data("-20%") ] )
 	.AddLinkArgument(_restven)
-	.SetProcess(20, 40, 5, 13, 1, 1,  "DARK.GSPELL.VENENO")
+	.SetProcess(20, 30, 1, 11, 1, 1,  "DARK.GSPELL.VENENO")
 	.SetString("Envenenado");
 
 	var _qem = _state.Add("quemadura" , false, [_fue, Data("-50%") ] )
@@ -67,7 +67,7 @@ function mall_init() {
 	
 	var _mel = _state.Add("melancolia", false, [_int, Data("-50%") ] )
 	.AddLinkArgument(_restmel)
-	.SetProcess(20, 50, 10, 13, 2, 1, "DARK.GSPELL.MELANCOLIA")
+	.SetProcess(20, 50, 10, 11, 2, 1, "DARK.GSPELL.MELANCOLIA")
 	.SetString("Melancolico");
 
 	var _elemn = (new mall_element_control() );

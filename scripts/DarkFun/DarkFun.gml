@@ -47,7 +47,7 @@ function dark_exists(_key) {
 
 /// @desc Con este codigo se crean todos los hechizos
 function dark_init() {
-    dark_add("DARK.BATTLE.ATACK" , dark_create_spell("Ataque").SetSpell(DARK_FUN {
+    dark_add("DARK.BATTLE.ATACK" , dark_create_spell("Ataque").SetSpell(function(caster, targets, extra) {
         var _cstat = caster .stats_final;
         var _tstat = targets.stats_final;
         
@@ -68,8 +68,8 @@ function dark_init() {
 		var _tlvl = targets.stats.lvl;
 		var _tdef = targets.StatAffect(_nm2, _tstat.Get(_nm2) );
 
-        var atack  = ( (base / 8) * (_cfue * 2 + (_clvl * .3) ) ) / count;
-		var damage = ( atack / (_tdef + _tlvl * 2) 	) * count;
+        var atack  = (_cfue * _clvl * 3);
+		var damage = ((atack / 8) * base) / (_tdef + _tlvl * 2);
         
 		// Aplicar daño
 		targets.StatUse("ps", round(damage) );
@@ -123,12 +123,12 @@ function dark_init() {
     
     dark_add("DARK.BATTLE.OBJECT", dark_create_spell("Objeto") );
 
-    dark_add("DARK.WSPELL.HEAL1" , (dark_create_spell("Blanca", 30, true) ).SetSpell(DARK_FUN {
+    dark_add("DARK.WSPELL.HEAL1" , (dark_create_spell("Blanca", 30, true) ).SetSpell(function() {
         show_debug_message("DARK SPELL PRUEBA!");    
     }));
     
     /// @desc Aplica un estado a un objetivo.
-    dark_add("DARK.GSPELL.BASIC" , (dark_create_spell("Verde") ).SetSpell(DARK_FUN {
+    dark_add("DARK.GSPELL.BASIC" , (dark_create_spell("Verde") ).SetSpell(function(caster, targets, extra) {
     	var _porcent = extra.porcent;
     	var _state   = extra.state;
     	// var _msj     = extra.msj;
@@ -160,25 +160,53 @@ function dark_init() {
     }) );
     
     
-    dark_add("DARK.GSPELL.VENENO", dark_create_spell("Verde").SetSpell(DARK_FUN {
-    	var control = caster.control;		
-    	var stats   	= caster.stats;
-    	var statsfinal	= caster.stats_final;
+    dark_add("DARK.GSPELL.VENENO", dark_create_spell("Verde").SetSpell(function(caster, targets, extra) {
+    	var control 	= caster.control;		
+    	var statsfinal	= caster.stats_final, ps = caster.stats.Get("ps");
 
     	// Si ha sido envenenado
-    	var _above  = statsfinal.Above("ps");
-    	var _exists = control	.ControlExists("Envenenado");
+    	var _exists = control.ControlExists("Envenenado");
     	
-    	if (_above && _exists) {
-    		caster.StatUse("ps", Data(extra), true); // Quitar un 20% de la vida base
+    	if (ps > 0 && _exists) {
+    		var _rest = ps * extra / 100;
+    		
+    		caster.StatUse("ps", _rest, true); // Quitar un 20% de la vida base
     	}
     	
 		return (statsfinal.Above("ps") );    	    		
     }) );
     
-    
+    dark_add("DARK.GSPELL.MELANCOLIA", dark_create_spell("Verde").SetSpell(function(caster, targets, extra) {
+    	var control 	= caster.control;		
+    	var statsfinal	= caster.stats_final, pm = caster.stats.Get("pm");
+    	
+    	// Si ha sido envenenado
+    	var _exists = control.ControlExists("Melancolico");
+    	
+    	if (pm > 0 && _exists) {
+    		var _rest = pm * extra / 100;
+    		
+    		caster.StatUse("pm", _rest, true); // Quitar un 20% del pm base
+    	}
+    	
+		return (statsfinal.Above("pm") );    	
+	}) );
         
-    
+    dark_add("DARK.GSPELL.QUEMADURA", dark_create_spell("Verde").SetSpell(function(caster, targets, extra) {
+    	var control 	= caster.control;		
+    	var statsfinal	= caster.stats_final, ps = caster.stats.Get("ps");
+    	
+    	// Si ha sido envenenado
+    	var _exists = control.ControlExists("Quemado");
+    	
+    	if (ps > 0 && _exists) {
+    		var _rest = ps * extra / 100;
+    		
+    		caster.StatUse("ps", _rest, true); // Quitar un 20% del pm base
+    	}
+    	
+		return (statsfinal.Above("ps") );    	
+	}) );    
     
     
     

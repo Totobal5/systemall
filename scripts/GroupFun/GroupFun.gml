@@ -37,7 +37,7 @@ function group_create_player1(_lvl = 1) {
         "fuego_rest"     , Data("0%"),
         "polucion_rest"  , Data("0%"),
         
-        "vivo_rest"      , Data("0%"),
+        "vivo_rest"      , Data("0%") ,
         "veneno_rest"    , Data("25%"),
         "quemadura_rest" , Data("25%"),
         "melancolia_rest", Data("25%")

@@ -281,6 +281,9 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
     	
     	capable = [];
     	
+    	pow    = 1;		// Modificador del daño al	  tener una arma equipada
+    	notpow = 0.6;	// Modificador del daño al no tener una arma equipada
+    	
     	#region Metodos
     	static set = function(_value, _fromlink = false) {
     		previous = equipped;
@@ -891,7 +894,7 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 			// Bonus al equipar cierto tipo de objeto
 			if (_mallpart.ExistsProperty(_subtype) ) bonus = _mallpart.GetProperty(_subtype);
 			
-			_stat = _item.GetStats();
+			_stat = _item.GetAll();
 
 			#endregion
 		} else if (_part.previous != _part.noitem) {
@@ -902,8 +905,8 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 			// Bonus al equipar cierto tipo de objeto
 			if (_mallpart.ExistsProperty(_subtype) ) bonus = _mallpart.GetProperty(_subtype);			
 			
-			_to   = stats_final;
-			_stat = _item.GetStats().Turn("stat");
+			_to 	= stats_final;
+			_stat	= _item.Turn("stats").GetAll();
 			
 			#endregion
 		} else {
@@ -926,12 +929,8 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
             	if (is_data(item) ) item = item.nop;
             	
             	item += (is_data(bonus) ) ? (bonus.num * item) : bonus;
-				
-				if (is_dataext(old) ) {
-					stats_final.Set(_name, old.Operate(item) );
-				} else {
-					stats_final.Set(_name, round(old + item) ); 
-				}
+            	
+				stats_final.Set(_name, (is_data(old) ) ? old.Operate(item) : round(old + item) );
             }
 			
             ++i;
@@ -1035,8 +1034,8 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 			if (is_data(val1) ) val1 = val1.num;
 			if (is_data(val2) ) val2 = val2.num;
 
-			val1 += (is_dataext(bonus1) ) ? (bonus1.num * val1) / 100 : bonus1;
-			val2 += (is_dataext(bonus2) ) ? (bonus2.num * val2) / 100 : bonus2;
+			val1 += (is_dataext(bonus1) ) ? (bonus1.num * val1) : bonus1;
+			val2 += (is_dataext(bonus2) ) ? (bonus2.num * val2) : bonus2;
 			 
 			if (val1 == 0) val2 *= -1;			 
 			
@@ -1097,8 +1096,8 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     /// @param use
     /// @desc Utiliza una estadistica
     static StatUse = function(_name, _val, _ignore = false)	{
-		var _stat = stats_final.Get(_name), _use = 0;
-    	var _in = (is_data(_val) ) ? (_val.num * _stat) : _val;
+		var _stat	= stats_final.Get(_name), _use = 0;
+    	var _in 	= (is_data(_val) ) ? (_val.num * _stat) : _val;
     	
     	_use = (!_ignore) ? StatAffect(_name, _in) : _in;
     	
