@@ -6,6 +6,7 @@ draw_set_color(c_red);
 draw_text(xx1, 8, Lvl1);
 draw_text(xx2, 8, Lvl2);
 
+#region Stats
 var i = 0; repeat(array_length(NamesStats) ) {
     var name  = NamesStats[i];
     
@@ -25,6 +26,9 @@ var i = 0; repeat(array_length(NamesStats) ) {
     ++i;
 }
 
+#endregion
+
+#region States
 yy += 16;
 var i = 0; repeat(array_length(NamesState) ) {
     var name  = NamesState[i];
@@ -44,3 +48,5 @@ var i = 0; repeat(array_length(NamesState) ) {
     }
     ++i;
 }
+
+#endregion

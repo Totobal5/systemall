@@ -1,5 +1,5 @@
-/// @description Dañar 1
-Psj1.BattleTarget(Psj2, "DARK.BATTLE.ATACK", ["Mano der.", "Mano izq."] );
+/// @description Dañar 2
+Psj2.BattleTarget(Psj1, "DARK.BATTLE.ATACK", ["Mano der.", "Mano izq."] );
 
 To1 = Psj1.stats_final; /// @is {group_create}
 To2 = Psj2.stats_final;

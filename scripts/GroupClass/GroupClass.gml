@@ -35,18 +35,17 @@ function __group_class_stats(_lvl = 1) : __mall_class_parent("GROUP_STATS") cons
         	var _stat  = mall_get_stat(_name), _data;
         	var _range = _stat.GetRange();
         	
-            if (is_dataext(_val) ) {
-            	if (_val.num < _range[0] ) {_val.Set(_range[0]); }
-            	if (_val.num > _range[1] ) {_val.Set(_range[1]); }
-            } else {
-            	if (_val < _range[0] ) {_val = _range[0]; }
-            	if (_val > _range[1] ) {_val = _range[1]; }            	
-            }
-            
+        	/////////////////////////////////////////////////////////////////////
+        	if (is_data(_val) ) {
+        		_val.Clamp(_range[0], _range[1]);
+        	} else {
+        		_val = clamp(_val, _range[0], _range[1] );	
+        	}
+
 			// Establecer un valor
 			variable_struct_set(stat, _name, _val);
-        }
-        
+        } 
+
         return self;
     }
 
@@ -74,28 +73,52 @@ function __group_class_stats(_lvl = 1) : __mall_class_parent("GROUP_STATS") cons
 		return (Get(_name) > _value);
 	}
 	
+	/// @desc Suma o resta
+	static Basic = function(_name, _value = 0) {
+		var _old = Get(_name);
+		var _num = (is_data(_value) ) ? _value.nop : _value;
+		
+		if (is_data(_old) ) {
+			_old.Operate(round(_num)); 
+		} else {
+			_old += round(_num);
+		}
+		
+		return (Set(_name, _old) );
+	}
+	
+		#region Base
     /// @param stat_name
     /// @param base_value
     static SetBase  = function(_name, _base) {
-    	if (mall_stat_exists(_name) && variable_struct_exists(base, _name) ) {
-    		variable_struct_set(base, _name, _base);
+    	if (argument_count <= 2) {	// 2 Argumentos
+	    	if (mall_stat_exists(_name) ) variable_struct_set(base, _name, _base);
+    	} else {
+    		var i = 0; repeat(argument_count) {
+    			SetBase(argument[i], argument[i + 1] );
+    			
+    			i += 2;		
+    		}	
     	}
         
         return self;
     }
     
     /// @param stat_array
-    static SetBaseArray = function(_array) {
+    static SetBaseArray    = function(_array) {
 		for (var i = 0, len = array_length(_array) - 1; i < len; i += 2) SetBase(_array[i], _array[i + 1] );
 
         return self;        
     }    
-    
+
     /// @param name
     static GetBase = function(_name) {
     	return (variable_struct_get(base, _name) ); 
     }
     
+    #endregion
+    
+    	#region Level
     /// @param level_init
     /// @param level_end
     static SetLevelFunctions = function(_init, _end) {
@@ -190,7 +213,9 @@ function __group_class_stats(_lvl = 1) : __mall_class_parent("GROUP_STATS") cons
         return self;
     }
     
-    #region Misq
+    #endregion
+    
+    	#region Misq
     
     /// @returns {struct}
     /// @desc Convierte los stat en un string y los pasa en un struct
@@ -272,29 +297,60 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
     	equipped = noitem; // Objeto equipado actualmente
     	previous = noitem; // Objeto anterior
     	
-    	damage = _deterstart;  	// Daño de la parte. Al llegar al minimo de la parte global entonces no se podrá usar.
-    	use  = true;	// Se se puede usar o no esta parte
-    	
-    	link	 = [];		// Links a otras partes
-    	fromlink = false;	// Si es equipado por algun link
-    	__link	 = {};		// Busqueda	
-    	
     	capable = [];
+
+    	///////////////////////////////////////////////////////////////////////////////////
+    	link   = []; // Links a otras partes (Siendo 0 el mismo JC)
+    	__link = {}; // Busqueda	
     	
+    	fromlink	  = false;	// Si es equipado por algun link.
+    	fromlink_name = "";		// Nombre del link que lo equipó.
+
+    	///////////////////////////////////////////////////////////////////////////////////
     	pow    = 1;		// Modificador del daño al	  tener una arma equipada
     	notpow = 0.6;	// Modificador del daño al no tener una arma equipada
+ 
+     	damage = _deterstart;  	// Daño de la parte. Al llegar al minimo de la parte global entonces no se podrá usar.
+    	use  = true;	// Se se puede usar o no esta parte
+    	
     	
     	#region Metodos
-    	static set = function(_value, _fromlink = false) {
+    	static set = function(_value, _fromlink = false, _fromlinkname = "") {
     		previous = equipped;
     		equipped = _value;
     		
-    		fromlink = _fromlink;
+    		// Link
+    		fromlink		= _fromlink;
+    		fromlink_name	= _fromlinkname;
     	}
     	
     	static get = function() {
     		return (equipped);
     	}
+ 
+    	static get_power = function() {
+    		return (equipped == noitem) ? notpow : pow;
+    	}
+    	
+    	static get_item  = function() {
+    		if (bag_item_exists(equipped) )	{
+    			return (bag_item_get(equipped) );
+    		} else {
+    			return noone;
+    		}
+    	}
+    	
+    	static get_link  = function(_index = 1) {
+    		// Si no posee links salir!
+    		if (array_length(link) <= 1) {return "noone";}
+
+    		return (link[_index] );
+    	}
+    	
+    	static get_from_name  = function() {
+    		return (fromlink_name);
+    	}
+    	
     	#endregion
     }
     
@@ -314,7 +370,7 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
     		var _damage = _globalpart.damage_start;
 
     		variable_struct_set(parts, _name, (new __ClassPart(_noitem, _damage) ) );
-    		Link(_name); // Linkear así mismo
+    		Link(_name, _name); // Linkear así mismo
     		
     		++i;
     	}
@@ -326,12 +382,14 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
 	/// @param {string} part_name
 	/// @param value
 	/// @param linked?
-	static Set = function(_name, _value, _linked = false) {
-		var _part = Get(_name);
-		
-		if (_value == undefined) _value = _part.noitem;
-		
-		if (mall_part_exists(_name) ) _part.set(_value, _linked);
+	static Set = function(_name, _value, _linked = false, _linkedname = "") {
+		if (mall_part_exists(_name) ) {
+			var _part = Get(_name);
+			
+			if (_value == undefined) _value = _part.noitem;			
+			
+			_part.set(_value, _linked, _linkedname);
+		}
 		
 		return self;
 	}
@@ -400,29 +458,27 @@ function __group_class_equip(_defaults = true) : __mall_class_parent("GROUP_EQUI
 	
 	/// @param part_name
 	/// @desc Linkea otras partes con esta (0 mayor prioridad)
-	static Link = function(_name) {
-		static _1_linkcount = 0;
-		
-		var _part = Get(_name);
+	static Link = function(_partname, _linkname) {
+		var _part = Get(_partname);
 		var _link = _part.link, _search = _part.__link;
 		
-		if (!ExistsLink(_name) ) {
-			array_push(_link, _name);
-			variable_struct_set(_search, _name, _1_linkcount);
-			
-			_1_linkcount++;
+		if (!variable_struct_exists(_search, _linkname) ) {
+			array_push(_link, _linkname);
+			variable_struct_set(_search, _linkname, 0);
 		}
 		
 		return self;
 	}
 	
 	/// @param part_name
-	static ExistsLink = function(_name) {
-		return (variable_struct_exists(Get(_name).__link, _name) );
+	static ExistsLink = function(_partname, _name) {
+		var _part = Get(_partname).__link;
+		
+		return (variable_struct_exists(_part, _name) );
 	}
 	
 	/// @param part_name
-	static GetLink = function(_name, _access) {
+	static GetLink  = function(_name, _access) {
 		var _part = Get(_name), _ret = _access;
 
 		if (is_string(_access) ) _ret = _part.__link[$ _access]; 
@@ -830,9 +886,10 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
         var _gpart = mall_get_part(_name);
         var _part  = equip.Get(_name);
 		var _link  = _part.link;
+		var _first = _link[0];
 		
 		// Si el objeto necesita muchas partes para usarse
-		if (array_length(_link) + 1 <= _item.use) return false;
+		if (array_length(_link) < _item.use) return false;
 		
 		// 0 es siempre el.
 		var i = 0; repeat(_item.use) {
@@ -842,10 +899,12 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 			if (equip.IsCapable(_linked, _subtype) ) {
 				if (equip.IsOccupied(_linked) ) EquipTake(_linked);
 
-				// Si el objeto no fue equipado por los links regresar el objeto al almacenamiento
-				if (!equip.IsLinked(_linked) ) bag_storage_add(_key, -1);
-				
-				equip.Set(_linked, _key, !(i == 0) );
+				// Si necesita varias partes solo quitar 1 vez del inventario!
+				if (i == 0) {
+					bag_storage_add(_key, -1);
+					equip.Set(_linked, _key);
+					
+				} else equip.Set(_linked, _key, true, _first);	// Equipo a los que estan linkeados al 0
 			}
 			
 			++i;
@@ -883,7 +942,8 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
         var _mallpart = mall_get_part(_slot), _part = equip.Get(_slot);
 
 		var _to = stats;	// referencia
-		var _stat, _item, _subtype = ".", bonus = 0;
+		var _subtype = ".", bonus = 0;
+		var _stat, _item;
 		
 		#region Objetos
 		if (_part.equipped != _part.noitem) {
@@ -894,7 +954,7 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 			// Bonus al equipar cierto tipo de objeto
 			if (_mallpart.ExistsProperty(_subtype) ) bonus = _mallpart.GetProperty(_subtype);
 			
-			_stat = _item.GetAll();
+			_stat = _item.GetStats();
 
 			#endregion
 		} else if (_part.previous != _part.noitem) {
@@ -905,8 +965,8 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 			// Bonus al equipar cierto tipo de objeto
 			if (_mallpart.ExistsProperty(_subtype) ) bonus = _mallpart.GetProperty(_subtype);			
 			
-			_to 	= stats_final;
-			_stat	= _item.Turn("stats").GetAll();
+			_to   = stats_final;
+			_stat = _item.Turn("stats").GetStats();
 			
 			#endregion
 		} else {
@@ -924,13 +984,15 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
             var _name = _statnames[i];
 
             if (_to.Exists(_name) && _stat.Exists(_name) ) {
-            	var old  = _to.Get(_name), item = _stat.Get(_name);
+            	var item = _stat.Get(_name);
 				
             	if (is_data(item) ) item = item.nop;
             	
             	item += (is_data(bonus) ) ? (bonus.num * item) : bonus;
-            	
-				stats_final.Set(_name, (is_data(old) ) ? old.Operate(item) : round(old + item) );
+            	////////////////////////////////////////////////////////////////
+				stats_final.Basic(_name, round(item) );
+				
+				show_debug_message(name + " Equip Upgrade | " + _name + ": " + string(item) );
             }
 			
             ++i;
@@ -1049,6 +1111,19 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     
         #region Stats
     
+    static StartInit   = function() {
+    	var _names = mall_global_stats();
+    	
+    	var i = 0; repeat(array_length(_names) ) {
+    		var _name = _names[i];
+    		var _stat = stats.Get(_name);
+    		
+    		stats_final.Basic(_name, _stat);
+    		
+    		++i;
+    	}
+    }
+    
     /// @param stat_name
     /// @param restore
     /// @desc Recupera una estadistica sin pasarse de un limite. funciona para quienes tengan un sub_stat (hpmax / hp)
@@ -1076,14 +1151,17 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     /// @desc Pasa un valor de un estado y revisa que estados activos lo afectan. Dando el resultado nuevo al final
     static StatAffect  = function(_name, _val)	{
 		var _watch = (mall_get_stat(_name) ).GetWatch(), _watchnames = variable_struct_get_names(_watch);
-
+		
+		// Si no pasa valor entoces se utiliza el valor final de la estadistica directamente.
+		if (_val == undefined) _val = stats_final.Get(_name);
+		
 		var i = 0; repeat(array_length(_watchnames) ) {
 			var _watchname = _watchnames[i];
 			
 			if (control.Get(_watchname) ) {
 				var in = _watch[$ _watchname];
 				
-				_val += (is_data(in) ) ? (in.num * _val) : _val;
+				_val += (is_data(in) ) ? (in.num * _val) : in;
 			} 
 			
 			++i;
@@ -1153,7 +1231,7 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     comands = tree_create();    /// @is {__tree_class}
     tree_add(comands, "Pasive");
     
-    EquipGetUpgrades();
+    StartInit();
 }
 
 

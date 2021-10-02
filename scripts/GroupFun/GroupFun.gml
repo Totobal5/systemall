@@ -30,23 +30,24 @@ function group_get_count() {
 function group_create_player1(_lvl = 1) {
     gc_collect();
     
-    var _stats = (new __group_class_stats(_lvl) );
-    _stats.SetBaseArray(["ps_max", 18, "pm_max", 18, "fue", 30, "int", 1, "def", 24, "esp", 24, "exp_max", 24]);
-    _stats.SetBaseArray(["fuego_atak", 0, "polucion_atak", 0] );
-    _stats.SetBaseArray([
+    var _stats = (new __group_class_stats(_lvl) ).
+    SetBase("ps_max", 15, "pm_max", 15, "exp_max", 25).
+    SetBase("fue"   , 51, "int"   , 51, "def"    , 51, "esp", 51, "vel", 51).
+    SetBase("fuego_atak", 51, "polucion_atak", 51).
+    SetBase(       
         "fuego_rest"     , Data("0%"),
         "polucion_rest"  , Data("0%"),
         
         "vivo_rest"      , Data("0%") ,
-        "veneno_rest"    , Data("25%"),
-        "quemadura_rest" , Data("25%"),
-        "melancolia_rest", Data("25%")
-    ]);
+        "veneno_rest"    , Data("0%") ,
+        "quemadura_rest" , Data("0%") ,
+        "melancolia_rest", Data("0%")
+    );
 
     _stats.SetLevelInit(function(context) {
         var _exp = context.Get("exp"), _exp_max = context.Get("exp_max");      
         
-        return (_exp == _exp_max);
+        return (_exp >= _exp_max);
     });
     _stats.SetLevelEnd (function(context) {});
     _stats.LevelUp(_lvl, true);
@@ -69,10 +70,11 @@ function group_create_player1(_lvl = 1) {
 function group_create_player2(_lvl = 1) {
     gc_collect();
     
-    var _stats = (new __group_class_stats(_lvl) );
-    _stats.SetBaseArray(["ps_max", 18, "pm_max", 18, "fue", 30, "int", 1, "def", 24, "esp", 24, "exp_max", 24]);
-    _stats.SetBaseArray(["fuego_atak", 68, "polucion_atak", 136] );
-    _stats.SetBaseArray([
+    var _stats = (new __group_class_stats(_lvl) ).
+    SetBase("ps_max", 15, "pm_max", 15, "exp_max", 25).
+    SetBase("fue"   , 51, "int"   , 51, "def"    , 51, "esp", 51, "vel", 51).
+    SetBase("fuego_atak", 51, "polucion_atak", 51).
+    SetBase(       
         "fuego_rest"     , Data("0%"),
         "polucion_rest"  , Data("0%"),
         
@@ -80,12 +82,12 @@ function group_create_player2(_lvl = 1) {
         "veneno_rest"    , Data("25%") ,
         "quemadura_rest" , Data("25%") ,
         "melancolia_rest", Data("25%")
-    ]);
+    );
 
     _stats.SetLevelInit(function(context) {
         var _exp = context.Get("exp"), _exp_max = context.Get("exp_max");      
         
-        return (_exp == _exp_max);
+        return (_exp >= _exp_max);
     });
     _stats.SetLevelEnd (function(context) {});
     _stats.LevelUp(_lvl, true);
@@ -95,10 +97,53 @@ function group_create_player2(_lvl = 1) {
     var _equip = (new __group_class_equip() );
     _equip.SetCapable("Mano der.", ["Espadas", "Arcos", "Escudos"]);
     _equip.SetCapable("Mano izq.", ["Espadas"] );
+    _equip.Link("Mano der.", "Mano izq.");
+    _equip.Link("Mano izq.", "Mano der."); 
     
     var _psj = (new group_create("Player2", _stats, _control, _equip) );
     
     group_add(_psj);
     
     return (_psj );
+}
+
+
+function group_create_enemyparent(_lvl = 1, _customname = "generic") {
+    gc_collect();
+    
+    var _stats = (new __group_class_stats(_lvl) ).
+    SetBase("ps_max", 15, "pm_max", 15, "exp_max", 25).
+    SetBase("fue"   , 51, "int"   , 51, "def"    , 51, "esp", 51, "vel", 51).
+    SetBase("fuego_atak", 51, "polucion_atak", 51).
+    SetBase(       
+        "fuego_rest"     , Data("0%"),
+        "polucion_rest"  , Data("0%"),
+        
+        "vivo_rest"      , Data("0%")  ,
+        "veneno_rest"    , Data("25%") ,
+        "quemadura_rest" , Data("25%") ,
+        "melancolia_rest", Data("25%")
+    );
+    
+    _stats.SetLevelInit(function(context) {
+        var _exp = context.Get("exp"), _exp_max = context.Get("exp_max");      
+        
+        return (_exp >= _exp_max);        
+    });
+    
+    _stats.SetLevelEnd (function(context) {});
+    _stats.LevelUp(_lvl, true);
+
+    var _control = (new __group_class_control(false, true) );
+    
+    var _equip = (new __group_class_equip() );
+    _equip.SetCapable("Mano der.", ["Espadas", "Arcos", "Escudos"]);
+    _equip.SetCapable("Mano izq.", ["Espadas"] );
+    _equip.Link("Mano der.", "Mano izq.");
+    _equip.Link("Mano izq.", "Mano der."); 
+    
+    var _psj = (new group_create(_customname, _stats, _control, _equip) );
+    _psj.EquipPut("Mano der.", "ARM.ESPADA_VENENO");
+    
+    return _psj;    
 }

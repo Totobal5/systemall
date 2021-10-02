@@ -141,11 +141,11 @@ function __mall_class_parent(_is) constructor {
     	var _names = variable_struct_get_names(_struct);
     	
     	var i = 0; repeat(array_length(_names) ) {
-    		var _name = _names[i];
-    		var in	  = _struct[$ _name];
+    		var _name = _names[i], in = _struct[$ _name];
     		
-    		if (is_dataext(in) ) {in.Turn(); } else {in *= -1; }
-
+    		if (is_data(in) )	 {in.Turn(); } else 
+    		if (is_numeric(in) ) {in *= -1 ; } 
+    		
     		variable_struct_set(_struct, _name, in);
     		
     		++i;
@@ -221,23 +221,29 @@ function __mall_class_data(_value, _proccess = "+") constructor {
 	}
 	
 	static Set = function(_value) {
-		num = ConvertPorcent(_value);
-		nop = num * 100;
-		str = ToString(_value);
+		if (is_data(_value) ) {
+			num = _value.num;
+			nop = num * 100;
+			str = string(nop) + "%";			
+		} else {
+			num = ConvertPorcent(_value);
+			nop = num * 100;
+			str = string(nop) + "%";			
+		}
 		
 		return self;
 	}
 	
 	/// @desc Suma o resta
 	static Operate  = function(_value) {
-		if (is_numeric(_value) ) {
-			num += _value;
-			nop = num * 100;
-			str = string(nop) + "%";
+		if (is_data(_value) ) {
+			num += _value.num;
+			nop  = num * 100;
+			str  = string(nop) + "%";
 		} else {
 			num += ConvertPorcent(_value);
-			nop = num * 100;
-			str = string(nop) + "%";
+			nop  = num * 100;
+			str  = string(nop) + "%";			
 		}
 		
 		return self;
@@ -264,9 +270,13 @@ function __mall_class_data(_value, _proccess = "+") constructor {
 		return Set(_other.nop);
 	}
 		
-	static Turn = function() {
+	static Turn  = function() {
 		num *= -1;
 		str  = ToString(num);
+	}
+	
+	static Clamp = function(_min, _max) {
+		return (Set(clamp(nop, _min, _max) ) );	
 	}
 	
 	#endregion

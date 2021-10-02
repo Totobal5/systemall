@@ -8,7 +8,7 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
     special = undefined;
     
     // Crear estadisticas
-    stats = mall_create_stats_reference();
+    stats = (new __group_class_stats() );	/// @is {__group_class_stats}
 
     // Trade
     can_sell = true;
@@ -20,25 +20,7 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
     use = 1;	// Cuantas partes necesita para ser equipado.
     
     #region Metodos
-    
-    /// @param stat_name
-    /// @param value
-	static Set = function(_name, _value) {
-		variable_struct_set(stats, _name, _value);
-		
-		return self;
-	}
-	
-	/// @param stat_name
-	static Get = function(_name) {
-		return (variable_struct_get(stats, _name) );
-	}
-    
-    /// @param stat_name
-    static Exists = function(_name) {
-    	return (variable_struct_exists(stats, _name) );
-    }
-    
+
     /// @param data_key
     static SetKey = function(_key) {
         key = _key;
@@ -119,20 +101,16 @@ function __bag_class_item(_subtype, _buy, _sell) : __mall_class_parent("BAG_ITEM
     }
     
     /// @returns {struct}
-    static GetAll = function() {
+    static GetStats = function() {
     	return (stats);
     }
 
 		#region Misq
 	/// @param stat
 	/// @param value...
-	static SetArgument = function()	{
-		var i = 0; repeat(argument_count - 1) {
-			Set(argument[i], argument[i + 1] );
-			
-			++i;
-		}	
-		
+	static StatsArgument = function()	{
+		var i = 0; repeat(argument_count - 1) {stats.Set(argument[i], argument[i + 1] ); ++i; }
+
 		return self;
 	} 
 		

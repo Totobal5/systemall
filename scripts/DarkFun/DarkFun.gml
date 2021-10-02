@@ -53,85 +53,89 @@ function dark_init() {
         
         // extra = {base, slot};
         var base = extra.base;
-        var slot = extra.slot;
+        var slot = extra.slot, count;
         
-        var count = (is_array(slot) ) ? array_length(slot) : 1;
-        
-        var _nm1 = "fue", _nm2 = "def";
-        
-        #region Esto ya es personalizado a lo que YO quiero realizar con mis estados, estadisticas, etc (lol lmao)
+        //	Primer Slot es el primario y el que se encarga de comprobar los links!
+        if (!is_array(slot) ) slot = [slot];
+    	count = array_length(slot);
+
+    	//////////////////////////////////////////////////////
+
 		// -- Caster
 		var _clvl = caster.stats.lvl;				
-		var _cfue =	caster.StatAffect (_nm1, _cstat.Get(_nm1) );
+		var _cfue =	caster.StatAffect ("fue");
 			
 		// -- Target	
 		var _tlvl = targets.stats.lvl;
-		var _tdef = targets.StatAffect(_nm2, _tstat.Get(_nm2) );
+		var _tdef = targets.StatAffect("def");
+		
+		// Asegurarse que ambos poseen salud
+		if (_tstat.Above("ps") && (_cstat.Above("ps") ) ) {
+			var _cequip = caster.equip;
+			var _aslot, _equipped, _lslot = noone;
 
-        var atack  = (_cfue * _clvl * 3);
-		var damage = ((atack / 8) * base) / (_tdef + _tlvl * 2);
-        
-		// Aplicar daño
-		targets.StatUse("ps", round(damage) );
-        
-		// Si el arma posee un efecto especial aplicarlo
-		if (_tstat.Get("ps") > 0) {
-			var _equip = caster.equip;
-			
-			if (count > 1) {
-				var i = 0; repeat(array_length(slot) ) {
-					var _in = slot[i];
-					
-				    if (_equip.IsOccupied(_in) ) {
-				    	var _put	 = _equip.Get(_in);
-				    	
-						var _item	 = bag_item_get(_put.equipped );	 	
-						var _special = _item .GetSpecial();
-						
-						if (!is_undefined(_special) ) {
-							var _spell = dark_get(_special.spell).spell;
-							var _extra = _special.arg;
-							
-							_spell(caster, targets, _extra);	
-						}	  
-				    }
-				    
-					++i;
-				}
-			} else {
-			    if (_equip.IsOccupied(slot) ) {
-					var _item	 = _equip.Get(slot);	 	
-					var _special = _item .GetSpecial();
+			for (var i = 0; i < count; i++) {
+				_aslot		= slot[i];
+				_equipped	= _cequip.Get(_aslot);
+				
+				// Si es linkeado no atacar!
+				var _insidelink = _equipped.fromlink_name;
+				if (_insidelink == _lslot) continue;
+				
+				// Obtener variables del slot
+				var _power = _equipped.get_power(); // Obtener poder del arma
+
+				var targetpart = 8 * count * (_tdef + _tlvl * 2);
+				var damage = (((_clvl * count) + (base * 3) + _cfue) * base) div targetpart;
+				
+				var item = _equipped.get_item();
+				
+				///// {(cint+clvl*Count+Base*2)*Base}/{8*Count*(tesp+tlvl*2)}
+				
+				//////////////////////////////////////////////////////
+				targets.StatUse("ps", round(damage * _power) );
+				
+				if (item != noone) {
+					var _special = item.GetSpecial();
 					
 					if (!is_undefined(_special) ) {
-						var _spell = _special.spell;
+						var _spell = dark_get_spell(_special.spell);
 						var _extra = _special.arg;
 						
 						_spell(caster, targets, _extra);	
-					}	  
-			    }				
+					}					
+				}
+				
+				// Guardar
+				_lslot = _aslot;
+				
+				show_debug_message("DARK.BATTLE.ATACK - Damage caused: " + string(damage) );
 			}
 		}
-
-		return [
-		    damage, 
-		    _tstat.Get("ps"),
-        ];
-
-        #endregion
     }));
     
     dark_add("DARK.BATTLE.OBJECT", dark_create_spell("Objeto") );
 
-    dark_add("DARK.WSPELL.HEAL1" , (dark_create_spell("Blanca", 30, true) ).SetSpell(function() {
-        show_debug_message("DARK SPELL PRUEBA!");    
-    }));
+    dark_add("DARK.WSPELL.HEAL1" , (dark_create_spell("Blanca", 30, true) ).SetSpell(function(caster, targets, extra) {
+    	var consume = extra.consume;
+    	var include = extra.include;
+		
+		var cstats		= caster.stats_final;
+		var stat_affect = caster.StatAffect;
+		
+		var clvl = caster.lvl;
+		var cint = stat_affect("int");
+		
+		var restore = ((clvl + cint * 9) * clvl) div 3200;
+		
+		if (cstats.Above("pm", consume) ) {
+				
+		}
+    }) );
     
     /// @desc Aplica un estado a un objetivo.
     dark_add("DARK.GSPELL.BASIC" , (dark_create_spell("Verde") ).SetSpell(function(caster, targets, extra) {
-    	var _porcent = extra.porcent;
-    	var _state   = extra.state;
-    	// var _msj     = extra.msj;
+    	var _chance = extra.chance, _state = extra.state;
     	
     	var state  = (mall_get_state(_state) );
     	var stat   = (state.GetLinkStat(0) ).GetName();
@@ -142,27 +146,23 @@ function dark_init() {
     	if (_prob < irandom(100) ) {
 	    	var _txt  = state.GetTxt();
 	    	var _prop = state.GetProcess();
-			
-			
-			var _turnfinal = _prop.turnactive;
-			var _rand      = irandom(_prob); // 80
-			
+
+			var _turnfinal = _prop.turnactive, _rand = irandom(_prob);
+
 			if (_rand < _prob) _turnfinal = max(2, _turnfinal * ( (100 - _rand) / 100) );
 			
 	    	var _effect  = (dark_create_effect(_txt, _state, _prop.start, _prop.ending, _prop.aument, round(_turnfinal), _prop.turniter, _prop.turnaument) )
 	    	.SetProcess(_prop.updatestart, _prop.update, _prop.updateend);
-	    		
-	    	targets.control.AddControl(_effect);
-    	
+	    	
+	    	var _control = targets.control;
+	    	_control.AddControl(_effect);
     	}
-    	
-    	// return _msj[0];
     }) );
     
     
     dark_add("DARK.GSPELL.VENENO", dark_create_spell("Verde").SetSpell(function(caster, targets, extra) {
     	var control 	= caster.control;		
-    	var statsfinal	= caster.stats_final, ps = caster.stats.Get("ps");
+    	var statsfinal	= caster.stats_final, ps = caster.stats.Get("ps_max");
 
     	// Si ha sido envenenado
     	var _exists = control.ControlExists("Envenenado");
@@ -171,6 +171,7 @@ function dark_init() {
     		var _rest = ps * extra / 100;
     		
     		caster.StatUse("ps", _rest, true); // Quitar un 20% de la vida base
+    		show_debug_message("DARK.GSPELL.VENENO - Damage caused: " + string(_rest) );
     	}
     	
 		return (statsfinal.Above("ps") );    	    		

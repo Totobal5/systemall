@@ -20,25 +20,28 @@ function mall_init() {
 	var _stat = (new mall_stat_control() ); /// @is {mall_stat_control}
 	
 	#region Estadisticas
-	var _psmax = _stat.Add("ps_max", undefined, MALL_FUN {return round( ((base * lvl * 3) / 2) + lvl + 10); } ).SetRange(0, 9999);
+	var _psmax = _stat.Add("ps_max", undefined, MALL_FUN {return ((3 * lvl * base) + (2 * lvl) + 20) div 2;  } ).SetRange(0, 9999);
 	var _pmmax = _stat.Add("pm_max").Inherit(_psmax);
+	var _expmax = _stat.Add("exp_max", undefined, MALL_FUN {return round( (base * lvl * 7) + (lvl * 2) + 20); } ).SetRange(0, 999999);
 
-	var _ps = _stat.Add("ps", _psmax).ToggleToMax(0, false).ToggleIgnore();
-	var _pm = _stat.Add("pm", _pmmax).ToggleToMax(0, false).ToggleIgnore();
+
+
+	var _ps  = _stat.Add("ps", _psmax)	.ToggleToMax(0, false).ToggleIgnore();
+	var _pm  = _stat.Add("pm", _pmmax)	.ToggleToMax(0, false).ToggleIgnore();
+	var _exp = _stat.Add("exp", _expmax).ToggleToMin().ToggleIgnore();
 	
-	var _fue = _stat.Add("fue", undefined, MALL_FUN {return round( ( (base * lvl) / 15) + 5); } ).SetRange(0, 999);
+	var _fue = _stat.Add("fue", undefined, MALL_FUN {return (75 + (lvl * base) ) div 15; } ).SetRange(0, 999);
 	var _int = _stat.Add("int").Inherit(_fue);
-	
+
 	var _def = _stat.Add("def").Inherit(_fue);
 	var _esp = _stat.Add("esp").Inherit(_fue);
 	
-	var _expmax = _stat.Add("exp_max", undefined, MALL_FUN {return round( (base * lvl * 7) + (lvl * 2) + 20); } ).SetRange(0, 999999);
-	_stat.Add("exp", _expmax).ToggleToMin().ToggleIgnore();
-	
+	var _spd = _stat.Add("vel").Inherit(_fue);
+
 	// Unir resistencias a los elementos y estadisticas en las estadisticas ya que la clase de "stat" ya posee todo lo necesario!
-	var _resfire = _stat.Add("fuego_rest", undefined, MALL_FUN {if (is_dataext(old) && is_dataext(base) ) return (old.Same(base) ); }, Data("0%") ).SetRange(0, 255);
+	var _resfire = _stat.Add("fuego_rest", undefined, MALL_FUN {if (is_data(old) && is_data(base) ) return (old.Same(base) ); }, Data("0%") ).SetRange(0, 255);
 	
-	var _atkfire = _stat.Add("fuego_atak", undefined, MALL_FUN {return ( (base * lvl) / (max(1, lvl - 1) ) ); } ).SetRange(0, 999);
+	var _atkfire = _stat.Add("fuego_atak", undefined, MALL_FUN {return round( (base * lvl) /  (lvl * 2) - 1); } ).SetRange(0, 999);
 	
 	var _respolu = _stat.Add("polucion_rest").Inherit(_resfire); 
 	var _atkpolu = _stat.Add("polucion_atak").Inherit(_atkfire);
@@ -57,17 +60,17 @@ function mall_init() {
 	
 	var _ven = _state.Add("veneno", false, [_fue, Data("-20%"), _ps, Data("-20%") ] )
 	.AddLinkArgument(_restven)
-	.SetProcess(20, 30, 1, 11, 1, 1,  "DARK.GSPELL.VENENO")
+	.SetProcess(15, 17, 1, 9, 3, 1,  "DARK.GSPELL.VENENO")
 	.SetString("Envenenado");
 
 	var _qem = _state.Add("quemadura" , false, [_fue, Data("-50%") ] )
 	.AddLinkArgument(_restqem)
-	.SetProcess(50, 50, 5, 6, 2, 1,  "DARK.GSPELL.QUEMADURA")
+	.SetProcess(50, 50, 0, 3, 2, 1,  "DARK.GSPELL.QUEMADURA")
 	.SetString("Quemado");
 	
 	var _mel = _state.Add("melancolia", false, [_int, Data("-50%") ] )
 	.AddLinkArgument(_restmel)
-	.SetProcess(20, 50, 10, 11, 2, 1, "DARK.GSPELL.MELANCOLIA")
+	.SetProcess(20, 50, 4, 6, 2, 1, "DARK.GSPELL.MELANCOLIA")
 	.SetString("Melancolico");
 
 	var _elemn = (new mall_element_control() );
