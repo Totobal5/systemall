@@ -1,16 +1,73 @@
-global._WATE_CREATOR  = noone;
-global._WATE_MESSAGES = noone;
-global._WATE_TURNS    = -1;
+global._WATE_CONTROLLER = noone;
+global._WATE_DATA		= noone;
+global._WATE_MESSAGES	= noone;
 
-#macro WATE        global._WATE_CREATOR
-#macro WATE_TURNS  global._WATE_TURNS
+global._WATE_TURNS  	= -1;
+
+#macro WATE     	global._WATE_CONTROLLER
+#macro WATE_DATA	global._WATE_DATA
+#macro WATE_BUS		global._WATE_MESSAGES
+
+
+#macro WATE_TURNS   global._WATE_TURNS
 #macro WATE_AMOUNT 6
 
-enum BACK_TYPE {
-    COLOR ,
-    SPRITE,
+enum WATE_BACK_TYPE  {COLOR , SPRITE}
+enum WATE_GROUPS	 {PLAYER, ENEMS, __SIZE}
+enum WATE_STATE 	 {NORMAL, PAUSE, TRANS}
+
+#region Constructors
+
+function wate_controller() constructor {
+	state = WATE_STATE.NORMAL;
+	
+	turns = 0;
+	timer = [];
+	statprior = "";
+	
+	// Donde se almacenan las entidades
+	entities = ds_priority_create(); 
+	
+	// Con esto se comprueba principalmente que no existan más de este tipo de instancia.
+	groups = array_create(WATE_GROUPS.__SIZE, [] );
+	grid   = array_create(WATE_GROUPS.__SIZE, [] );	// Donde dibujar las entidades
+	
+	// Si no existe el bus de mensajes crearlo
+	if (!ds_exists(WATE_BUS, ds_type_priority) ) WATE_BUS = ds_queue_create();
+	
+	#region Metodos
+	static Organize = function() {
+		var _arr = array_create(WATE_GROUPS.__SIZE, [] );
+		
+		ds_priority_clear(entities);
+		
+		var i = 0; repeat(array_length(groups) ) {
+			var inside = groups[i];
+			
+			var j = 0; repeat(array_length(inside) ) {
+				var _entity = inside[i];
+				var _group  = _entity.group;
+				var _comp   = _entity.stats_final.Get(statprior);	// Obtener valor para comparar y crear los turnos.				
+				
+				// Agregar
+				ds_priority_add(entities, _entity, _comp);  // Recrear turnos
+				array_push	   (_arr[i] , _entity);			// Recrear entidades		
+				
+				++j;
+			}
+			
+			++i;
+		}
+		
+		groups = _arr;
+	}
+
+	
+
+	#endregion
 }
 
+/// @desc
 function wate_data() constructor {	
 	// -- Enemigos
 	packs = []; // Se almacenan varios packs (enemigos y loot) Si se tiene una mazmorra o algo por el estilo esto funciona a la maravilla ya que permite tener 
@@ -22,7 +79,7 @@ function wate_data() constructor {
 	group_ignore = [];  // Si ignora a alguien perteneciente al grupo o no.
 	
 	// -- Background
-	back_type  = BACK_TYPE.COLOR;
+	back_type  = WATE_BACK_TYPE.COLOR;
 	back_color = [c_white, c_black];
 	back_spr   = noone;
 	
@@ -31,7 +88,8 @@ function wate_data() constructor {
 	timer		= [];
 	
 	// -- Ext
-	trans = 0;	// 0: Normal
+	trans_start = undefined;
+	trans_end   = undefined;
 	
 	#region Metodos
 	
@@ -95,30 +153,16 @@ function wate_data() constructor {
     
     
         #region Timer
-    static TimerClass = function(_type, _finish, _callback) constructor {
-        type = _type;   // 0 Turn
-        
-        pass   = 0; // Tiempo o turnos pasados
-        finish = _finish; // Terminar        
-        
-        callback = _callback;   // Funcion que ejecutar.
-        
-        #region Metodos
-        static update = function() {
-            pass++;
-            
-            if (pass >= finish) callback();
-        }
-        
-        #endregion
-    }
-    
     static AddTimer   = function(_type, _finish, _callback) {
-        array_push(timer, (new TimerClass(_type, _finish, _callback) ) );
+        array_push(timer, (new wate_turns(_type, _finish, _callback) ) );
         return self;
     }
     
     #endregion
+    
+    static GetEnemy = function(_index) {
+    	return (enems[_index]);
+    }
     
 	#endregion
 }
@@ -158,126 +202,72 @@ function wate_create_pack() constructor {
     #endregion
 }
 
-function wate_battle() {
-	// Guardar jugador
-	if (jugador_ex) actor_congelar(oJugador);
-	
-	// Crear instancias.
-	switch(WATE.trans) {
-		default:
-			fx_create(oFX_desaparecer_circulos, "Method_end", function() {
-				// Establecer que se inicio un combate
-				GAME.set_state(GAME_MODE_COMBATE);
-				
-				if (jugador_ex) {
-					plyClass.Set(oJugador.x, oJugador.y, oJugador.Profundidad, oJugador.Direccion);			
-				}	
-				
-				with (oJugador) instance_destroy();
-				
-				// -- Crear controlador de batallas
-				var _ins = instance_create_layer(0, 0, lyr_cont, oBatallas_global);
-			});
-
-			break;
-	}
+function wate_timer(_type, _finish, _callback) constructor {
+    type = _type;   // 0 Turn
+    
+    pass   = 0; // Tiempo o turnos pasados
+    finish = _finish; // Terminar        
+    
+    callback = _callback;   // Funcion que ejecutar.
+    
+    #region Metodos
+    static Update = function() {
+        pass++;
+        
+        if (pass >= finish) callback();
+    }
+    
+    #endregion
 }
 
-function wate_init() {
-	// Lista principal
-	Entys = ds_list_create();
-	
-	// -- Crear jugadores
-	Allys = ds_list_create();
-	Enems = ds_list_create();
-	
-	// -- Allys
-	var _size = GROUP_size;
-	
-	for (var i = 0; i < _size; i++) {
-		var _psj = GROUP_get(i);
-		
-		// Agregar a la lista
-		ds_list_add(Allys, _psj);
-		ds_list_add(Entys, _psj);
-		
-		// Crear una instancia que este anclado a él.
-		var _ins = instance_create_layer(0, 0, lyr_mid, oAlly_padre);
-		
-		with (_ins) Anclado = _psj;
-	}
-	
-	// -- Enems
-	var _size = array_length(WATE.enems);
-	
-	for (var i = 0; i < _size; i++) {
-		var _enem = WATE.enems[i];
-		
-		// Agregar a la lista
-		ds_list_add(Allys, _enem);
-		ds_list_add(Entys, _enem);
-		
-		// Crear una instancia que este anclado a él.
-		var _ins = instance_create_layer(0, 0, lyr_mid, _enem[0] );
-		
-		with (_ins) Anclado = _enem[1];		
-	}
-	
-	// Ordenar velocidades
-	wate_sort_speed(Entys);
-	
-	wate_sort_speed(Allys);
-	wate_sort_speed(Enems);
-}
+#endregion
 
-/// @fun wate_sort_speed(List, Sort)
-/// @param List
-/// @param Sort
-function wate_sort_speed(_list, _sort)	{
-	if (is_undefined(_sort) ) _sort = true;
+/// @desc Inicia un combate
+function wate_battle(_data, _prioritystat, _startcall, _endcall) {
+	if (_startcall == undefined) _startcall = _data.trans_start;
+	if   (_endcall   ==   undefined)   _endcall   = _data.trans_end	;
 	
-	var _new  = ds_list_create();
+	if (!is_struct(WATE) ) WATE = (new wate_controller() );
 	
-	var i = 0;
+	WATE.statprior = _prioritystat;
 	
-	var fun = function(a, b, s) {
-		if ( s && (a < b) ) return true;
-		if (!s && (a > b) ) return true;
+	// Inicial
+	if (!is_undefined(_startcall) )	_startcall(_data);
+	
+	WATE_DATA = _data;	// referencia a la data
+	
+	/// Grupo
+	var i = 0; repeat(group_get_count() ) {
+		var _enemy = group_get(i);
+		var _group = _enemy.group;
+		var _comp  = _enemy.stats_final.Get(_prioritystat);	// Obtener valor para comparar y crear los turnos.
 		
-		return false;
+		// Agregar
+		ds_priority_add(WATE.entities, _enemy, _comp);
+		
+		array_push(WATE.groups[_group], _enemy);
+		array_push(WATE.grid  [_group], _enemy.render_pos);
+		
+		++i;
+	}	
+	
+	/// Enemigos
+	var i = 0; repeat(array_length(_data.enems) ) {
+		var _enemy = _data.GetEnemy(i);
+		var _group = _enemy.group;
+		var _comp  = _enemy.stats_final.Get(_prioritystat);	// Obtener valor para comparar y crear los turnos.
+		
+		// Agregar
+		ds_priority_add(WATE.entities, _enemy, _comp);
+		
+		array_push(WATE.groups[_group], _enemy);
+		array_push(WATE.grid  [_group], _enemy.render_pos);
+		
+		++i;
 	}
 	
-	while (!ds_list_empty(_list) ) {
-		#region Ordenar dependiendo del "_sort"
-		var _size = ds_list_size(_list);
-		
-		var _os  = _list[| i][1].VEL;
-		var _rep = false;
-		var _pos = 0;
-		
-		for (var j = i; j < _size; j++) {
-			var _ns = _list[| j][1].VEL;
-			
-			// Obtengo el mayor
-			if (fun(_os, _ns, _sort) ) {
-				_os  = _ns;
-				_pos = j;	
-			}
-		}
-		
-		// Elimina de la lista el más rapido
-		ds_list_add	  (_new, _list[| _pos] );
-		ds_list_delete(_list, _pos);
-	
-		i++;
-		
-		#endregion
-	}
-	
-	// Limpiar ordenar y destruir
-	ds_list_clear	(_list);
-	ds_list_copy	(_list, _new);
-	ds_list_destroy	(_new);
+	// Terminar
+	if (!is_undefined(_endcall) )	_endcall(_data);
 }
 
 function wate_pack_flaite1(_lvlmin = 0, _lvlmax = 100) {

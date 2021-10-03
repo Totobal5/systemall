@@ -1208,8 +1208,15 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
 		
 		return ( _dark(self, _target, {base: _base, slot: _slot} ) );
 	}
+	
+	/// @param wate_group
+	static BattleGroup  = function(_group) {
+		group = _group;
+		return self;
+	}
+	
 		#endregion
-		
+	
 	#endregion
 
     name = _name;
@@ -1219,6 +1226,11 @@ function group_create(_name, _stats, _control, _equip) : __mall_class_parent("GR
     portrait_index = 0;
     
     state_text = "";
+    
+    group = WATE_GROUPS.PLAYER;
+    
+    render_pos = (new Vector2(0, 0) ); 
+    render_spr = -1;
     
     stats		= _stats; 									/// @is {__group_class_stats}
     stats_final = (new __group_class_stats(_stats.lvl) );	/// @is {__group_class_stats}

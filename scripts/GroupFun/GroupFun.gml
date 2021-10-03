@@ -65,6 +65,23 @@ function group_create_player1(_lvl = 1) {
     return (_psj );
 }
 
+///
+function group_update_position(_posmethod) {
+    if (_posmethod == undefined) _posmethod = function(vec2, i) {
+        switch (group_get_count() ) {
+            case 1: vec2.SetXY(320, 240); break;
+        }
+    }
+    
+    var i = 0; repeat(group_get_count() ) {
+        var group = group_get(i); /// @is {group_create}
+        
+        _posmethod(group.render_pos, i);
+        
+        ++i;
+    }    
+}
+
 /// @param level
 /// @returns {group_create}
 function group_create_player2(_lvl = 1) {
@@ -107,8 +124,7 @@ function group_create_player2(_lvl = 1) {
     return (_psj );
 }
 
-
-function group_create_enemyparent(_lvl = 1, _customname = "generic") {
+function group_create_enemyparent(_lvl = 1, _customgroup = WATE_GROUPS.ENEMS, _customname = "generic") {
     gc_collect();
     
     var _stats = (new __group_class_stats(_lvl) ).
@@ -143,7 +159,9 @@ function group_create_enemyparent(_lvl = 1, _customname = "generic") {
     _equip.Link("Mano izq.", "Mano der."); 
     
     var _psj = (new group_create(_customname, _stats, _control, _equip) );
-    _psj.EquipPut("Mano der.", "ARM.ESPADA_VENENO");
+    _psj.EquipPut   ("Mano der.", "ARM.ESPADA_VENENO");
+    _psj.BattleGroup(_customgroup);
+    
     
     return _psj;    
 }

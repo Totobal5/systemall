@@ -24,8 +24,6 @@ function mall_init() {
 	var _pmmax = _stat.Add("pm_max").Inherit(_psmax);
 	var _expmax = _stat.Add("exp_max", undefined, MALL_FUN {return round( (base * lvl * 7) + (lvl * 2) + 20); } ).SetRange(0, 999999);
 
-
-
 	var _ps  = _stat.Add("ps", _psmax)	.ToggleToMax(0, false).ToggleIgnore();
 	var _pm  = _stat.Add("pm", _pmmax)	.ToggleToMax(0, false).ToggleIgnore();
 	var _exp = _stat.Add("exp", _expmax).ToggleToMin().ToggleIgnore();
