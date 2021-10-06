@@ -143,19 +143,18 @@ function dark_init() {
     	// Probabilidad de infectar
     	var _prob = targets.stats_final.Get(stat).nop;
     	
-    	if (_prob < irandom(100) ) {
+    	if (percent_chance(_chance) ) {
 	    	var _txt  = state.GetTxt();
 	    	var _prop = state.GetProcess();
 
-			var _turnfinal = _prop.turnactive, _rand = irandom(_prob);
+			var _turnfinal	= _prop.turnactive;
 
-			if (_rand < _prob) _turnfinal = max(2, _turnfinal * ( (100 - _rand) / 100) );
+			_turnfinal = max(2, _turnfinal * percent_between(_prob) );
 			
 	    	var _effect  = (dark_create_effect(_txt, _state, _prop.start, _prop.ending, _prop.aument, round(_turnfinal), _prop.turniter, _prop.turnaument) )
 	    	.SetProcess(_prop.updatestart, _prop.update, _prop.updateend);
-	    	
-	    	var _control = targets.control;
-	    	_control.AddControl(_effect);
+
+	    	targets.control.AddControl(_effect);
     	}
     }) );
     

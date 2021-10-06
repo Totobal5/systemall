@@ -8,9 +8,9 @@ global._WATE_TURNS  	= -1;
 #macro WATE_DATA	global._WATE_DATA
 #macro WATE_BUS		global._WATE_MESSAGES
 
-
 #macro WATE_TURNS   global._WATE_TURNS
 #macro WATE_AMOUNT 6
+#macro WATE_PRIORSTAT "vel"
 
 enum WATE_BACK_TYPE  {COLOR , SPRITE}
 enum WATE_GROUPS	 {PLAYER, ENEMS, __SIZE}
@@ -19,11 +19,11 @@ enum WATE_STATE 	 {NORMAL, PAUSE, TRANS}
 #region Constructors
 
 function wate_controller() constructor {
-	state = WATE_STATE.NORMAL;
+	state = WATE_STATE.TRANS;
 	
 	turns = 0;
 	timer = [];
-	statprior = "";
+	prior = "";
 	
 	// Donde se almacenan las entidades
 	entities = ds_priority_create(); 
@@ -36,6 +36,27 @@ function wate_controller() constructor {
 	if (!ds_exists(WATE_BUS, ds_type_priority) ) WATE_BUS = ds_queue_create();
 	
 	#region Metodos
+	static AddEntity  = function(_entity, _priority) {
+		// Agregar
+		ds_priority_add(entities , _entity, _priority);
+		
+		var _index = _entity.group;
+		
+		array_push(groups[_index], _entity);
+		array_push(grid  [_index], _entity.render_pos);
+	}
+	
+	static PassEntity = function(_entities) {
+		var i = 0, _name;
+		
+		if (is_array(_entities) ) { // Es un array
+			
+			
+		} else {	// Es una lista
+			
+		}
+	}
+	
 	static Organize = function() {
 		var _arr = array_create(WATE_GROUPS.__SIZE, [] );
 		
@@ -61,13 +82,23 @@ function wate_controller() constructor {
 		
 		groups = _arr;
 	}
-
 	
-
+	/// @param Crea las instancias asociadas
+	static ActorsCreate = function() {
+			
+	}
+	
+	/// @param
+	static SetPriority  = function(_prior) {
+		prior = _prior;
+		
+		return self;
+	}
+	
 	#endregion
 }
 
-/// @desc
+/// @desc Informacion para pasarla al controlador, pensar que es una dungeon
 function wate_data() constructor {	
 	// -- Enemigos
 	packs = []; // Se almacenan varios packs (enemigos y loot) Si se tiene una mazmorra o algo por el estilo esto funciona a la maravilla ya que permite tener 
@@ -91,6 +122,8 @@ function wate_data() constructor {
 	trans_start = undefined;
 	trans_end   = undefined;
 	
+	trans_part = 0;
+	
 	#region Metodos
 	
 	/// @param pack_class
@@ -105,42 +138,49 @@ function wate_data() constructor {
     
     /// @desc Establece que enemigos generará y los loots que se obtendrán a partir del pack seleccionado.
     static Unpack  = function(_pack_index) {
-    	if (_pack_index == undefined) _pack_index = irandom(array_length(packs) );
+    	if (_pack_index == undefined) _pack_index = irandom(array_length(packs) - 1);
     	
-        var _packer = GetPack(_pack_index); /// @is {wate_create_pack}
+    	if (_pack_index == -1) exit;
+    	
+        var _packer = GetPack(_pack_index); /// @is {wate_pack}
         
-        var _randomloot = array_length(_packer.loot);
+        var _iloot_random = array_length(_packer.loot) - 1;
         
         var i = 0; repeat(array_length(_packer.pack) ) {
-            var ienemy = _packer.GetEnemy(i);
-            var iloot  = _packer.GetLoot (irandom(_randomloot) ); // Obtener un loot random
-            
-            var ienemy_chance = ienemy[2];	// obtener probabilidad de aparecer
-            
-            var iloot_amount  = iloot [1];
-        	var iloot_chance  = iloot [2];
-        
+            var _ienemy = _packer.GetEnemy(i);
+            var _ienemy_chance = _ienemy[2]; // obtener probabilidad de aparecer
+
         	// Se consigue agregar el enemigo
-    		if (ienemy_chance < irandom(100) ) {        	
+    		if (percent_chance(_ienemy_chance) ) {
         		// Agregar enemigo
-        		array_push(enems, ienemy);
+        		array_push(enems, _ienemy);
         		
         		// loot
-        		if (is_array(iloot_amount) ) { // Entre cantidades
-        			var _random = irandom(iloot_chance);
-					var _amount = max(iloot_amount[0], iloot_amount[1] * (100 - _random) / 100);
-					
-					iloot[1] = _amount;
-					
-					array_push(loot, iloot);
-					
-        		} else { // Boleano
-					if (iloot_chance < irandom(100) ) array_push(loot, iloot);
+        		if (_iloot_random > -1) { // Hay loot
+        			var _iloot = _packer.GetLoot(irandom(_iloot_random) ); // Obtener un loot random	
+        			
+		            var _iloot_amount = _iloot [1];
+		        	var _iloot_chance = _iloot [2]; 
+		        	
+	        		if (is_array(_iloot_amount) ) { // Entre cantidades
+						var _amount = max(_iloot_amount[0], _iloot_amount[1] * percent_between(_iloot_chance) );
+
+						_iloot[1] = _amount;
+						
+						array_push(loot, _iloot);
+						
+	        		} else { // Boleano
+						if (percent_chance(_iloot_chance) ) array_push(loot, _iloot);
+	        		}		        	
         		}
+        		
+
     		}
         	
         	++i;    
         }
+        
+        return self;
     }
     
     /// @desc Limpia variables que se utilizan en otros combates.
@@ -149,8 +189,9 @@ function wate_data() constructor {
     	loot  = [];
     	
     	timer = [];
+    	
+    	return self;
     }
-    
     
         #region Timer
     static AddTimer   = function(_type, _finish, _callback) {
@@ -168,7 +209,7 @@ function wate_data() constructor {
 }
 
 /// @desc 
-function wate_create_pack() constructor {
+function wate_pack() constructor {
     pack = [];
     loot = [];
     
@@ -222,56 +263,52 @@ function wate_timer(_type, _finish, _callback) constructor {
 
 #endregion
 
+/// @param priority_stat
 /// @desc Inicia un combate
-function wate_battle(_data, _prioritystat, _startcall, _endcall) {
-	if (_startcall == undefined) _startcall = _data.trans_start;
-	if   (_endcall   ==   undefined)   _endcall   = _data.trans_end	;
+function wate_battle(_prior) {
+	if (_prior == undefined) _prior = WATE_PRIORSTAT;
 	
-	if (!is_struct(WATE) ) WATE = (new wate_controller() );
+	if (!is_struct(WATE) ) WATE = (new wate_controller() ).SetPriority(_prior);
 	
-	WATE.statprior = _prioritystat;
+	// Unpack
+	WATE_DATA.Clean().Unpack();
 	
-	// Inicial
-	if (!is_undefined(_startcall) )	_startcall(_data);
-	
-	WATE_DATA = _data;	// referencia a la data
+	var i = 0, _entity, _comp;
 	
 	/// Grupo
-	var i = 0; repeat(group_get_count() ) {
-		var _enemy = group_get(i);
-		var _group = _enemy.group;
-		var _comp  = _enemy.stats_final.Get(_prioritystat);	// Obtener valor para comparar y crear los turnos.
+	repeat(group_get_count() ) {
+		_entity = group_get(i);
+		_comp   = _entity.stats_final.Get(_prior);	// Obtener valor para comparar y crear los turnos.
 		
-		// Agregar
-		ds_priority_add(WATE.entities, _enemy, _comp);
-		
-		array_push(WATE.groups[_group], _enemy);
-		array_push(WATE.grid  [_group], _enemy.render_pos);
+		// Se mantiene el nombre de los personajes en el grupo
+		WATE.AddEntity(_entity, _comp);
 		
 		++i;
-	}	
+	} i = 0;	
 	
 	/// Enemigos
-	var i = 0; repeat(array_length(_data.enems) ) {
-		var _enemy = _data.GetEnemy(i);
-		var _group = _enemy.group;
-		var _comp  = _enemy.stats_final.Get(_prioritystat);	// Obtener valor para comparar y crear los turnos.
+	repeat(array_length(WATE_DATA.enems) ) {
+		_entity = WATE_DATA.GetEnemy(i)[1];
+		_comp   = _entity.stats_final.Get(_prior);	// Obtener valor para comparar y crear los turnos.
 		
-		// Agregar
-		ds_priority_add(WATE.entities, _enemy, _comp);
-		
-		array_push(WATE.groups[_group], _enemy);
-		array_push(WATE.grid  [_group], _enemy.render_pos);
+		WATE.AddEntity(_entity, _comp);
 		
 		++i;
 	}
+
 	
-	// Terminar
-	if (!is_undefined(_endcall) )	_endcall(_data);
 }
 
-function wate_pack_flaite1(_lvlmin = 0, _lvlmax = 100) {
-    var _pack = (new wate_create_pack() );
+/// @param data_class {wate_pack}
+function wate_set_data(_data) {
+	// referencia a la data
+	WATE_DATA = _data;
+}
+
+
+/// @returns {wate_pack}
+function wate_pack_flaite1(_lvlmin = 1, _lvlmax = 100) {
+    var _pack = (new wate_pack() );
     
     _pack.AddEnemy(oEnemy_parent, group_create_enemyparent(irandom_range(_lvlmin, _lvlmax) ), 100);
     _pack.AddEnemy(oEnemy_parent, group_create_enemyparent(irandom_range(_lvlmin, _lvlmax) ), 75 );
@@ -282,7 +319,18 @@ function wate_pack_flaite1(_lvlmin = 0, _lvlmax = 100) {
 	return _pack;
 }
 
+/// @returns {wate_pack}
+function wate_pack_flaite2(_lvlmin = 1, _lvlmax = 100) {
+    var _pack = (new wate_pack() );
+    
+    _pack.AddEnemy(oEnemy_parent, group_create_enemyparent(irandom_range(_lvlmin, _lvlmax) ), 100);
+    _pack.AddEnemy(oEnemy_parent, group_create_enemyparent(irandom_range(_lvlmin, _lvlmax) ), 100);
+    _pack.AddEnemy(oEnemy_parent, group_create_enemyparent(irandom_range(_lvlmin, _lvlmax) ), 100);
+    
+    _pack.AddLoot ("OBJ.MANZANA", 3, 50).AddLoot ("GOLD", [10000, 15000], 50);
 
+	return _pack;
+}
 
 
 

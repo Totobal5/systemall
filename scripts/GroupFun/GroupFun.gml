@@ -1,28 +1,83 @@
-global._GROUP_PLAYER = ds_list_create();
+global._GROUP_PLAYER = [];
 
 #macro GROUP global._GROUP_PLAYER
 
 /// @param {group_create} group_id
 function group_add(_group) {
-    var i = 0; repeat(group_get_count() ) {
-        var in = group_get(i);
-        
-        if (in.name == _group.name) return in;
-        
-        ++i;
-    }  
-    
-    ds_list_add(GROUP, _group);
+    if (group_search(_group.GetName() ) == noone) { 
+        array_push(GROUP, _group);
+    }
+}
+
+/// @param {group_create} group_id
+/// @param insert_pos
+function group_insert(_group, _insert) {
+    array_insert(GROUP, _insert, _group);
+    return _group;
 }
 
 /// @param {number} index
 function group_get(_index) {
-    return (GROUP[| _index] );
+    return (GROUP[_index] );
 }
 
 /// @returns {number}
-function group_get_count() {
-    return (ds_list_size(GROUP) );
+function group_length() {
+    return (array_length(GROUP) );
+}
+
+/// @param access
+/// @returns {group_create} Deleted
+function group_delete(_access) {
+    var _search = group_search(_access);
+    
+    if (is_string(_access) ) {
+        var _search = group_search(_access, true);
+        
+        array_delete(GROUP, _search[1], 1);
+        
+        return _search[0];
+    } else {
+        var _search = group_get(_access);
+        array_delete(GROUP, _access, 1);
+        
+        return _search;
+    }
+}
+
+/// @param group_name
+/// @param return_pos?
+function group_search(_name, _both = false) {
+    var i = 0; repeat(group_get() ) {
+        var _found = group_get(i);
+        
+        if (_found.GetName() == _name) return (_both) ? [_found, i] : _found;
+        ++i;
+    }   
+    
+    return (noone);
+}
+
+/// @param group_name
+function group_search_index(_name) {
+    var i = 0; repeat(group_get() ) {
+        var _found = group_get(i);
+        
+        if (_found.GetName() == _name) return i;
+        ++i;
+    }   
+    
+    return i;
+}
+
+/// @param select_pos
+/// @param new_pos
+/// @desc Mueve de posicion en el grupo
+function group_move(_selectpos, _newpos) {
+    var _val = group_get(_selectpos);
+    
+    group_delete(_selectpos);
+    group_insert(_val, _newpos);
 }
 
 /// @param level
@@ -73,7 +128,7 @@ function group_update_position(_posmethod) {
         }
     }
     
-    var i = 0; repeat(group_get_count() ) {
+    var i = 0; repeat(group_length() ) {
         var group = group_get(i); /// @is {group_create}
         
         _posmethod(group.render_pos, i);
@@ -81,6 +136,9 @@ function group_update_position(_posmethod) {
         ++i;
     }    
 }
+
+
+#region Plantillas
 
 /// @param level
 /// @returns {group_create}
@@ -165,3 +223,6 @@ function group_create_enemyparent(_lvl = 1, _customgroup = WATE_GROUPS.ENEMS, _c
     
     return _psj;    
 }
+
+
+#endregion

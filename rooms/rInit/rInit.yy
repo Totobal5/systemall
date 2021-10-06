@@ -18,10 +18,10 @@
       ],"visible":true,"depth":0,"userdefinedDepth":false,"inheritLayerDepth":false,"inheritLayerSettings":false,"gridX":16,"gridY":16,"layers":[],"hierarchyFrozen":false,"resourceVersion":"1.0","name":"Instances_1","tags":[],"resourceType":"GMRInstanceLayer",},
   ],
   "inheritLayers": false,
-  "creationCodeFile": "",
+  "creationCodeFile": "${project_dir}/rooms/rInit/RoomCreationCode.gml",
   "inheritCode": false,
   "instanceCreationOrder": [
-    {"name":"inst_25B8FC14","path":"rooms/Room1/Room1.yy",},
+    {"name":"inst_25B8FC14","path":"rooms/rInit/rInit.yy",},
   ],
   "inheritCreationOrder": false,
   "sequenceId": null,
@@ -45,11 +45,11 @@
     "PhysicsWorldPixToMetres": 0.1,
   },
   "parent": {
-    "name": "rpg_systemall",
-    "path": "rpg_systemall.yyp",
+    "name": "Rooms",
+    "path": "folders/Rooms.yy",
   },
   "resourceVersion": "1.0",
-  "name": "Room1",
+  "name": "rInit",
   "tags": [],
   "resourceType": "GMRoom",
 }

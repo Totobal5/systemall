@@ -1,11 +1,3 @@
-randomize();
-
-/// @desc
-mall_init();
-
-dark_init();
-bag_init ();
-
 bag_storage_add("OBJ.MANZANA", 10);
 bag_storage_add("ARM.ESPADA_COBRE" , 1);
 bag_storage_add("ARM.ESPADA_VENENO", 1);

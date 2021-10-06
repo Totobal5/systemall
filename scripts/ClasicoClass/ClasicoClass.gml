@@ -1193,3 +1193,112 @@ function Contador(_size, _lim, _act = true) constructor {
 	
 	#endregion
 }
+
+/// @desc Numeros porcentuales.
+function Data(_val = 0) constructor {
+	#region Metodos
+	__is = "MALL_DATA";
+	
+	static IsPorcent = function(_value) {
+		var _len = string_length (_value);
+		var _str = string_char_at(_value, _len);
+		
+		return ( (is_string(_value) ) && (_str == "%") );
+	}
+	
+	static ConvertPorcent = function(_value) {
+		if (IsPorcent(_value) ) {
+			var _len	= string_length (_value); 
+			var _bun	= string_delete (_value, _len, 1);
+			
+			return (real(_bun) / 100);
+		} else if (is_numeric(_value) ) return (_value / 100);
+	}
+	
+	static ToString = function(_value) {
+		if (is_numeric(_value) ) {
+			return (string(_value) + "%");
+		} else {
+			var _len = string_length (_value);
+			var _str = string_char_at(_value, _len);
+			
+			if (_str != "%") return (_value + "%");
+		}
+		
+		return (_value);	
+	}
+	
+	static Set = function(_value) {
+		if (is_data(_value) ) {
+			num = _value.num;
+			nop = num * 100;
+			str = string(nop) + "%";			
+		} else {
+			num = ConvertPorcent(_value);
+			nop = num * 100;
+			str = string(nop) + "%";			
+		}
+		
+		return self;
+	}
+	
+	/// @desc Suma o resta
+	static Operate  = function(_value) {
+		if (is_data(_value) ) {
+			num += _value.num;
+			nop  = num * 100;
+			str  = string(nop) + "%";
+		} else {
+			num += ConvertPorcent(_value);
+			nop  = num * 100;
+			str  = string(nop) + "%";			
+		}
+		
+		return self;
+	}
+		
+	static Operated = function(_value) {
+		return (new __mall_class_data(1) );
+	}
+	
+	static Multiply = function(_value) {
+		if (is_numeric(_value) ) {
+			num *= _value;
+			str = string(num) + "%";
+		} else {
+			num *= ConvertPorcent(_value);
+			str = string(num) + "%";
+		}
+		
+		return self;		
+	}
+	
+	/// @param {__mall_class_data} Data_class	
+	static Same = function(_other) {
+		return Set(_other.nop);
+	}
+		
+	static Turn  = function() {
+		num *= -1;
+		str  = ToString(num);
+	}
+	
+	static Clamp = function(_min, _max) {
+		return (Set(clamp(nop, _min, _max) ) );	
+	}
+	
+	static Copy  = function() {
+		return (new __mall_class_data(nop) );
+	}
+	
+	#endregion
+	
+	bereal = 0;	// Segundo numerico que se encuentra
+	
+	num = ConvertPorcent(_value);	// Valor porcentaje (decimal)
+	nop = num * 100;				// Valor sin ser porcentaje (entero)
+	
+	str = ToString(_value);			// Si es numero lo pasa a string
+
+	gc_collect();
+}

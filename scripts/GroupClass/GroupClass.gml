@@ -3,8 +3,8 @@ function __group_class_stats(_lvl = 1) : __mall_class_parent("GROUP_STATS") cons
     // Copiar estadisticas del diccionario    
     lvl  = max(1, _lvl);	// No puede ser menor a 0
     
-    base = {};
-    stat = {};
+    base  = {};
+    stat  = {};
     count = {};
     
     // Condiciones para subir de nivel
@@ -20,7 +20,7 @@ function __group_class_stats(_lvl = 1) : __mall_class_parent("GROUP_STATS") cons
 			var _start = (mall_get_stat(_name) ).start;
 			
 			variable_struct_set(base , _name, 0);
-			variable_struct_set(stat , _name, (is_dataext(_start) ) ? Data(_start.num) : _start);
+			variable_struct_set(stat , _name, (is_data(_start) ) ? Data(_start.num) : _start);
 			variable_struct_set(count, _name, {c: 0, r: true} );
 			
 			++i;
@@ -91,26 +91,19 @@ function __group_class_stats(_lvl = 1) : __mall_class_parent("GROUP_STATS") cons
     /// @param stat_name
     /// @param base_value
     static SetBase  = function(_name, _base) {
-    	if (argument_count <= 2) {	// 2 Argumentos
+    	var _count = argument_count;
+    	
+    	if (_count <= 2) {	// 2 Argumentos
 	    	if (mall_stat_exists(_name) ) variable_struct_set(base, _name, _base);
     	} else {
-    		var i = 0; repeat(argument_count) {
+    		for (var i = 0; i < _count - 1; i += 2) {
     			SetBase(argument[i], argument[i + 1] );
-    			
-    			i += 2;		
-    		}	
+    		}
     	}
         
         return self;
     }
-    
-    /// @param stat_array
-    static SetBaseArray    = function(_array) {
-		for (var i = 0, len = array_length(_array) - 1; i < len; i += 2) SetBase(_array[i], _array[i + 1] );
-
-        return self;        
-    }    
-
+	
     /// @param name
     static GetBase = function(_name) {
     	return (variable_struct_get(base, _name) ); 
