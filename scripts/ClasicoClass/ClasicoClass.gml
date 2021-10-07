@@ -1273,7 +1273,7 @@ function Data(_val = 0) constructor {
 		return self;		
 	}
 	
-	/// @param {__mall_class_data} Data_class	
+	/// @param {Data} Data_class	
 	static Same = function(_other) {
 		return Set(_other.nop);
 	}

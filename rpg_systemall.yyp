@@ -28,6 +28,9 @@
     {"id":{"name":"MallGroup","path":"scripts/MallGroup/MallGroup.yy",},"order":3,},
     {"id":{"name":"MallGlobal","path":"scripts/MallGlobal/MallGlobal.yy",},"order":4,},
     {"id":{"name":"MallStats","path":"scripts/MallStats/MallStats.yy",},"order":5,},
+    {"id":{"name":"MallStates","path":"scripts/MallStates/MallStates.yy",},"order":0,},
+    {"id":{"name":"MallElements","path":"scripts/MallElements/MallElements.yy",},"order":1,},
+    {"id":{"name":"MallParts","path":"scripts/MallParts/MallParts.yy",},"order":2,},
   ],
   "Options": [
     {"name":"Linux","path":"options/linux/options_linux.yy",},
@@ -54,6 +57,7 @@
     {"folderPath":"folders/Struct N' Array Parser.yy","order":3,"resourceVersion":"1.0","name":"Struct N' Array Parser","tags":[],"resourceType":"GMFolder",},
     {"folderPath":"folders/Clasico.yy","order":2,"resourceVersion":"1.0","name":"Clasico","tags":[],"resourceType":"GMFolder",},
     {"folderPath":"folders/Rooms.yy","order":10,"resourceVersion":"1.0","name":"Rooms","tags":[],"resourceType":"GMFolder",},
+    {"folderPath":"folders/Scripts/MALL/Inside.yy","order":5,"resourceVersion":"1.0","name":"Inside","tags":[],"resourceType":"GMFolder",},
   ],
   "AudioGroups": [
     {"targets":-1,"resourceVersion":"1.3","name":"audiogroup_default","resourceType":"GMAudioGroup",},

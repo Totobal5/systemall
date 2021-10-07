@@ -1,19 +1,32 @@
+global._MALL_GLOBAL = {
+    stats : [], statsnames  : {},
+    states: [], statesnames : {}, 
+    
+    elemns:  [], elemnsnames: {}, 
+    parts :  [], partsnames: {},
+    
+    dark:     [], darknames:     {},   
+    itemtype: [], itemtypenames: {}, itemsubnames: {},
+    pocket:   [], pocketnames:   {}
+}
+
 /// @param name
 /// @param index
-function __mall_class_group(_name, _index = -1) : __mall_class_parent("MALL_GROUP_INTERN") constructor { 
-    #region Interno
-    __mall = "MALL";
-    __is   = "MALL_GROUP_INTERN";
-
-    #endregion    
-    
+function __mall_class_group(_name, _index = -1, _notinit = false) : __mall_class_parent("MALL_GROUP_INTERN") constructor { 
     name  = _name ;
     index = _index;
     
-    stats  = mall_stats_copy();
-    states = undefined;
-    elemns = undefined;
-    parts  = undefined;
+    if (!_notinit) {
+	    stats  = mall_stats_copy ();
+	    states = mall_states_copy();
+	    elemns = undefined;
+	    parts  = undefined;
+    } else {
+    	stats  = 0;
+    	states = 0;
+    	elemns = 0;
+    	parts  = 0;
+    }
     
     #region Metodos
     /// @param stat
@@ -86,17 +99,18 @@ function __mall_group_control() constructor {
         return (group[index] );    
     }
     
-    #region Stats
+    	#region Stats
     static CustomizeStat = function(_name, _start = 0, _master, _levelformula, _levelmax) {
         var _stats = GetGroup().stats; // Obtener grupo
-        var _stat  = (new __mall_class_stat(_name) );
+        var _stat  = (new __mall_class_stat(_name, _start) );
         
         // Si no se establecio un master entonces agregar la formula
-        if (!_stat.SetMaster(_master) ) {
+        if (!_stat.SetFather(_master) ) {
         	_stat.SetLevelUp(_levelformula, _levelmax);
         }
         
-        _stats[$ _name] = _stat;
+        // Establecer finalmente estadistica
+        variable_struct_set(_stats, _name, _stat);
 
         return _stat;        
     }
@@ -106,6 +120,71 @@ function __mall_group_control() constructor {
         return (GetGroup().stats[$ _name] );
     }
 
+    #endregion
+    
+    	#region States
+    /// @param name
+    /// @param start
+    /// @param resistance
+    /// @param hud_name*
+    static CustomizeState = function(_name, _start, _rest, _hudname) {
+    	var _states = GetGroup().states;
+        var _state  = (new __mall_class_state(_name, _start, _rest, _hudname) );
+        
+		
+	    variable_struct_set(_states, _name, _state);
+
+        return _state;
+    }
+    
+    /// @param name
+    static GetState = function(_name) {
+    	return (GetGroup().states[$ _name] );
+    }
+
+    #endregion
+    
+    	#region Elements
+    
+    /// @param element_name
+    /// @param attack_stat
+    /// @param defend_stat
+    /// @param produce_state
+    /// @param produce_value...
+    static CustomizeElement = function(_name, _ataq, _rest, _produce, _chance) {
+    	var _elemns = GetGroup().elemns;
+	    var _elemn  = (new __mall_class_element(_name) );
+	    
+		// Establecer
+		_elemn.Interaction(_ataq, _rest).Produce(_produce, _chance);
+		
+	    variable_struct_set(_elemns, _name, _elemn);
+
+	    return (_elemn);    	
+    }
+    
+    /// @param element_name
+    static GetElement = function(_name) {
+    	return (GetGroup() ).elemns[$ _name];	
+    }
+    
+    #endregion
+    
+    	#region Parts
+    static CustomizePart = function(_name, _itemtype) {
+    	var _parts = GetGroup().parts;
+	    var _part  = (new __mall_class_part(_name, _itemtype) );
+		
+	    variable_struct_set(_parts, _name, _part);
+
+	    return (_part);    	
+    }	
+    	
+    /// @param part_name
+    static GetPart = function(_name) {
+    	return (GetGroup() ).parts[$ _name];
+    }	
+    	
     #endregion
     
     /// @param {__mall_class_stat} stat_class
@@ -226,22 +305,10 @@ function mall_group_change(_ind)  {
     MALL_MASTER.index = _ind;
 }
 
-/// @param mall_stat
-function mall_group_add_stat(_stat)     {
-    MALL_MASTER.AddStat(_stat);
-}
 
-/// @param mall_state
-function mall_group_add_state(_state)   {
-    MALL_MASTER.AddState(_state);
-}
 
-/// @param mall_element
-function mall_group_add_element(_elmn)  {
-    MALL_MASTER.AddElement(_elmn);
-}
 
-/// @param mall_part
-function mall_group_add_part(_part)     {
-    MALL_MASTER.AddPart(_part);
-}
+
+
+
+

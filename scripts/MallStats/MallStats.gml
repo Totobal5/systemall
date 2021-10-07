@@ -1,27 +1,23 @@
 /// @param stat_name
 /// @param stat_index
-function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_STAT_INTERN") constructor {
+function __mall_class_stat(_name = "", _start = 0) : __mall_class_parent("MALL_STAT_INTERN") constructor {
     // Lo basico
-    SetBasic(_name, _index);
+    SetBasic(_name);
 
-    // Master : Otra estadistica, no puede ser mayor que esta y solo master puede aumentar sus atributos mediante lvlup
+    // Father : Otra estadistica, no puede ser mayor que esta y solo master puede aumentar sus atributos mediante lvlup
     //	Así mismo no son tomados en cuenta para ser dibujados directamente.
-    master = undefined;
-    master_name = "";
+    father = undefined;
+    father_name = "";
     
     children = [];
-
-    watched = {};   // Que estado es observado
-    used    = {};   // Que partes lo usan
-    
-    absorb = [];    // Que elemento absorbe
-    reduce = [];    // Que elemento reduce    
-    
+	
+	watched = [];	// Que state observa
+	
     //////////////////////////////////////////////////
-    start = 0;	// Valor inicial
+    start = _start;	// Valor inicial
     
-    range_max = 0;
-    range_min = 0;
+    limit_max = 0;
+    limit_min = 0;
     
     lvlup  = function(old, base, lvl) {return old; };
     lvlmax = 100; 
@@ -35,18 +31,32 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
 	tomax_repeat = false;
 
     #region Metodos
-    	#region Family
+    	#region Heritage
     /// @param {__mall_class_stat} stat_class
-    static SetMaster = function(_stat) {
+    /// @desc Hereda la formula y rangos de otro estado, pero no es su maestro
+    static Inherit = function(_stat) {
+        limit_min = _stat.limit_min;
+        limit_max = _stat.limit_max;
+
+        // Quitar la manera de subir de nivel, ya que ahora es esclavo de la otra estadistica
+        SetLevelUp(_stat.GetLvlUp(), lvlmax);
+        
+        start = _stat.start;
+    	
+        return self;
+    }
+    
+    /// @param {__mall_class_stat} stat_class
+    static SetFather = function(_stat) {
         if (is_struct(_stat) ) {
         	array_push(_stat.children, name); // Agregar hijos
         	
-            master      = _stat;
-            master_name = _stat.name;
-            
-            range_max = _stat.range_max;
-            range_min = _stat.range_min;
-            
+            father      = _stat;
+            father_name = _stat.name;
+
+            limit_min = _stat.limit_min;            
+            limit_max = _stat.limit_max;
+
             // Quitar la manera de subir de nivel, ya que ahora es esclavo de la otra estadistica
             SetLevelUp(undefined);
             
@@ -56,6 +66,12 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
         return false;
     }
     
+    /// @returns {array}
+    static GetFather = function() {
+        return (father);
+    }
+    
+    /// @param index
     static GetChildren = function(_index) {
     	return (children[_index] );
     }
@@ -65,20 +81,6 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
     	return (array_length(children) );
     }
 
-    /// @param {__mall_class_stat} stat_class
-    /// @desc Hereda la formula y rangos de otro estado, pero no es su maestro
-    static Inherit = function(_stat) {
-        range_max = _stat.range_max;
-        range_min = _stat.range_min;
-            
-        // Quitar la manera de subir de nivel, ya que ahora es esclavo de la otra estadistica
-        SetLevelUp(_stat.GetLvlUp(), lvlmax);
-        
-        start = _stat.start;
-    	
-        return self;
-    }
-    
     #endregion
     
     /// @param range_min
@@ -90,9 +92,14 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
         return self;
     }
 	
+	/// @returns {array} [0:min 1:max]
+	static GetLimits = function() {
+		return [limit_min, limit_max];	
+	}
+	
 	/// @param repeat?
 	/// @param min
-	static ToggleToMin = function(_repeat = true, _min = 0) {
+	static ToMin = function(_repeat = true, _min = 0) {
 		tomin = !tomin;
 		
 		tomin_max	 = _min;
@@ -103,7 +110,7 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
 	
 	/// @param repeat?
 	/// @param max
-	static ToggleToMax = function(_repeat = true, _max = 0) {
+	static ToMax = function(_repeat = true, _max = 0) {
 		tomax = !tomax;
 		
 		tomax_max	 = _max;
@@ -112,63 +119,20 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
 		return self;
 	}
 	
-
-    /// @param state_class
-    /// @param values
-    static AddWatched = function(_state, _values) {
-        var _name = _state.name;
-        
-        if (!variable_struct_exists(watched, _name) ) {
-            variable_struct_set(watched, _name, _values);
-        }
-        
-        return self;
-    }
-    
-    /// @param watch_array
-    static AddWatchedArray = function(_array) {
-        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) AddWatched(_array[i], _array[i + 1] );
-
-        return self;
-    }
-    
-    static AddAbsorb = function(_elmn) {
-        array_push(absorb, _elmn.name);
-        return self;
-    }
-    
-    static AddAbsorbArray = function(_array) {
-        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) AddAbsorb(_array[i]);
-        return self;
-    }
-
-    static AddReduce = function(_elmn) {
-        array_push(reduce, _elmn.name);
-        return self;
-    }
-    
-    static AddReduceArray = function(_array) {
-        for (var i = 0, _len = array_length(_array) - 1; i < _len; ++i) AddReduce(_array[i]);
-        return self;
-    }
-   
-    /// @returns {struct}
-    static GetWatch = function() {
-        return watched;
-    }
-    
-    /// @returns {array}
-    static GetRange = function() {
-        return [range_min, range_max];
-    }
-    
-    /// @returns {array}
-    static GetMaster = function(_option = true) {
-        return (_option) ? master : [master, master_name];
-    }
-    
+		#region Watch
+	/// @param {string} state_name
+	/// @param value
+	static WatchState = function(_statename, _value) {
+		array_push(watched, [_statename, _value] );
+		return self;
+	}
+	
+	
+	#endregion
+	
 		#region Level Up
     /// @param lvlup
+    /// @param {number} max_level?
     static SetLevelUp  = function(_lvlup, _max = 100) {
         lvlup  = _lvlup;
         lvlmax = _max;
@@ -176,13 +140,15 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
         return self;
     }
 	
+	/// @returns {number}
 	static SetLevelMax = function(_max) {
 		lvlmax = _max;
 		return self;
 	}
 	
+	/// @returns {script}
     static GetLevelUp  = function() {
-        return lvlup;
+        return (lvlup);
     }
     
 	#endregion
@@ -192,8 +158,8 @@ function __mall_class_stat(_name = "", _index = -1) : __mall_class_parent("MALL_
 
 /// @desc Crea las estadisticas que todos poseen
 function mall_create_stats() {
-    var _order = mall_global_stats();
-    var _stats = mall_global_stats_names();
+    var _order = mall_stats();
+    var _stats = mall_stats_names();
     
     var _count = array_length(_order);
     
