@@ -5,9 +5,10 @@ global._MALL_GLOBAL = {
     elemns:  [], elemnsnames: {}, 
     parts :  [], partsnames: {},
     
-    dark:     [], darknames:     {},   
+    dark:     [], darknames:     {}, darksubnames: {},
     itemtype: [], itemtypenames: {}, itemsubnames: {},
-    pocket:   [], pocketnames:   {}
+    
+    pocket:   [], pocketnames:   {}, pocketitemtype: {}
 }
 
 /// @param name
@@ -16,63 +17,17 @@ function __mall_class_group(_name, _index = -1, _notinit = false) : __mall_class
     name  = _name ;
     index = _index;
     
+	stats  = 0;
+	states = 0;
+	elemns = 0;
+	parts  = 0;
+    
     if (!_notinit) {
 	    stats  = mall_stats_copy ();
 	    states = mall_states_copy();
-	    elemns = undefined;
-	    parts  = undefined;
-    } else {
-    	stats  = 0;
-    	states = 0;
-    	elemns = 0;
-    	parts  = 0;
+	    elemns = mall_elements_copy();
+	    parts  = mall_parts_copy();
     }
-    
-    #region Metodos
-    /// @param stat
-    /// @param state
-    /// @param element
-    /// @param part
-    static SetComponents = function(_stat, _state, _elemn, _part) {
-        stat  = _stat ;
-        state = _state;
-        elemn = _elemn;
-        part  = _part ;
-        
-        return self;
-    }
-    
-    /// @desc Todas las variables son puestas como un array
-    static AllSetArray = function() {
-        stat  = [];
-        state = [];
-        elemn = [];
-        part  = [];
-        
-        return self;
-    }
-    
-    	#region Array
-    static AddStat  = function(_value) {
-    	if (is_array(stat) ) array_push(stat, _value);
-    }
-    
-    static AddState = function(_value) {
-    	if (is_array(state) ) array_push(state, _value);	
-    }
-    
-    static AddPart  = function(_value) {
-    	if (is_array(part) )  array_push(part, _value);	
-    } 
-    
-    static AddElement = function(_value) {
-    	if (is_array(elemn) ) array_push(elemn, _value);	
-    }
-
-    
-    #endregion
-    
-    #endregion
 }
 
 function __mall_group_control() constructor {
@@ -80,7 +35,7 @@ function __mall_group_control() constructor {
     index =  0; // Para cambiar de grupo hay que cambiar el indice
 
     #region Metodos
-    static Create = function(_name) {
+    static Create = function(_name)  {
         var _count = array_length(group);
         index = _count; // Poner el puntero donde corresponde
         
@@ -187,85 +142,6 @@ function __mall_group_control() constructor {
     	
     #endregion
     
-    /// @param {__mall_class_stat} stat_class
-    static AddStat = function(_stat) {
-    	GetGroup().stat = _stat;
-        
-        return self;
-    }
-
-    /// @param {__mall_class_state} state_class    
-    static AddState = function(_state) {
-        static statecount = 0;
-        
-        var _gstates = global._MALL_GLOBAL.statenames;
-        var _gorder  = global._MALL_GLOBAL.state;
-        
-        var _names = _state.order;
-        
-        repeat(each(_names) ) {
-            var in = this.value;
-            
-            if (!variable_struct_exists(_gstates, in) ) {
-            	variable_struct_set(_gstates, in, statecount);
-                array_push(_gorder, in);
-            
-                statecount++;
-            }
-        }        
-
-        GetGroup().state = _state;
-        return self;        
-    }
-    
-    /// @param {__mall_class_element} element_class
-    static AddElement = function(_elemn) {
-        static elemncount = 0;
-        
-        var _gelemn = global._MALL_GLOBAL.elmnnames;
-        var _gorder = global._MALL_GLOBAL.elmn;
-        
-        var _order  = _elemn.order;
-        
-        repeat(each(_order) ) {
-            var in = this.value;
-            
-            if (!variable_struct_exists(_gelemn, in) ) {
-                array_push(_gorder, in);
-                variable_struct_set(_gelemn, in, elemncount);
-            
-                elemncount++;
-            }
-        }
-        
-        GetGroup().elemn = _elemn;
-        return self;        
-    }
-    
-    /// @param {__mall_class_part} part_class
-    static AddPart    = function(_part)  {
-        static partcount = 0;
-        
-        var _gpart  = global._MALL_GLOBAL.partnames;
-        var _gorder = global._MALL_GLOBAL.part;
-        
-        var _order = _part.order;
-        
-        repeat(each(_order) ) {
-            var in = this.value;
-            
-            if (!variable_struct_exists(_gpart, in) ) {
-                array_push(_gorder, in);
-                variable_struct_set(_gpart, in, partcount);
-            
-                partcount++;
-            }
-        }
-        
-        GetGroup().part = _part;
-        return self;
-    }
-
         #region Obtener controladores
     static ControlStat  = function() {
         return GetGroup().stat;
@@ -298,17 +174,10 @@ function mall_group_init(_default = "Default") {
 
 /// @param group_name
 function mall_group_create(_name) {
-    MALL_MASTER.MasterCreate(_name);
+    mall_group_init().Create(_name);
 }
 
 function mall_group_change(_ind)  {
-    MALL_MASTER.index = _ind;
+    mall_group_init().index = _ind;
 }
-
-
-
-
-
-
-
 

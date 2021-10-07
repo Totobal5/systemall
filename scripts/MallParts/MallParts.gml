@@ -188,6 +188,19 @@ function mall_get_part(_name) {
     return (mall_group_init() ).GetPart(_name);    
 }
 
+/// @returns {struct}
+function mall_parts_copy() {
+    var _names = mall_parts(), _reference = {}, i = 0;
+
+    repeat(array_length(_names) ) {
+        variable_struct_set(_reference, _names[i], undefined);
+        
+        ++i;
+    }
+    
+    return (_reference );    
+}
+
 /// @param part_name
 /// @param capable_itemtype
 /// @param capable_usable?

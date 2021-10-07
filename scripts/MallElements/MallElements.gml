@@ -96,6 +96,18 @@ function mall_get_element(_access) {
     return (mall_group_init() ).GetElement(_access);    
 }
 
+function mall_elements_copy() {
+    var _names = mall_elements(), _reference = {}, i = 0;
+
+    repeat(array_length(_names) ) {
+        variable_struct_set(_reference, _names[i], undefined);
+        
+        ++i;
+    }
+    
+    return (_reference );  	
+}
+
 /// @param element_name
 /// @param attack_stat
 /// @param defend_stat

@@ -62,15 +62,19 @@ function mall_custom_levelup_ele(old, base, lvl)	{
 
 /// @desc PLANTILLA PARA INICIAR EL SISTEMA!
 function mall_init() {
-	mall_create_itemtypes("Armas"  , "Espadas", "Arcos", "Escudos");
-	mall_create_itemtypes("Cascos" , "Boina"  , "Sombrero", "Cascos");
-	mall_create_itemtypes("Objetos", "Comida" , "Pociones");
+	mall_create_itemtypes("Armas"     , "Espadas",	"Arcos"	  , "Escudos");
+	mall_create_itemtypes("Cascos"    , "Boina",	"Sombrero", "Cascos" );
+	mall_create_itemtypes("Pantalones", "Falda",	"Jeans"	  , "Shorts" );
 	
-	mall_create_dark("Batalla", ["Ataque", "Defensa", "Objeto"] );
-	mall_create_dark("Magia"  , ["Blanca", "Negra"  , "Roja"  , "Verde"] );
+	mall_create_itemtypes("Poleras"   , "Jardinera", "Polera larga", "Polera corta");
 	
-	mall_create_pocket("Armas"  , ["Armas"  ] );
-	mall_create_pocket("Objetos", ["Objetos"] );
+	mall_create_itemtypes("Objetos", "Comida", "Pociones");
+	
+	mall_create_dark("Batalla", "Ataque", "Defensa", "Objeto");
+	mall_create_dark("Magia"  , "Blanca", "Negra", "Roja", "Verde");
+	
+	mall_create_pocket("Armas"  , noone, "Armas");
+	mall_create_pocket("Objetos", noone, "Objetos");
 	
 	mall_create_stats(
 		"ps_max", "pm_max", "exp_max", "ps", "pm", "exp",
@@ -142,6 +146,11 @@ function mall_init() {
 	var _hand2 = mall_part_customize("Mano der.").Inherit(_hand1, true);
 	
 	var _head = mall_part_customize("Cabeza", "")
+	
+	
+	// "Cabeza", "Mano izq.", "Mano der.", "Torso", "Piernas", "Pies"
+	
+	
 }
 
 

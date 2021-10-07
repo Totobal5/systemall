@@ -2,10 +2,6 @@ global._MALL_MASTER   = -1;
 
 #macro MALL_MASTER mall_group_init()
 
-#macro MALL_ITEMTYPE		global._MALL_GLOBAL.itemtypenames
-#macro MALL_ITEMTYPE_SUB	global._MALL_GLOBAL.itemsubnames
-#macro MALL_ITEMTYPE_ORDER	global._MALL_GLOBAL.itemtype
-
 #macro MALL_DARK_TYPE  global._MALL_GLOBAL.darknames
 #macro MALL_DARK_ORDER global._MALL_GLOBAL.dark
 
@@ -172,282 +168,207 @@ function __mall_class_parent(_is) constructor {
 
 #endregion
 
-/// @param name
-/// @param index
-function __mall_class_itemtype(_name = "", _index = -1) : __mall_class_parent("MALL_ITEMTYPE_INTERN") constructor {
-    SetBasic(_name, _index);
+/// @returns {array}
+function mall_itemtypes() {
+    return (global._MALL_GLOBAL.itemtype);
+}
 
-	// Nombres
-	order = []; 
-    
-    #region Metodos
-    
-    /// @param subtype
-    static Add = function(_subtype) {
-		if (!variable_struct_exists(MALL_ITEMTYPE_SUB, _subtype) ) {
-    		variable_struct_set(MALL_ITEMTYPE_SUB, _subtype, self);		 
-        	array_push(order, _subtype);		
-		}
-        
-        return self;
-    }
-    
-    /// @param {string} subtype
-    /// @returns {bool}
-    static ExistsSubtype = function(_subtype) {
-    	return (variable_struct_exists(subtypes, _subtype) );
-    }
-    
-    #endregion
+/// @returns {struct}
+function mall_itemtypes_names() {
+	return (global._MALL_GLOBAL.itemtypenames);
+}
+
+/// @returns {struct}
+function mall_itemsubtype_names() {
+	return (global._MALL_GLOBAL.itemsubnames);	
 }
 
 /// @param {string} itemtype
 /// @param itemsubtypes...
 /// @desc Crea los distintos tipos de objetos (armas, consumibles) tambien incluye los sub-tipos (arma:Espada, armadura:Vestido)
 function mall_create_itemtypes(_itemtype) {
-    if (!variable_struct_exists(MALL_ITEMTYPE, _itemtype) ) {
-        var _type = (new __mall_class_itemtype(_itemtype, typecount) );
-		
-		for (var i = 1; i < argument_count - 1; i++) _type.Add(argument[i] );
+	var _types  = mall_itemtypes();
+	var _inside = mall_itemtypes_names();
+	
+	var _sub    = mall_itemsubtype_names();
+	
+	var _count = array_length(_types);
+	
+    if (!variable_struct_exists(_inside, _itemtype) ) {
+        var _type = {name: _itemtype, index: _count, order: [] };
+
+		for (var i = 1, _order = _type.order; i < argument_count - 1; i++) {
+			var _subname = argument[i];
+			
+			// Agregar sub-type
+			variable_struct_set(_sub, _subname, _type);
+			array_push(_order, _sub);
+		}
 		
         // Agregar al orden
-        variable_struct_set(MALL_ITEMTYPE, _itemtype, _type);
-        array_push(MALL_ITEMTYPE_ORDER, _itemtype);
-        
-        typecount++;
+        array_push(_types, _itemtype);
+        variable_struct_set(_inside, _itemtype, _type);
         
         return _type;
     }      
 }
 
+/// @param access
 /// @returns {__mall_class_itemtype}
 function mall_get_itemtype(_access) {
-	if (!is_string(_access) ) {_access = MALL_ITEMTYPE_ORDER[_access]; }
-	
-	return (MALL_ITEMTYPE[$ _access] );
+	if (is_numeric(_access) ) _access = global._MALL_GLOBAL.itemtype[_access];
+
+	return (global._MALL_GLOBAL.itemtypenames[$ _access] );
 }
 
 /// @param {string} subtype
-function mall_get_itemtype_by_subtype(_subtype) {
-	return (MALL_ITEMTYPE_SUB[$ _subtype] );	
-}
-
-/// @returns {array}
-function mall_itemtypes_get_types() {
-    return MALL_ITEMTYPE_ORDER;
-}
-
-/// @returns {number}
-function mall_itemtypes_get_count() {
-	return (array_length(mall_itemtypes_get_types() ) );
+/// @desc Devuelve un tipo a partir de un sub-tipo
+function mall_get_itemsubtype(_subtype) {
+	return (global._MALL_GLOBAL.itemsubnames[$ _subtype] );	
 }
 
 /// @param itemtype
 /// @returns {bool}
 function mall_itemtypes_exists(_itemtype) {
-    return (variable_struct_exists(MALL_ITEMTYPE, _itemtype) );
+    return (variable_struct_exists(global._MALL_GLOBAL.itemtypenames, _itemtype) );
 }
 
 /// @param subtype
 /// @returns {bool}
-function mall_itemtypes_exists_subtype(_subtype) {
-	return (variable_struct_exists(MALL_ITEMTYPE_SUB, _subtype) );
+function mall_itemsubtype_exists(_subtype) {
+	return (variable_struct_exists(global._MALL_GLOBAL.itemsubnames, _subtype) );
 }
 
 #endregion
 
 #region Dark (Comandos)
 
-/// @param name
-/// @param index
-function __mall_class_dark(_name, _index) : __mall_class_parent("MALL_DARK_INTERN") constructor {
-    subtypes = {};
-    order    = [];
-    
-    #region Metodos
-    /// @param {string} subtype
-    static Add = function(_subtype) {
-        static darksubtypecount = 0;
-        
-        if (!variable_struct_exists(subtypes, _subtype) ) {
-            variable_struct_set(subtypes, _subtype, darksubtypecount);
-            
-            array_push(order, _subtype);
-            darksubtypecount++;
-        }
-        
-        return self;
-    }
-    
-    /// @param {Array} subtype_array
-    static AddArray = function(_array) {
-        repeat (each(_array) ) Add(this.value);
-        
-        return self;
-    }
-    
-    static GetSubtype = function(_name) {
-    	return subtypes[$ _name];
-    }
-    
-    static ExistsSubtype = function(_name) {
-    	return (variable_struct_exists(subtypes, _name) );
-    }
-    
-    #endregion
-}
-
-/// @param {string} dark_type
-/// @param {array} dark_subtypes
-function mall_create_dark(_type, _subtypes) {
-    static darkcount = 0;
-    
-    if (!variable_struct_exists(MALL_DARK_TYPE, _type) ) {
-        var _dark = (new __mall_class_dark(_type, darkcount) ).AddArray(_subtypes);
-        
-        variable_struct_set(MALL_DARK_TYPE, _type, _dark);
-        array_push(MALL_DARK_ORDER, _type);
-        
-        darkcount++;
-    }
-}
-
-/// @returns {__mall_class_dark}
-function mall_dark_get(_access) {
-	if (!is_string(_access) ) {_access = MALL_DARK_ORDER[_access]; }
-	
-	return (MALL_DARK_TYPE[$ _access] );
-}
-
-/// @returns {__mall_class_dark}
-/// @desc Devuelve el tipo al que pertenece este subtipo.
-function mall_dark_get_by_subtype(_subtype) {
-	repeat (each(MALL_DARK_ORDER) ) {
-		var in = this.value, _dark = mall_dark_get(in);
-		
-		// Obtengo los subtipos
-		if (_dark.ExistsSubtype(_subtype) ) return (_dark );
-	}	
-	
-	return noone;
-}
-
 /// @returns {array}
-function mall_dark_get_types() {
-    return MALL_DARK_ORDER;
+function mall_dark() {
+	return (global._MALL_GLOBAL.dark);
+}
+
+/// @returns {struct}
+function mall_dark_names() {
+	return (global._MALL_GLOBAL.darknames);
+}
+
+/// @returns {struct}
+function mall_darksub_names() {
+	return (global._MALL_GLOBAL.darksubnames);
 }
 
 /// @param {string} dark_type
-function mall_dark_get_subtypes(_type) {
-    return (variable_struct_get(MALL_DARK_TYPE, _type) ).subtypes;
+/// @param dark_subtypes...
+function mall_create_dark(_type) {
+	var _dark		= mall_dark();
+	var _darknames	= mall_dark_names();
+	
+	var _sub = mall_darksub_names();
+	
+	var _count = array_length(_dark);
+
+    if (!variable_struct_exists(_names, _type) ) {
+    	var _new = {name: _type, index: _count, order: [] }; 
+
+		for (var i = 1, _order = _new.order; i < argument_count - 1; i++) {
+			var _subname = argument[i];
+			
+			// Agregar sub-type
+			variable_struct_set(_sub, _subname, _new);
+			array_push(_order, _subname);
+		}
+		
+        // Agregar al orden
+        array_push(_dark, _new);
+        variable_struct_set(_darknames, _type, _new);
+        
+        return _new;
+    }
+}
+
+/// @param access
+function mall_get_dark(_access) {
+	if (is_numeric(_access) ) _access = global._MALL_GLOBAL.dark[_access];
+	
+	return (global._MALL_GLOBAL.darknames[$ _access] );
+}
+
+/// @param dark_subtype
+/// @desc Devuelve el tipo al que pertenece este subtipo.
+function mall_get_darksub(_subtype) {
+	return (global._MALL_GLOBAL.darksubnames[$ _subtype] );	
 }
 
 /// @param {string} dark_type
 /// @returns {bool}
 function mall_dark_exists(_type) {
-    return (variable_struct_exists(MALL_DARK_TYPE, _type) );
+    return (variable_struct_exists(global._MALL_GLOBAL.darknames, _type) );
 }
 
-/// @param {string} dark_type
 /// @param {string} dark_subtype
 /// @returns {bool}
-function mall_dark_exists_subtype(_type, _subtype) {
-    var in = mall_dark_get_subtypes(_type);
-    
-    return (variable_struct_exists(in, _subtype) );
+function mall_darksub_exists(_subtype) {
+	return (variable_struct_exists(global._MALL_GLOBAL.darksubnames, _subtype) );	
 }
 
 #endregion
 
 #region Pockets
 
-/// @param name
-/// @param index
-function __mall_class_pocket(_name, _index) : __mall_class_parent("MALL_POCKET_INTERN") constructor {
-    SetBasic(_name, _index);
-    
-    subtypes = {};	// Se almacenan los tipos de objetos que almacena.
-    
-    order = [];
-    limit = noone;
-    
-    #region Metodos
-    /// @param {string} subtype
-    static Add = function(_subtype) {
-        static pocketincount = 0;
-        
-        if (mall_itemtypes_exists(_subtype) ) {
-            variable_struct_set(subtypes, _subtype, pocketincount);
-            
-            array_push(order, _subtype);
-            pocketincount++;
-        }
-        
-        return self;
-    }
-    
-    /// @param {Array} subtype_array
-    static AddArray = function(_array) {
-        repeat (each(_array) ) Add(this.value);
-        
-        return self;
-    }
-    
-    /// @param {number} limite
-    static SetLimit = function(_lim) {
-    	limit = _lim;
-    	
-    	return self;
-    }
-    
-    static Exists = function(_name) {
-    	return (variable_struct_exists(subtypes, _name) );
-    }
-    
-    #endregion	
+/// @returns {array}
+function mall_pocket() {
+	return (global._MALL_GLOBAL.pocket);
+}
+
+/// @returns {struct}
+function mall_pocket_names() {
+	return (global._MALL_GLOBAL.pocketnames);
 }
 
 /// @param {string} pocket_name
-/// @param {array}  items_types
-/// @param {number} limit
-function mall_create_pocket(_pocket_name, _itemtypes, _limit = noone) {   
-    static pocketcount = 0;
+/// @param {number}  limit
+/// @param itemtypes...
+function mall_create_pocket(_name, _limit = noone) {   
+    var _pocket = mall_pocket();
+    var _names  = mall_pocket_names();
+
+    var _count = array_length(_pocket);
     
-    if (!mall_pocket_exists(_pocket_name) ) {
-		var _pocket = (new __mall_class_pocket(_pocket_name, pocketcount) ).SetLimit(_limit);
-		
-		_pocket.AddArray(_itemtypes);
-		
-        variable_struct_set(MALL_POCKET_TYPE, _pocket_name, _pocket);
-        array_push(MALL_POCKET_ORDER, _pocket_name); // Agregar a la lista de bolsillos
-    	
-        pocketcount++;
-        
-        return _pocket;
+    if (!variable_struct_exists(_names, _name) ) {
+    	var _new = {name: _name, index: _count, order: [], limit: _limit};
+
+		for (var i = 2, _order = _new.order; i < argument_count - 2; i++) {
+			var _itemtype = argument[i];
+			
+			// Agregar sub-type
+			variable_struct_set(global._MALL_GLOBAL.pocketitemtype, _itemtype, _new);
+			array_push(_order, _itemtype);
+		}
+
+        variable_struct_set(_names, _name, _new);
+        array_push(_pocket, _name); // Agregar a la lista de bolsillos
+
+        return _new;
     }    
 }
 
 /// @param pocket_name
 /// @returns {bool}
 function mall_pocket_exists(_name) {
-	return (variable_struct_exists(MALL_POCKET_TYPE, _name) );
+	return (variable_struct_exists(global._MALL_GLOBAL.pocketnames, _name) );
 }
 
+/// @param access
 function mall_get_pocket(_access) {
-	if (!is_string(_access) ) {_access = MALL_POCKET_TYPE[_access]; }
+	if (is_numeric(_access) ) _access = global._MALL_GLOBAL.pocket[_access];
 	
-	return (MALL_POCKET_TYPE[$ _access] );
+	return (global._MALL_GLOBAL.pocketnames[$ _access] );
 }
 
 /// @desc Devuelve el bolsillo al que pertenece este tipo de objeto
-function mall_pocket_get_itemtype(_itemtype) {
-	repeat (each(MALL_POCKET_ORDER) ) {
-		var in = this.value, _pocket = mall_get_pocket(in);
-		
-		if (_pocket.Exists(_itemtype) ) return _pocket;
-	}
-	
-	return noone;
+function mall_pocket_permitted(_itemtype) {
+	return (global._MALL_GLOBAL.pocketitemtype[$ _itemtype] );	
 }
 
 
