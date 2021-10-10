@@ -178,12 +178,12 @@ function mall_create_stats() {
 /// @desc Devuelve todas las estadisticas en el sistema
 /// @returns {array} all_stats
 function mall_stats() {
-    return (global._MALL_GLOBAL.stats);   
+    return (MALL_STORAGE.stats);   
 }
 
 /// @returns {struct} all_stats_names
 function mall_stats_names() {
-    return (global._MALL_GLOBAL.statsnames);
+    return (MALL_STORAGE.statsnames);
 }
 
 /// @desc Crea un struct con todas las estadisticas
@@ -205,36 +205,22 @@ function mall_stats_copy() {
 
 /// @returns {__mall_class_stat}
 function mall_get_stat(_access) {
-	if (is_numeric(_access) ) _access = global._MALL_GLOBAL.stats[_access];
+	if (is_numeric(_access) ) _access = MALL_STORAGE.stats[_access];
 	
-    return (mall_group_init() ).GetStat(_access);
+    return MALL_CONTROL.GetStat(_access);
 }
 
 /// @returns {__mall_class_stat}
 function mall_stat_customize(_name, _start, _master, _levelformula, _levelmax) {
 	if (!mall_stat_exists(_name) ) return noone;
 	
-    return (mall_group_init() ).CustomizeStat(_name, _start, _master, _levelformula, _levelmax);
+    return MALL_CONTROL.CustomizeStat(_name, _start, _master, _levelformula, _levelmax);
 }
 
 /// @param name
 /// @returns {bool}
 function mall_stat_exists(_name) {
-	return (variable_struct_exists(global._MALL_GLOBAL.statsnames, _name) );
-}
-
-function mall_stat_get_master(_access, _option) {
-    return (mall_get_stat(_access) ).GetMaster(_option);
-}
-
-/// @returns {array}
-function mall_stat_get_watch(_access) {
-    return (mall_get_stat(_access) ).GetWatch();  
-}
-
-/// @returns {array}
-function mall_stat_get_range(_access) {
-    return (mall_get_stat(_access) ).GetRange();    
+	return (variable_struct_exists(MALL_STORAGE, _name) );
 }
 
 #endregion

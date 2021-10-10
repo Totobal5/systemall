@@ -122,12 +122,12 @@ function mall_create_states() {
 
 /// @returns {array} all_states
 function mall_states() {
-    return (global._MALL_GLOBAL.states);
+    return (MALL_STORAGE.states);
 }
 
 /// @returns {struct} all_states_names
 function mall_states_names() {
-    return (global._MALL_GLOBAL.statesnames);
+    return (MALL_STORAGE.statesnames);
 }
 
 /// @returns {struct}
@@ -146,14 +146,14 @@ function mall_states_copy() {
 /// @param {string} name
 /// @returns {bool}
 function mall_state_exists(_name) {
-	return (variable_struct_exists(global._MALL_GLOBAL.statenames, _name) );	
+	return (variable_struct_exists(MALL_STORAGE.statenames, _name) );	
 }
 
 /// @returns {__mall_class_state}
 function mall_get_state(_access) {
-    if (is_numeric(_access) ) _access = global._MALL_GLOBAL.states[_access];
+    if (is_numeric(_access) ) _access = MALL_STORAGE.states[_access];
     
-    return (mall_group_init() ).GetState(_access);
+    return MALL_CONTROL.GetState(_access);
 }
 
 /// @param name
@@ -163,7 +163,7 @@ function mall_get_state(_access) {
 function mall_state_customize(_name, _start, _rest, _hudname) {
 	if (!mall_state_exists(_name) ) return noone;
 	
-    return (mall_group_init() ).CustomizeState(_name, _start, _rest, _hudname);    
+    return MALL_CONTROL.CustomizeState(_name, _start, _rest, _hudname);    
 }
 
 

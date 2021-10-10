@@ -1,4 +1,4 @@
-global._MALL_GLOBAL = {
+global._MALL_STORAGE = {
     stats : [], statsnames  : {},
     states: [], statesnames : {}, 
     
@@ -11,16 +11,31 @@ global._MALL_GLOBAL = {
     pocket:   [], pocketnames:   {}, pocketitemtype: {}
 }
 
+#macro MALL_CONTROL mall_group_init()
+#macro MALL_STORAGE global._MALL_STORAGE
+
+#macro MALL_LOCALIZE true // Si utiliza las funciones de localizacion
+
+#macro MALL_NAME ".NAME"
+#macro MALL_DES  ".DESC"
+#macro MALL_TXT  ".TXT"
+
 /// @param name
 /// @param index
-function __mall_class_group(_name, _index = -1, _notinit = false) : __mall_class_parent("MALL_GROUP_INTERN") constructor { 
+function __mall_class_group(_name, _index = -1, _notinit = false) constructor { 
+    #region Inside
+    __mall = "MALL";
+    __is   = "MALL_GROUP_INTERN";   
+    
+    #endregion
+    
     name  = _name ;
     index = _index;
     
-	stats  = 0;
-	states = 0;
-	elemns = 0;
-	parts  = 0;
+	stats  = undefined;
+	states = undefined;
+	elemns = undefined;
+	parts  = undefined;
     
     if (!_notinit) {
 	    stats  = mall_stats_copy ();
@@ -142,25 +157,6 @@ function __mall_group_control() constructor {
     	
     #endregion
     
-        #region Obtener controladores
-    static ControlStat  = function() {
-        return GetGroup().stat;
-    }
-
-    static ControlState = function() {
-        return GetGroup().state;
-    }
-    
-    static ControlElements = function() {
-        return GetGroup().elemn;
-    }
-    
-    static ControlPart = function() {
-        return GetGroup().part;   
-    }
-    
-    #endregion
- 
     #endregion
 }
 

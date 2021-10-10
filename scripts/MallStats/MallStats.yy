@@ -2,8 +2,8 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "MALL",
-    "path": "folders/Scripts/MALL.yy",
+    "name": "Components",
+    "path": "folders/Scripts/MALL/Components.yy",
   },
   "resourceVersion": "1.0",
   "name": "MallStats",

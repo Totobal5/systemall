@@ -4,6 +4,167 @@
 
 #macro MALL_FUN function(old, base, lvl)
 
+/// @param is
+function __mall_class_parent(_is) constructor {
+    #region Interno
+    __mall = "MALL";
+    __is = _is;
+
+    #endregion
+	
+	key = "";	// Si se localiza se utiliza esta llave
+	
+	name  = "";	// Nombre de la clase
+	index = -1;	// indice
+	
+	ignore = false;	// Si se ignora globalmente
+	
+	#region GUI
+    txt = "";	// texto principal que se muestra
+    
+    txt_des = "";	// descripcion de la clase
+    txt_ext = [];	// textos complementarios
+	
+	txt_ignore = false;	// Se se ignora en funciones con relacion al texto
+	
+    #endregion
+
+    #region Metodos
+    
+    /// @desc Establece la key, index y name
+    static Property = function(_key, _index = -1, _name = _key) {
+		key = _key;
+		
+		index = _index;
+		name  = _key;
+		
+		return self;
+    }
+    
+    static Localize = function() {
+    	name = lexicon_text(key + ".NAME");
+    	
+		txt 	= lexicon_text(key + ".TXT");
+		txt_des = lexicon_text(key + ".DES");
+		
+		return self;
+    }
+	
+	static IgnoreGUI = function() {
+		txt_ignore = !txt_ignore;
+		
+		return self;
+	}
+	
+		#region Basico
+    /// @param name
+    /// @param class
+    /// @desc Permite vincular una clase de mall a alguna estructura de otro sistema
+    static Vinculate = function(_name, _value) {
+        if (is_struct(_value) ) {
+            if (!variable_struct_exists(self, _name) ) {
+                variable_struct_set(self, _name, _value);
+            }    
+        }
+        
+        return self;
+    }
+    
+    /// @param struct_name
+    static GetStruct = function(_name) {
+    	return (variable_struct_get(self, _name) );
+    }
+    
+    /// @param struct
+    /// @param override
+    /// @desc Permite sobrescribir todos los valores de una estructura
+    static Override = function(_struct_name, _value) {
+    	var _struct = GetStruct(_struct_name);
+  
+    	if (!is_struct(_struct) ) return false;
+    	
+    	var _names = variable_struct_get_names(_struct), i = 0;
+    	
+    	repeat(array_length(_names) ) {variable_struct_set(_struct, _names[i], _value); ++i; }
+    	
+    	return self;
+    }
+    
+    /// @param struct
+    /// @param multiply
+    static Multiply = function(_struct_name, _mult) {
+    	var _struct = GetStruct(_struct_name);
+  
+    	if (!is_struct(_struct) ) return false;
+    	
+    	var _names = variable_struct_get_names(_struct), i = 0;
+    	
+    	repeat(array_length(_names) ) {
+    		var _name = _names[i], in = variable_struct_get(_struct, _name);
+
+			if (is_numeric(in) ) variable_struct_set(_struct, _name, round(in * _mult) );
+			
+    		++i; 
+    	}
+    	
+		return self;    	
+    }
+    
+    /// @desc Pasa los valores de un struct al contrario (1 -> -1)
+    static Turn = function(_struct) {
+    	if (is_string(_struct) ) _struct = self[$ _struct];
+    	
+    	if (!is_struct(_struct) ) return false;
+    	
+    	var _names = variable_struct_get_names(_struct);
+    	
+    	var i = 0; repeat(array_length(_names) ) {
+    		var _name = _names[i], in = _struct[$ _name];
+    		
+    		if (is_data(in) )	 {in.Turn(); } else 
+    		if (is_numeric(in) ) {in *= -1 ; } 
+    		
+    		variable_struct_set(_struct, _name, in);
+    		
+    		++i;
+    	}
+    	
+    	return self;
+    }
+    
+    	#endregion
+    
+    	#region Getter´s
+    static GetName  = function() {
+    	return name;
+    }
+        
+    static GetBasic = function() {
+        return [name, index];
+    }
+    
+    static GetTxt	= function() {
+    	return (txt );
+    }
+    
+    static GetString = function() {
+        return [txt, symbol];
+    }
+
+    static GetType   = function() {
+        return __is;
+    }
+    
+    #endregion
+    
+    	#region Misq
+    static Copy = function() {}
+    
+    #endregion
+    
+    #endregion
+}
+
 #region Is
 /// @param group_id
 function is_mall_group(_class) {
@@ -62,32 +223,36 @@ function mall_custom_levelup_ele(old, base, lvl)	{
 
 /// @desc PLANTILLA PARA INICIAR EL SISTEMA!
 function mall_init() {
-	mall_create_itemtypes("Armas"     , "Espadas",	"Arcos"	  , "Escudos");
-	mall_create_itemtypes("Cascos"    , "Boina",	"Sombrero", "Cascos" );
-	mall_create_itemtypes("Pantalones", "Falda",	"Jeans"	  , "Shorts" );
+	mall_create_itemtypes("MALL_ITEMTYPE.ARMAS"	 , "ESPADA", "DAGA", "HACHA");
+	mall_create_itemtypes("MALL_ITEMTYPE.ESCUDOS", "ESCUDO");
 	
-	mall_create_itemtypes("Poleras"   , "Jardinera", "Polera larga", "Polera corta");
+	mall_create_itemtypes("MALL_ITEMTYPE.CASCOS", "CASCO", "SOMBRERO", "BOINA");
 	
-	mall_create_itemtypes("Objetos", "Comida", "Pociones");
+	mall_create_itemtypes("MALL_ITEMTYPE.ARMADURA"  , "LIGERA" , "PESADA", "MALLAS");
+	mall_create_itemtypes("MALL_ITEMTYPE.ACCESORIOS", "GUANTES", "COLLAR", "ANILLO");
 	
-	mall_create_dark("Batalla", "Ataque", "Defensa", "Objeto");
-	mall_create_dark("Magia"  , "Blanca", "Negra", "Roja", "Verde");
+	//  Weapon, Shield, Helmet, Armor, and Gloves.
 	
-	mall_create_pocket("Armas"  , noone, "Armas");
-	mall_create_pocket("Objetos", noone, "Objetos");
+	mall_create_itemtypes("MALL_ITEMTYPE.OBJETOS", "POCIONES", "IMPORTANTE");
+	
+	mall_create_dark("MALL_DARK" , "ATAQUE", "DEFENSA", "OBJETO");
+	mall_create_dark("MALL_MAGIA", "BLANCA", "NEGRA"  , "ROJA"  , "VERDE");
+	
+	mall_create_pocket("MALL_POCKET.ARMAS"  , noone, "MALL_ITEMTYPE.ARMAS");
+	mall_create_pocket("MALL_POCKET.OBJETOS", noone, "MALL_ITEMTYPE.OBJETOS");
 	
 	mall_create_stats(
-		"ps_max", "pm_max", "exp_max", "ps", "pm", "exp",
-		"fue", "int", "def", "esp", "vel",
+		"PSMAX", "PMMAX", "EXPMAX", "PS", "PM", "EXP",
+		"FUE", "INT", "DEF", "ESP", "VEL",
 		
-		"fuego_rest", "fuego_atak"	  , "polucion_rest"  , "polucion_atak",	// Elementos
-		"vivo_rest" , "quemadura_rest", "melancolia_rest"					// Resistencias
+		"FUEGOREST", "FUEGOATK"	  , "POLUCIONREST"  , "POLUCIONATK",	// Elementos
+		"VIVOREST" , "QUEMADURAREST", "MELANCOLIAREST"					// Resistencias
 	);
 	
-	mall_create_states  ("vivo" , "veneno", "quemadura", "melancolia");
-	mall_create_elements("fuego", "polucion");
+	mall_create_states  ("VIVO" , "VENENO", "QUEMADURA", "MELANCOLIA");
+	mall_create_elements("FUEGO", "POLUCION");
 	
-	mall_create_parts("Cabeza", "Mano izq.", "Mano der.", "Torso", "Piernas", "Pies");
+	mall_create_parts("CABEZA", "MANO.IZQ", "MANO.DER", "TORSO", "PIERNAS", "FEET");
 	
 	
 	var _group = mall_group_init("Default");
@@ -145,12 +310,11 @@ function mall_init() {
 	var _hand1 = mall_part_customize("Mano izq.", "Armas", true).BonusItemsub("Espadas", (new Data(25) ) );
 	var _hand2 = mall_part_customize("Mano der.").Inherit(_hand1, true);
 	
-	var _head = mall_part_customize("Cabeza", "")
-	
-	
-	// "Cabeza", "Mano izq.", "Mano der.", "Torso", "Piernas", "Pies"
-	
-	
+	var _head  = mall_part_customize("Cabeza" , "Cascos"	, true);
+	var _pants = mall_part_customize("Piernas", "Pantalones", true);
+	var _torso = mall_part_customize("Torso"  , "Pantalones", true);
+	var _feet  = mall_part_customize("Pies"	  , "Zapatos"	, true);
+
 }
 
 

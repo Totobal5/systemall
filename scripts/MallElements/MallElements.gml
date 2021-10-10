@@ -75,25 +75,25 @@ function mall_create_elements() {
 
 /// @returns {array}
 function mall_elements() {
-    return (global._MALL_GLOBAL.elemns);
+    return (MALL_STORAGE.elemns);
 }
 
 /// @returns {struct}
 function mall_elements_names() {
-    return (global._MALL_GLOBAL.elemnsnames);
+    return (MALL_STORAGE.elemnsnames);
 }
 
 /// @param element_name
 /// @returns {bool}
 function mall_element_exists(_name) {
-    return (variable_struct_exists(global._MALL_GLOBAL.elemnsnames, _name) );
+    return (variable_struct_exists(MALL_STORAGE.elemnsnames, _name) );
 }
 
 /// @param access
 function mall_get_element(_access) {
-    if (is_numeric(_access) ) _access = global._MALL_GLOBAL.elemn[_access];
+    if (is_numeric(_access) ) _access = MALL_STORAGE.elemn[_access];
     
-    return (mall_group_init() ).GetElement(_access);    
+    return MALL_CONTROL.GetElement(_access);    
 }
 
 function mall_elements_copy() {
@@ -114,7 +114,9 @@ function mall_elements_copy() {
 /// @param produce_state
 /// @param produce_value...
 function mall_element_customize(_name, _attack, _defend, _produce, _chance) {
-    return (mall_group_init() ).CustomizeElement(_name, _attack, _defend, _produce, _chance);
+	if (!mall_element_exists(_name) ) return noone;
+	
+    return MALL_CONTROL.CustomizeElement(_name, _attack, _defend, _produce, _chance);
 }
 
 

@@ -1,0 +1,10 @@
+{
+	"Spanish": {
+		"locale": "es",	
+		"file": "locale.csv"	
+	},
+	"English": {
+			"locale": "en",
+			"file": "locale.csv"
+	}
+}

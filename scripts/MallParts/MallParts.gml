@@ -9,10 +9,11 @@ function __mall_class_part(_name) : __mall_class_parent("MALL_PART_INTERN") cons
     
     damage_start = 0;	
     damage_min = noone;	// Si es noone entonces no posee un valor minimo del daño
-    damage_max = 0;		// Si es noone entonces no posee un valor maximo del daño
+    damage_max = noone;	// Si es noone entonces no posee un valor maximo del daño
     
     damage_txt = "dañado!";
     
+    ////////////////////////////////////////////////////////////////////////////
     bonus    = {};  // Que subtipo de arma le otorga un bonus
     possible = {};  // Que tipo de objetos puede llevar esta parte.
 
@@ -175,17 +176,19 @@ function mall_create_parts() {
 
 /// @returns {array}
 function mall_parts() {
-    return (global._MALL_GLOBAL.parts);
+    return (MALL_STORAGE.parts);
 }
 
 /// @returns {struct}
 function mall_parts_name() {
-    return (global._MALL_GLOBAL.partsnames);
+    return (MALL_STORAGE.partsnames);
 }
 
 /// @param part_name
-function mall_get_part(_name) {
-    return (mall_group_init() ).GetPart(_name);    
+function mall_get_part(_access) {
+	if (is_numeric(_access) ) _access = MALL_STORAGE.parts[_access];
+	
+    return MALL_CONTROL.GetPart(_access);    
 }
 
 /// @returns {struct}
@@ -202,13 +205,20 @@ function mall_parts_copy() {
 }
 
 /// @param part_name
+function mall_part_exists(_name) {
+	return (variable_struct_exists(MALL_STORAGE.partsnames, _name) );
+}
+
+/// @param part_name
 /// @param capable_itemtype
 /// @param capable_usable?
 /// @param ...
 function mall_part_customize(_name) {
-    var _part = (mall_group_init() ).CustomizePart(_name);
+	if (!mall_part_exists(_name) ) return noone;
+	
+    var _part = MALL_CONTROL.CustomizePart(_name);
     
-    for (var i = 1; i < argument_count; i += 2) {
+    for (var i = 1; i < argument_count - 1; i += 2) {
         _part.Posible(argument[i], argument[i + 1] );
     }
     
