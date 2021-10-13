@@ -2,11 +2,11 @@
 /// @param state_start
 /// @param stat_resistance
 /// @param stat_hudname
-function __mall_class_state(_name = "", _start = false, _rest, _hudname = _name) : __mall_class_parent("MALL_STATE_INTERN") constructor {
-    SetBasic(_name, -1);
+function __mall_class_state(_key, _start = false, _rest, _hudnamekey = _key) : __mall_class_parent("MALL_STATE_INTERN", _key, -1) constructor {
+    txt   = _hudnamekey;
     
     start = _start;
-    
+
     resist = [];
     //affect = [];
     
@@ -66,10 +66,20 @@ function __mall_class_state(_name = "", _start = false, _rest, _hudname = _name)
 		#region Links
 	/// @param stat
     static AddResistance = function(_rest) {
-        if (!is_mall_stat(_rest) ) exit;
-        
-        array_push(resist, _rest.name);
-        return self;
+        if (is_array(_rest) ) {
+        	var i = 0; repeat(array_length(_rest) ) {
+        		var in = _rest[i];
+        		
+        		if (is_mall_stat(in) ) array_push(resist, in.name);
+
+        		++i;
+        	}
+        } else {
+	        if (!is_mall_stat(_rest) ) exit;
+	        
+	        array_push(resist, _rest.name);
+	        return self;
+        }
     }
     
     /// @param stat
@@ -99,7 +109,6 @@ function __mall_class_state(_name = "", _start = false, _rest, _hudname = _name)
     #endregion
     
     AddResistance(_rest);
-    SetString    (_hudname);
 }
 
 function mall_create_states() {
@@ -108,8 +117,8 @@ function mall_create_states() {
     
     var _count = array_length(_order);
     
-    repeat(argument_count) {
-    	var in = argument[_count];
+    var in; repeat(argument_count) {
+    	in = (MALL_LOCALIZE) ? (MALL_KEYSTART_STATE + argument[_count] ) : argument[_count];
     	
     	if (!variable_struct_exists(_stats, in) ) {		
     		array_push(_order, in);
@@ -161,6 +170,8 @@ function mall_get_state(_access) {
 /// @param resistance
 /// @param hud_name*
 function mall_state_customize(_name, _start, _rest, _hudname) {
+	_name = (MALL_LOCALIZE) ? (MALL_KEYSTART_STATE + _name) : _name;
+	
 	if (!mall_state_exists(_name) ) return noone;
 	
     return MALL_CONTROL.CustomizeState(_name, _start, _rest, _hudname);    

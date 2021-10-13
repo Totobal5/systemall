@@ -16,9 +16,17 @@ global._MALL_STORAGE = {
 
 #macro MALL_LOCALIZE true // Si utiliza las funciones de localizacion
 
+#macro MALL_KEYSTART_STAT		"MALL_STAT."
+#macro MALL_KEYSTART_STATE		"MALL_STATE."
+#macro MALL_KEYSTART_ELEMENT	"MALL_ELEMENT."
+#macro MALL_KEYSTART_PART		"MALL_POCKET."
+
 #macro MALL_NAME ".NAME"
 #macro MALL_DES  ".DESC"
 #macro MALL_TXT  ".TXT"
+
+
+
 
 /// @param name
 /// @param index
@@ -101,7 +109,6 @@ function __mall_group_control() constructor {
     	var _states = GetGroup().states;
         var _state  = (new __mall_class_state(_name, _start, _rest, _hudname) );
         
-		
 	    variable_struct_set(_states, _name, _state);
 
         return _state;

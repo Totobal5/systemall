@@ -5,18 +5,20 @@
 #macro MALL_FUN function(old, base, lvl)
 
 /// @param is
-function __mall_class_parent(_is) constructor {
+/// @param key
+/// @param index
+function __mall_class_parent(_is, _key = "", _index = -1) constructor {
     #region Interno
     __mall = "MALL";
     __is = _is;
 
     #endregion
 	
-	key = "";	// Si se localiza se utiliza esta llave
+	key = _key;	// Si se localiza se utiliza esta llave
 	
-	name  = "";	// Nombre de la clase
-	index = -1;	// indice
+	name  = lexicon_text(_key);	// Nombre de la clase
 	
+	index = _index;	// indice
 	ignore = false;	// Si se ignora globalmente
 	
 	#region GUI
@@ -223,97 +225,102 @@ function mall_custom_levelup_ele(old, base, lvl)	{
 
 /// @desc PLANTILLA PARA INICIAR EL SISTEMA!
 function mall_init() {
-	mall_create_itemtypes("MALL_ITEMTYPE.ARMAS"	 , "ESPADA", "DAGA", "HACHA");
-	mall_create_itemtypes("MALL_ITEMTYPE.ESCUDOS", "ESCUDO");
+	mall_create_itemtypes("ARMAS"  , "ESPADA", "DAGA", "HACHA");
+	mall_create_itemtypes("ESCUDOS", "ESCUDO");
 	
-	mall_create_itemtypes("MALL_ITEMTYPE.CASCOS", "CASCO", "SOMBRERO", "BOINA");
+	mall_create_itemtypes("CASCOS", "CASCO", "SOMBRERO", "BOINA");
 	
-	mall_create_itemtypes("MALL_ITEMTYPE.ARMADURA"  , "LIGERA" , "PESADA", "MALLAS");
-	mall_create_itemtypes("MALL_ITEMTYPE.ACCESORIOS", "GUANTES", "COLLAR", "ANILLO");
-	
+	mall_create_itemtypes("ARMADURA"  , "LIGERA" , "PESADA", "MALLAS");
+	mall_create_itemtypes("ACCESORIOS", "GUANTES", "COLLAR", "ANILLO");
+
 	//  Weapon, Shield, Helmet, Armor, and Gloves.
 	
-	mall_create_itemtypes("MALL_ITEMTYPE.OBJETOS", "POCIONES", "IMPORTANTE");
+	mall_create_itemtypes("OBJETOS", "POCIONES", "IMPORTANTE");
 	
-	mall_create_dark("MALL_DARK" , "ATAQUE", "DEFENSA", "OBJETO");
-	mall_create_dark("MALL_MAGIA", "BLANCA", "NEGRA"  , "ROJA"  , "VERDE");
+	mall_create_dark("BATALLA" , "ATAQUE", "DEFENSA", "OBJETO");
+	mall_create_dark("MAGIA"   , "BLANCA", "NEGRA"  , "ROJA"  , "VERDE");
 	
-	mall_create_pocket("MALL_POCKET.ARMAS"  , noone, "MALL_ITEMTYPE.ARMAS");
-	mall_create_pocket("MALL_POCKET.OBJETOS", noone, "MALL_ITEMTYPE.OBJETOS");
+	mall_create_pocket("ARMAS"  , noone, "ARMAS");
+	mall_create_pocket("OBJETOS", noone, "OBJETOS");
 	
 	mall_create_stats(
 		"PSMAX", "PMMAX", "EXPMAX", "PS", "PM", "EXP",
 		"FUE", "INT", "DEF", "ESP", "VEL",
 		
-		"FUEGOREST", "FUEGOATK"	  , "POLUCIONREST"  , "POLUCIONATK",	// Elementos
-		"VIVOREST" , "QUEMADURAREST", "MELANCOLIAREST"					// Resistencias
+		"FUEGO.REST", "FUEGO.ATAK" , "POLUCION.REST" , "POLUCION.ATAK",		// Elementos
+		"VIVO.REST" , "VENENO.REST", "QUEMADURA.REST", "MELANCOLIA.REST"	// Resistencias
 	);
 	
 	mall_create_states  ("VIVO" , "VENENO", "QUEMADURA", "MELANCOLIA");
 	mall_create_elements("FUEGO", "POLUCION");
 	
-	mall_create_parts("CABEZA", "MANO.IZQ", "MANO.DER", "TORSO", "PIERNAS", "FEET");
+	mall_create_parts("CABEZA", "MANO.IZQ", "MANO.DER", "CUERPO", "ORNAMENTOS");
 	
-	
-	var _group = mall_group_init("Default");
+	var _group = mall_group_init("MALL_GROUP.");
 
-	#region Estadisticas _name, _start = 0, _master, _formula
-	var _psmax = mall_stat_customize("ps_max", 0, undefined, mall_custom_levelup_stat1).Limits(0, 9999);
-	var _pmmax = mall_stat_customize("pm_max").Inherit(_psmax);
+	#region STATS
+	var _psmax = mall_stat_customize("PSMAX", 0, undefined, mall_custom_levelup_stat1).Limits(0, 9999);
+	var _pmmax = mall_stat_customize("PMMAX").Inherit(_psmax);
 	
-	var _expmax = mall_stat_customize("exp_max", 0, undefined, mall_custom_levelup_stat2).Limits(0, 999999);
+	var _expmax = mall_stat_customize("EXPMAX", 0, undefined, mall_custom_levelup_stat2).Limits(0, 999999);
 
-	var _ps  = mall_stat_customize("ps" , _psmax ).ToMax(false)	.Ignore();
-	var _pm  = mall_stat_customize("pm" , _pmmax ).ToMax(false)	.Ignore();
-	var _exp = mall_stat_customize("exp", _expmax).ToMin()		.Ignore();
+	var _ps  = mall_stat_customize("PS" , _psmax ).ToMax(false)	.Ignore();
+	var _pm  = mall_stat_customize("PM" , _pmmax ).ToMax(false)	.Ignore();
+	var _exp = mall_stat_customize("EXP", _expmax).ToMin()		.Ignore();
 	
-	var _fue = mall_stat_customize("fue", 0, undefined, mall_custom_levelup_stat3).Limits(0, 999);
-	var _int = mall_stat_customize("int").Inherit(_fue);
+	var _fue = mall_stat_customize("FUE", 0, undefined, mall_custom_levelup_stat3).Limits(0, 999);
+	var _int = mall_stat_customize("INT").Inherit(_fue);
 
-	var _def = mall_stat_customize("def").Inherit(_fue);
-	var _esp = mall_stat_customize("esp").Inherit(_fue);
+	var _def = mall_stat_customize("DEF").Inherit(_fue);
+	var _esp = mall_stat_customize("ESP").Inherit(_fue);
 	
-	var _spd = mall_stat_customize("vel").Inherit(_fue);
+	var _spd = mall_stat_customize("VEL").Inherit(_fue);
 
 	// Unir resistencias a los elementos y estadisticas en las estadisticas ya que la clase de "stat" ya posee todo lo necesario!
-	var _resfire = mall_stat_customize("fuego_rest", (new Data(0) ), undefined, mall_custom_levelup_res).Limits(0, 255);
+	var _resfire = mall_stat_customize("FUEGO.REST", (new Data(0) ), undefined, mall_custom_levelup_res).Limits(0, 255);
 	
-	var _atkfire = mall_stat_customize("fuego_atak", 0, undefined, mall_custom_levelup_ele).Limits(0, 999);
+	var _atkfire = mall_stat_customize("FUEGO.ATAK", 0, undefined, mall_custom_levelup_ele).Limits(0, 999);
 	
-	var _respolu = mall_stat_customize("polucion_rest").Inherit(_resfire); 
-	var _atkpolu = mall_stat_customize("polucion_atak").Inherit(_atkfire);
+	var _respolu = mall_stat_customize("POLUCION.REST").Inherit(_resfire); 
+	var _atkpolu = mall_stat_customize("POLUCION.ATAK" ).Inherit(_atkfire);
 	
-	var _restvivo = mall_stat_customize("vivo_rest").Inherit(_resfire).Ignore();
+	var _restvivo = mall_stat_customize("VIVO.REST").Inherit(_resfire).Ignore();
 	
-	var _restven = mall_stat_customize("veneno_rest")		.Inherit(_resfire);
-	var _restqem = mall_stat_customize("quemadura_rest")	.Inherit(_resfire);
-	var _restmel = mall_stat_customize("melancolia_rest")	.Inherit(_resfire);
+	var _restven = mall_stat_customize("VENENO.REST")		.Inherit(_resfire);
+	var _restqem = mall_stat_customize("QUEMADURA.REST")	.Inherit(_resfire);
+	var _restmel = mall_stat_customize("MELANCOLIA.REST")	.Inherit(_resfire);
 	
 	#endregion
-	var _vivo = mall_state_customize("vivo", true, _restvivo);
 	
-	var _ven = mall_state_customize("veneno", false, _restven, "Envenenado")
+	#region STATES
+	var _vivo = mall_state_customize("VIVO", true, _restvivo);
+	
+	var _ven = mall_state_customize("VENENO", false, _restven, "Envenenado")
 	.AddAffect(_fue, (new Data(-20) ), _ps, (new Data(-20) ) )
 	.Process  (15, 17, 1, 9, 1, "DARK.GSPELL.VENENO");
 
-	var _qem = mall_state_customize("quemadura", false, _restqem, "Quemado")
+	var _qem = mall_state_customize("QUEMADURA", false, _restqem, "Quemado")
 	.AddAffect(_fue, (new Data(-50) ) )
 	.Process  (50, 50, 0, 3, 1, "DARK.GSPELL.QUEMADURA");
 	
-	var _mel = mall_state_customize("melancolia", false, _restmel, "Melancolico")
+	var _mel = mall_state_customize("MELANCOLIA", false, _restmel, "Melancolico")
 	.AddAffect(_int, (new Data(-50) ) )
 	.Process  (20, 50, 5, 6, 2, "DARK.GSPELL.MELANCOLIA");
 	
-	var _fire = mall_element_customize("fuego"	 , _atkfire, _resfire, _qem, (new Data(20) ) );
-	var _polu = mall_element_customize("polucion", _atkpolu, _respolu, _ven, (new Data(50) ) );
-
-	var _hand1 = mall_part_customize("Mano izq.", "Armas", true).BonusItemsub("Espadas", (new Data(25) ) );
-	var _hand2 = mall_part_customize("Mano der.").Inherit(_hand1, true);
+	#endregion
 	
-	var _head  = mall_part_customize("Cabeza" , "Cascos"	, true);
-	var _pants = mall_part_customize("Piernas", "Pantalones", true);
-	var _torso = mall_part_customize("Torso"  , "Pantalones", true);
-	var _feet  = mall_part_customize("Pies"	  , "Zapatos"	, true);
+	var _fire = mall_element_customize("FUEGO"	 , _atkfire, _resfire, _qem, (new Data(20) ) );
+	var _polu = mall_element_customize("POLUCION", _atkpolu, _respolu, _ven, (new Data(50) ) );
+
+	#region PARTS
+	var _head  = mall_part_customize("CABEZA" , "CASCOS"	, true);
+	var _body  = mall_part_customize("CUERPO" , "ARMADURA"	, true);
+	var _orn   = mall_part_customize("ORNAMENTOS", "ACCESORIOS", true);
+
+	var _hand1 = mall_part_customize("MANO.IZQ", "ARMAS", true, "ESCUDOS", true).BonusItemsub("ESPADA", (new Data(25) ) );
+	var _hand2 = mall_part_customize("MANO.DER").Inherit(_hand1, true);
+
+	#endregion
 
 }
 

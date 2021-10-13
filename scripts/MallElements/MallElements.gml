@@ -1,9 +1,6 @@
-/// @param element_name
-/// @param element_index
-function __mall_class_element(_name = "") : __mall_class_parent("MALL_ELEMENT_INTERN") constructor {
+/// @param element_key
+function __mall_class_element(_key = "") : __mall_class_parent("MALL_ELEMENT_INTERN", _key) constructor {
     // Lo basico
-    SetBasic(_name, -1);
-    
     absorb = []; // Una estadistica qe puede beneficiar del elemento
     absorb_threshold = 0;
 
@@ -61,8 +58,8 @@ function mall_create_elements() {
     
     var _count = array_length(_order);
     
-    repeat(argument_count) {
-    	var in = argument[_count];
+    var in; repeat(argument_count) {
+    	in = (MALL_LOCALIZE) ? (MALL_KEYSTART_ELEMENT + argument[_count] ) : argument[_count];
     	
     	if (!variable_struct_exists(_elemns, in) ) {		
     		array_push(_order, in);
@@ -114,6 +111,8 @@ function mall_elements_copy() {
 /// @param produce_state
 /// @param produce_value...
 function mall_element_customize(_name, _attack, _defend, _produce, _chance) {
+	_name = (MALL_LOCALIZE) ? (MALL_KEYSTART_ELEMENT + _name) : _name;
+	
 	if (!mall_element_exists(_name) ) return noone;
 	
     return MALL_CONTROL.CustomizeElement(_name, _attack, _defend, _produce, _chance);

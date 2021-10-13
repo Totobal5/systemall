@@ -1,7 +1,5 @@
 /// @param name
-function __mall_class_part(_name) : __mall_class_parent("MALL_PART_INTERN") constructor {
-    SetBasic(_name, -1);
-    
+function __mall_class_part(_key) : __mall_class_parent("MALL_PART_INTERN", _key, -1) constructor {
     noitem = "noitem";	// Si no hay objeto equipado
     
     // Deterioro
@@ -162,8 +160,8 @@ function mall_create_parts() {
     
     var _count = array_length(_order);
     
-    repeat(argument_count) {
-    	var in = argument[_count];
+    var in; repeat(argument_count) {
+    	in = (MALL_LOCALIZE) ? (MALL_KEYSTART_PART + argument[_count] ) : argument[_count];
     	
     	if (!variable_struct_exists(_parts, in) ) {		
     		array_push(_order, in);
@@ -214,6 +212,8 @@ function mall_part_exists(_name) {
 /// @param capable_usable?
 /// @param ...
 function mall_part_customize(_name) {
+	_name = (MALL_LOCALIZE) ? (MALL_KEYSTART_PART + _name) : _name;
+
 	if (!mall_part_exists(_name) ) return noone;
 	
     var _part = MALL_CONTROL.CustomizePart(_name);

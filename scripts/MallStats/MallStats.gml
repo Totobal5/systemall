@@ -1,9 +1,6 @@
-/// @param stat_name
-/// @param stat_index
-function __mall_class_stat(_name = "", _start = 0) : __mall_class_parent("MALL_STAT_INTERN") constructor {
-    // Lo basico
-    SetBasic(_name);
-
+/// @param stat_key
+/// @param stat_start
+function __mall_class_stat(_key, _start) : __mall_class_parent("MALL_STAT_INTERN", _key, -1) constructor {
     // Father : Otra estadistica, no puede ser mayor que esta y solo master puede aumentar sus atributos mediante lvlup
     //	Así mismo no son tomados en cuenta para ser dibujados directamente.
     father = undefined;
@@ -163,8 +160,8 @@ function mall_create_stats() {
     
     var _count = array_length(_order);
     
-    repeat(argument_count) {
-    	var in = argument[_count];
+    var in; repeat(argument_count) {
+    	in = (MALL_LOCALIZE) ? (MALL_KEYSTART_STAT + argument[_count] ) : argument[_count];
     	
     	if (!variable_struct_exists(_stats, in) ) {		
     		array_push(_order, in);
@@ -212,6 +209,8 @@ function mall_get_stat(_access) {
 
 /// @returns {__mall_class_stat}
 function mall_stat_customize(_name, _start, _master, _levelformula, _levelmax) {
+	_name  = (MALL_LOCALIZE) ? MALL_KEYSTART_STAT + _name : _name;
+	
 	if (!mall_stat_exists(_name) ) return noone;
 	
     return MALL_CONTROL.CustomizeStat(_name, _start, _master, _levelformula, _levelmax);
