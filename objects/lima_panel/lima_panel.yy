@@ -1,0 +1,46 @@
+{
+  "spriteId": {
+    "name": "sprLimaTest2",
+    "path": "sprites/sprLimaTest2/sprLimaTest2.yy",
+  },
+  "solid": false,
+  "visible": true,
+  "managed": true,
+  "spriteMaskId": null,
+  "persistent": false,
+  "parentObjectId": {
+    "name": "lima_parent",
+    "path": "objects/lima_parent/lima_parent.yy",
+  },
+  "physicsObject": false,
+  "physicsSensor": false,
+  "physicsShape": 1,
+  "physicsGroup": 1,
+  "physicsDensity": 0.5,
+  "physicsRestitution": 0.1,
+  "physicsLinearDamping": 0.1,
+  "physicsAngularDamping": 0.1,
+  "physicsFriction": 0.2,
+  "physicsStartAwake": true,
+  "physicsKinematic": false,
+  "physicsShapePoints": [],
+  "eventList": [],
+  "properties": [
+    {"varType":4,"value":"[]","rangeEnabled":false,"rangeMin":0.0,"rangeMax":10.0,"listItems":[],"multiselect":false,"filters":[],"resourceVersion":"1.0","name":"panelElements","tags":[],"resourceType":"GMObjectProperty",},
+    {"varType":6,"value":"\"Horizontal\"","rangeEnabled":false,"rangeMin":0.0,"rangeMax":10.0,"listItems":[
+        "\"Horizontal\"",
+        "\"Vertical\"",
+      ],"multiselect":false,"filters":[],"resourceVersion":"1.0","name":"orentation","tags":[],"resourceType":"GMObjectProperty",},
+  ],
+  "overriddenProperties": [
+    {"propertyId":{"name":"isActive","path":"objects/lima_parent/lima_parent.yy",},"objectId":{"name":"lima_parent","path":"objects/lima_parent/lima_parent.yy",},"value":"False","resourceVersion":"1.0","name":"","tags":[],"resourceType":"GMOverriddenProperty",},
+  ],
+  "parent": {
+    "name": "Elements",
+    "path": "folders/Lima/Elements.yy",
+  },
+  "resourceVersion": "1.0",
+  "name": "lima_panel",
+  "tags": [],
+  "resourceType": "GMObject",
+}
