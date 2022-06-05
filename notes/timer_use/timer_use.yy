@@ -1,7 +1,7 @@
 {
   "parent": {
-    "name": "timer",
-    "path": "folders/timer.yy",
+    "name": "systemall",
+    "path": "systemall.yyp",
   },
   "resourceVersion": "1.1",
   "name": "timer_use",

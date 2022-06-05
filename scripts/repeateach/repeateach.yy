@@ -2,8 +2,8 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "rpg_systemall",
-    "path": "rpg_systemall.yyp",
+    "name": "systemall",
+    "path": "systemall.yyp",
   },
   "resourceVersion": "1.0",
   "name": "repeateach",

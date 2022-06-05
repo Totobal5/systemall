@@ -2,6 +2,7 @@
   "spriteId": null,
   "solid": false,
   "visible": true,
+  "managed": true,
   "spriteMaskId": null,
   "persistent": false,
   "parentObjectId": null,
@@ -21,8 +22,8 @@
   "properties": [],
   "overriddenProperties": [],
   "parent": {
-    "name": "rpg_systemall",
-    "path": "rpg_systemall.yyp",
+    "name": "systemall",
+    "path": "systemall.yyp",
   },
   "resourceVersion": "1.0",
   "name": "oEnemy_parent",
