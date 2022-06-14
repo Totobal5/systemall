@@ -25,17 +25,17 @@ function MallComponent(_key="") constructor {
 	#endregion
 
     #region METHODS
-	/// @param {String} _key
-	/// @param {String} [__keyFrom]
+	/// @param {String} key			LLave propia
+	/// @param {String} [keyFrom]	De quien proviene
 	/// @param {Struct.MallComponent}
 	static setKey = function(_key, _keyFrom="") {
 		__key  = _key;
 		__from = _keyFrom;
 	}
 	
-	/// @param {Bool} _display			Ignorar en el UI
-	/// @param {String} _display_key	Llave a usar
-	/// @param {String} [TextKey...]
+	/// @param {Bool}	display			Ignorar en el UI
+	/// @param {String} display_key		Llave a usar (Lexicon)
+	/// @param {String} [TextKey...]	Distintas llaves a utilizar (Lexicon)
 	/// @desc Establece las llaves de traduccion que utiliza Lexicon
     static setDisplay = function(_display=true, _display_key) {
         // Si es undefined se establece que la llave de display es la misma que la llave del componente

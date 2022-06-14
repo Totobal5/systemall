@@ -1,4 +1,4 @@
-/// @param {String} _key
+/// @param {String} state_key
 /// @desc Obtiene el estado en el grupo actual
 /// @return {Struct.MallState}
 function mall_get_state(_key){

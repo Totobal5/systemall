@@ -1,2 +1,0 @@
-/// @description [DEFAUTL TEMPLATE]
-defaultTemplate();

@@ -1,5 +1,5 @@
-/// @param	{String} _key
-/// @param	{Bool} [_init]
+/// @param	{String} group_key
+/// @param	{Bool} [start_now]
 /// @desc	Un grupo es como debe funcionar los componentes guardados (MallStorage) entre sí. Esto sirve para diferenciar clases, especies o razas en distintos rpg (Humanos distintos a Orcos por ejemplo)
 /// @return {Struct.MallGroup}
 function MallGroup(_key, _init=false) constructor {

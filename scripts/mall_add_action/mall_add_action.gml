@@ -1,4 +1,6 @@
-/// @param _key
+/// @param action_key
+/// @param [prefix_keys]
+/// @desc Añade acciones globalmente
 function mall_add_action(_key) {
     var _action = new MallAction(_key);
     

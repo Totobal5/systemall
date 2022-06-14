@@ -1,4 +1,4 @@
-/// @param {String} _key
+/// @param {String} part_key
 /// @return {Struct.MallPart}
 function MallPart(_key) : MallComponent(_key) constructor {
 	#region PRIVATE
@@ -23,11 +23,11 @@ function MallPart(_key) : MallComponent(_key) constructor {
 	
     #region METHODS
     
-    /// @param _itemtype_key
-    /// @param _value
-    /// @param _type
+    /// @param itemtype_key
+    /// @param bonus_value
+    /// @param number_type
     /// @param ...
-    /// Indica que objetos puede equipar esta parte y el bonus agregado
+    /// @desc Indica que objetos puede equipar esta parte y el bonus agregado
     static setItemtype = function(_itemtype_key, _value=0, _type=0) {
         if (argument_count > 3) {
             var i=0; repeat(argument_count div 3) {
@@ -45,13 +45,13 @@ function MallPart(_key) : MallComponent(_key) constructor {
         return self;    
     }
     
-    /// @param {String} _item_key
+    /// @param {String} item_key
 	/// @return {Array<Real>}
     static getItemtype = function(_item_key) {
         return (__items[$ _item_key] );
     }
     
-    /// @param {String} _part_key
+    /// @param {String} part_key
 	/// @desc Unir una parte a la actual
 	/// @return {Struct.MallPart}
     static link = function(_part_key) {
@@ -60,7 +60,7 @@ function MallPart(_key) : MallComponent(_key) constructor {
         return self;
     }
     
-    /// @param {String} _part_key
+    /// @param {String} part_key
 	/// @return {Struct.MallPart}
     static joint = function(_part_key) {
         __joint[$ _part_key] = true;

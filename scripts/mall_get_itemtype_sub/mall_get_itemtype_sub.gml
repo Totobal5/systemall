@@ -1,4 +1,4 @@
-/// @param {String} key
+/// @param {String} sub_itemtype
 /// @desc Devuelve el tipo a partir del subtipo
 /// @return {String}
 function mall_get_itemtype_sub(_sub_key) {

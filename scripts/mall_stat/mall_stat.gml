@@ -1,3 +1,4 @@
+/// @param {String}	stat_key
 /// @desc Donde se guardan las propiedades de una estadistica
 function MallStat(_key) : MallComponent(_key) constructor {
     #region PRIVATE
@@ -29,10 +30,10 @@ function MallStat(_key) : MallComponent(_key) constructor {
 	#endregion
 	
     #region METHODS
-	/// @param {Struct.MallStat, String} _stat	MallStat o llave
-	/// @param {Bool} [_inh_limit]		Heredar limites
-	/// @param {Bool} [_inh_lvl]		Heredar formula de nivel
-	/// @param {Bool} [_inh_display]	Heredar metodo de display
+	/// @param {Struct.MallStat, String}	stat				MallStat o llave
+	/// @param {Bool}						[inherit_limit]		Heredar limites
+	/// @param {Bool}						[inherit_lvl]		Heredar formula de nivel
+	/// @param {Bool}						[inherit_display]	Heredar metodo de display
 	/// @desc Copia el limite, valor inicial y formula de otro MallStat
 	/// @return {Struct.MallStat}
     static inherit = function(_stat, _inh_limit=true, _inh_lvl=true, _inh_display=false) {
@@ -40,7 +41,7 @@ function MallStat(_key) : MallComponent(_key) constructor {
 			/// @type {Struct.MallStruct}
 			_stat = mall_get_stat(_stat);
 		}
-		
+
 		// Copiar valor inicial
 		numtype_copy(__initial, _stat.__initial);
 		
@@ -81,25 +82,25 @@ function MallStat(_key) : MallComponent(_key) constructor {
         return self;
     }
     
-	/// @param {Function} _method
+	/// @param {Function} visualize_method	Forma de visualizar los datos de esta estadistica
 	/// @return {Struct.MallStat}	
     static setVisualize = function(_method) {
     	__visualize = method(undefined, _method);
     	return self;
     }
     
-	/// @param {Real} _initial
-	/// @param {Real} _type
-	/// @param {Real} _min
-	/// @param {Real} _max
+	/// @param {Real} initial_value
+	/// @param {Real} number_type
+	/// @param {Real} min
+	/// @param {Real} max
 	/// @return {Struct.MallStat}
 	static set = function(_initial, _type, _min, _max) { 
 		__initial = numtype(_initial, _type);	
 		return setLimit(_min, _max);
 	}
 	
-    /// @param {Real} _min
-    /// @param {Real} [_max]
+    /// @param {Real} min
+    /// @param {Real} [max]
 	/// @return {Struct.MallStat}	
     static setLimit = function(_min, _max) {
 		if (!is_array(_min) ) {
@@ -113,10 +114,10 @@ function MallStat(_key) : MallComponent(_key) constructor {
         return self;
     }
     
-    /// @param {Function} _method
-    /// @param {Real} _min
-    /// @param {Real} _max
-    /// @param {Bool} _single
+    /// @param {Function} level_method	Forma de subir de nivel	function(level, stat, self)
+    /// @param {Real} min_level			Nivel minimo
+    /// @param {Real} max_level			Nivel maximo
+    /// @param {Bool} [single_level]	Aumenta de nivel ignorando el sistema para subir establecido.
 	/// @return {Struct.MallStat}	
     static setLevel = function(_method, _min = 0, _max = 100, _single = false) {
     	// Si ya existe un lider no usar
@@ -128,8 +129,8 @@ function MallStat(_key) : MallComponent(_key) constructor {
         return self;
     }
     
-    /// @param {Real} _min
-    /// @param {Real} _max
+    /// @param {Real} min_level	Nivel minimo
+    /// @param {Real} max_level	Nivel maximo
     static setLimitLevel = function(_min, _max) {
     	if (!is_array(_min) ) {
 			__lvlLimits[0] = _min;
@@ -166,9 +167,9 @@ function MallStat(_key) : MallComponent(_key) constructor {
         return self;
     }
     
-    /// @param {String} _stateKey
-    /// @param _value
-	/// @param _type
+    /// @param {String} state_key	LLave de estado
+    /// @param			value		Valor que afecta el estado a esta estadistica	
+	/// @param			number_type	Tipo de numero	
 	/// @return {Struct.MallStat}
     static setAffected = function(_stateKey, _value, _type=NUMTYPE.REAL) {
 		if (!is_array(_value) ) {
@@ -181,14 +182,14 @@ function MallStat(_key) : MallComponent(_key) constructor {
         return self;
     }
     
-    /// @param {String} _stateKey
+    /// @param {String} state_key
     static getAffected = function(_stateKey) {
         return (__affected[$ _stateKey] );    
     }
 	
-	/// @param {Real} _lvl
-	/// @param {Struct.__PartyStatsComponent} _stat
-	/// @param {Struct.PartyStats} _self
+	/// @param {Real}							lvl
+	/// @param {Struct.__PartyStatsComponent}	stat
+	/// @param {Struct.PartyStats}				self
 	static execute = function(_lvl, _stat, _self) {
 		return (__lvlMethod(_lvl, _stat, _self) );	
 	}
@@ -205,7 +206,7 @@ function MallStat(_key) : MallComponent(_key) constructor {
     #endregion
 }
 	
-/// @param {Real} _x
+/// @param {Real} value
 function __mall_stat_rounding(_x) {
 	switch (MALL_STAT_ROUND) {	
 		case 0: return _x;			break;

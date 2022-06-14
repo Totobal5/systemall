@@ -1,5 +1,5 @@
-/// @param	{String} _key
-/// @param	{String} [_prefix]
+/// @param	{String} state_key
+/// @param	{String} [prefix_keys]
 /// @desc	Crea un estado y agrega una estadistica al Storage en base al nuevo estado 
 /// 		utiliza prefijos para crear las estadisticas relacionadas
 function mall_add_state(_key) {

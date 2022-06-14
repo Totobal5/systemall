@@ -1,5 +1,5 @@
-/// @param {String} _group_key
-/// @param {Bool} _actual
+/// @param {String} group_key
+/// @param {Bool} [make_actual]
 /// @return {Struct.MallGroup}
 function mall_add_group(_group_key, _actual=false) {
 	var _group = new MallGroup(_group_key); 

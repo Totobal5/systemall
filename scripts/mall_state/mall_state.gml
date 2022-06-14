@@ -1,3 +1,4 @@
+/// @param {String}	state_key
 /// @desc Donde se guardan las propiedades de los estados
 function MallState(_key) : MallComponent(_key) constructor {
 	#region PRIVATE
@@ -47,7 +48,7 @@ function MallState(_key) : MallComponent(_key) constructor {
         return self;
     }
     
-    /// @param stat/part/action
+    /// @param stat_part_action
     /// @param value
     /// @param number_type
     /// @param ...
@@ -95,9 +96,9 @@ function MallState(_key) : MallComponent(_key) constructor {
         return self;
     }
     
-    /// @param _init
-    /// @param _update
-    /// @param _end
+    /// @param start_message
+    /// @param update_message
+    /// @param end_message
     static setMessages = function(_init, _update, _end) {
         __propInit   =  _init;
         __propUpdate = _update;

@@ -1,14 +1,11 @@
-/*
-    Donde se guarda la configuracion para los elementos del proyecto
-        Se configuran: 
-            1) Que estado causa este elemento y la probabilidad de hacerlo
-            2) Que estadistica defiende a este elemento
-            3) Que estadistica ataca con este elemento
-            4) Que estadistica puede absorver este elemento     (en base a un umbral)
-            5) Que estadistica es reducida por este elemento    (en base a un umbral)
-*/
-
-/// @param {String} _key
+/// @desc Donde se guarda la configuracion para los elementos del proyecto
+///		Se configuran: 
+///		   1) Que estado causa este elemento y la probabilidad de hacerlo
+///		   2) Que estadistica defiende a este elemento
+///		   3) Que estadistica ataca con este elemento
+///		   4) Que estadistica puede absorver este elemento	(en base a un umbral)
+///		   5) Que estadistica es reducida por este elemento	(en base a un umbral)
+/// @param {String} element_key
 /// @return {Struct.MallElement}
 function MallElement(_key) : MallComponent(_key) constructor {
     #region PRIVATE

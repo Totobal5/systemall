@@ -1,6 +1,6 @@
-/// @param {String} _key
-/// @param {String} _produce_state
-/// @param {Real}   _produce_probability
+/// @param {String} element_key				Llave del elemento
+/// @param {String} produce_state			Estado que provoca
+/// @param {Real}   produce_probability		Probabilidad de provocarlo
 /// @returns {Struct.MallElement}
 function mall_element_customize(_key, _produce_state, _produce_probability) {
     var _prefix  = mall_get_element_prefix(_key);

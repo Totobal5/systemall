@@ -1,6 +1,6 @@
-/// @param {string} part_key
-/// @param number       Cantidad de estas partes y su valor inicial EJ: [true, false, false] 
-/// @param equip_max
+/// @param	{String}		part_key
+/// @param	{Array<Bool>}	number		Cantidad de estas partes y su valor inicial EJ: [true, false, false] 
+/// @param	{Real}			equip_max	
 /// @returns {MallPart}
 function mall_customize_part(_key, _number, _equip = 1) {
     var _part = mall_get_part(_key);

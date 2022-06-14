@@ -80,7 +80,7 @@ function mall_data_init() {
 	#endregion
 }
 
-/// @param _msg Mensaje a mostrar
+/// @param message Mensaje a mostrar
 function __mall_trace(_msg) {
 	if (MALL_TRACE) {
 		show_debug_message("MALL: " + string(_msg) );	

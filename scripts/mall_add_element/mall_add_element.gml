@@ -1,5 +1,5 @@
-/// @param {string} _key
-/// @param prefix...
+/// @param {String} element_key
+/// @param [prefix_keys]
 /// @desc Crea un elemento y agrega estadistica al storage en base a este, mediante prefijos para trabajar con ellos
 function mall_add_element(_key) {
     var _prefix = [MALL_ELEMENT_PREFIX_ATTACK, MALL_ELEMENT_PREFIX_DEFEND];

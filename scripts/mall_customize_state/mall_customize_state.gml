@@ -1,6 +1,6 @@
-/// @param _key
-/// @param _init
-/// @param _numtype
+/// @param {String}	state_key
+/// @param {Real}	start_value
+/// @param numtype
 /// @returns {Struct.MallState}
 function mall_customize_state(_key, _init, _numtype=NUMTYPE.BOOLEAN) {
     var _state = mall_get_state(_key);
