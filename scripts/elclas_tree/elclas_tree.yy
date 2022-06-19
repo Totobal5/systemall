@@ -2,8 +2,8 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Classes",
-    "path": "folders/ElClasico/Classes.yy",
+    "name": "Tree",
+    "path": "folders/ElClasico/Data/Tree.yy",
   },
   "resourceVersion": "1.0",
   "name": "elclas_Tree",

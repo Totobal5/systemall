@@ -2,7 +2,8 @@
 /// @param {Real}	start_value
 /// @param numtype
 /// @returns {Struct.MallState}
-function mall_customize_state(_key, _init, _numtype=NUMTYPE.BOOLEAN) {
+function mall_customize_state(_key, _init, _numtype=NUMTYPE.BOOLEAN) 
+{
     var _state = mall_get_state(_key);
     
 	_state.__init    = numtype(_init, _numtype);

@@ -2,8 +2,8 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Pocket",
-    "path": "folders/Mall/Pocket.yy",
+    "name": "Constructor",
+    "path": "folders/Mall/Pocket/Constructor.yy",
   },
   "resourceVersion": "1.0",
   "name": "pocket_Item",

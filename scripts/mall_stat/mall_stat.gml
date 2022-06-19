@@ -9,7 +9,7 @@ function MallStat(_key) : MallComponent(_key) constructor {
     __affected = {};
 
 		#region Configuracion
-	__initial = numtype(0, NUMTYPE.REAL);
+	__initial = numtype(0, NUMTYPES.REAL);
     __limits  = [0, 0];
     
     // No hay cambios
@@ -36,7 +36,8 @@ function MallStat(_key) : MallComponent(_key) constructor {
 	/// @param {Bool}						[inherit_display]	Heredar metodo de display
 	/// @desc Copia el limite, valor inicial y formula de otro MallStat
 	/// @return {Struct.MallStat}
-    static inherit = function(_stat, _inh_limit=true, _inh_lvl=true, _inh_display=false) {
+    static inherit = function(_stat, _inh_limit=true, _inh_lvl=true, _inh_display=false) 
+	{
 		if (is_string(_stat) ) {
 			/// @type {Struct.MallStruct}
 			_stat = mall_get_stat(_stat);
@@ -48,13 +49,24 @@ function MallStat(_key) : MallComponent(_key) constructor {
         // Si se hereda el limite de valor
         if (_inh_limit) setLimit(_stat.__limits);
 		
-		// Si se hereda lo relacionado al nivel (method y limite)
-		if (_inh_lvl) {
+		#region Hereda nivel
+		if (_inh_lvl) 
+		{
 	        __lvlMethod = method(undefined, _stat.__lvlMethod);	// Copiar formula para subir de nivel
 			array_copy(__lvlLimit, 0, _stat.__lvlLimit, 0, 2);	// Copiar limite de nivel
 		}
         
-        if (_inh_display) __display = _stat.__display;
+		#endregion
+		
+		#region Heredar display
+        if (_inh_display) 
+		{
+			__display	 = _stat.__display;
+			__displayKey = _stat.__displayKey;
+			__displayMethod = method(undefined, _stat.__displayMethod);	
+		}
+		
+		#endregion
         
         return self;
     }
@@ -93,6 +105,7 @@ function MallStat(_key) : MallComponent(_key) constructor {
 	/// @param {Real} number_type
 	/// @param {Real} min
 	/// @param {Real} max
+	/// @desc	Establece el valor inicial, tipo de numero, el valor minimo y maximo
 	/// @return {Struct.MallStat}
 	static set = function(_initial, _type, _min, _max) { 
 		__initial = numtype(_initial, _type);	
@@ -117,7 +130,7 @@ function MallStat(_key) : MallComponent(_key) constructor {
     /// @param {Function} level_method	Forma de subir de nivel	function(level, stat, self)
     /// @param {Real} min_level			Nivel minimo
     /// @param {Real} max_level			Nivel maximo
-    /// @param {Bool} [single_level]	Aumenta de nivel ignorando el sistema para subir establecido.
+    /// @param {Bool} [solo_level]		Aumenta de nivel ignorando el sistema para subir establecido.
 	/// @return {Struct.MallStat}	
     static setLevel = function(_method, _min = 0, _max = 100, _single = false) {
     	// Si ya existe un lider no usar
@@ -131,7 +144,7 @@ function MallStat(_key) : MallComponent(_key) constructor {
     
     /// @param {Real} min_level	Nivel minimo
     /// @param {Real} max_level	Nivel maximo
-    static setLimitLevel = function(_min, _max) {
+    static setLevelLimit = function(_min, _max) {
     	if (!is_array(_min) ) {
 			__lvlLimits[0] = _min;
 			__lvlLimits[1] = _max;
@@ -171,7 +184,7 @@ function MallStat(_key) : MallComponent(_key) constructor {
     /// @param			value		Valor que afecta el estado a esta estadistica	
 	/// @param			number_type	Tipo de numero	
 	/// @return {Struct.MallStat}
-    static setAffected = function(_stateKey, _value, _type=NUMTYPE.REAL) {
+    static setAffected = function(_stateKey, _value, _type=NUMTYPES.REAL) {
 		if (!is_array(_value) ) {
 			__affected[$ _stateKey] = numtype(_value, _type); 	
 		}
@@ -183,8 +196,9 @@ function MallStat(_key) : MallComponent(_key) constructor {
     }
     
     /// @param {String} state_key
-    static getAffected = function(_stateKey) {
-        return (__affected[$ _stateKey] );    
+	/// @desc Devuelve que estado lo afecta
+    static getAffected = function(_key) {
+        return (__affected[$ _key] );    
     }
 	
 	/// @param {Real}							lvl

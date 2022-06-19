@@ -1,7 +1,7 @@
 /// @param {String} state_key
 function MallStateProp(_key) constructor {
     __name = _key;
-    __count = (new Counter(0, 0) ).ToggleIterate(); /// @is {Counter}
+    __count = (new Counter(0, 0) );
     
     // -- Metodos
     __mStart  = MALL_DUMMY_METHOD;

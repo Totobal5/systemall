@@ -1,24 +1,21 @@
-
-/// @param name
-/// @param {PartyStats}     stats
-/// @param {PartyControl}   control
-/// @param {PartyParts}     parts
+/// @param  {String}				entity_name
+/// @param  {Struct.PartyStats}		stats
+/// @param  {Struct.PartyControl}	control
+/// @param  {Struct.PartyParts}		parts
 /// @param group_key
-function PartyEntity(_name = "Test", _stats, _control, _parts, _group) : MallComponent(_name) constructor {
-    __group = _group;
+function PartyEntity(_name = "Test", _stats, _control, _parts, _group) : MallComponent(_name) constructor 
+{
+    __group = _group;	// Key del party group
+	__groupIndex = -1;	// Indice del party group
+	
     __party = -1;
-    
-    // Renderizado
-    __pos = (new Vector2(0, 0) );
-    __spr = -1;        
-    
+  
     // Estructuras        
-    __stats   = _stats;     /// @is {PartyStats}    // Estadisticas        
-    __control = _control;   /// @is {PartyControl}  // Control de estados / buffos      
-    __parts   = _parts  ;                           // Equipo y partes
+    __stats   = _stats;		// Estadisticas        
+    __control = _control;   // Control de estados / buffos      
+    __parts   = _parts  ;   // Equipo y partes
             
     __commands = {};        // Que comandos puede realizar
-    
     
     #region Metodos
     
@@ -28,20 +25,31 @@ function PartyEntity(_name = "Test", _stats, _control, _parts, _group) : MallCom
     }
     
     /// @returns {PartyParts}
-    static GetParts = function() {
+    static getParts = function() {
         return __parts; 
     }
     
     /// @returns {PartyControl}
-    static GetControl = function() {
+    static getControl = function() {
         return __control;
     }
     
     /// @returns {PartyStats}
-    static GetStats = function() {
+    static getStats = function() {
         return __stats;
     }
     
-    
+	static setGroup = function(_key, _index)
+	{
+		__group = _key;
+		__groupIndex = _index;
+		
+		__stats	 .setKey(_key, _index);	// Establece la llave del grupo y el indice para crear la referencia.
+		__control.setKey(_key, _index);	
+		
+		return self;
+	}
+  
+  
     #endregion
 }

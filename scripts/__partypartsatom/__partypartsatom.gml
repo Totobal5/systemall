@@ -1,8 +1,9 @@
-/// @param {Bool} _usable
-/// @param {Real} _index
-/// @param {Real} _max
+/// @param {Bool} is_usable
+/// @param {Real} index
+/// @param {Real} item_max
 /// @return {Struct.__PartyPartsAtom}
-function __PartyPartsAtom(_usable, _index, _max) constructor {
+function __PartyPartsAtom(_usable, _index, _max) constructor 
+{
 	#region PRIVATE
 	__number = _index;
 	__max = _max;		// Cuantos objetos puede equipar al mismo tiempo	

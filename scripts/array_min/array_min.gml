@@ -1,4 +1,4 @@
-/// @param {Array} _array
+/// @param {Array<Real>} _array
 /// @desc Devuelve el menor numero en un array (Default=0)
 /// @returns {Real} 
 function array_min(_array) {

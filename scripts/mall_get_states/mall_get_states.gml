@@ -1,5 +1,5 @@
 /// @desc Devuelve todos las llaves de estado
-/// @returns {Array}
+/// @returns {Array<String>}
 function mall_get_states() {
     return (global.__mall_states_master);
 }

@@ -3,7 +3,7 @@
   "isCompatibility": false,
   "parent": {
     "name": "__PartyAtoms",
-    "path": "folders/Mall/Party/__PartyAtoms.yy",
+    "path": "folders/Mall/Party/Constructor/__PartyAtoms.yy",
   },
   "resourceVersion": "1.0",
   "name": "__PartyPartsAtom",

@@ -1,57 +1,65 @@
-/// @param {String}	_subtype
-/// @param {Real}	_buy
-/// @param {Real}	_sell
-/// @param _stat_key
-/// @param _stat_value
-/// @param ...
+/// @param	{String}	item_subtype
+/// @param	{Real}		[buy]
+/// @param	{Real}		[sell]
+/// @param	{String}	[stat_key]
+/// @param				[stat_value]
 /// @return {Struct.PocketItem}
-function PocketItem(_subtype, _buy, _sell) : MallComponent() constructor {
+function PocketItem(_subtype, _buy=0, _sell=0) : MallComponent() constructor 
+{
     #region PRIVATE
-	__type = mall_get_itemtype_sub(_subtype); // Buscar tipo esto
-    __subtype = _subtype;    
-    
+	/// @ignore
+	__type		= mall_get_itemtype_sub(_subtype); // Buscar tipo esto
+	/// @ignore
+    __subtype	= _subtype;    
+	/// @ignore 
 	__buy  = _buy;	// Valor al que se compra
+	/// @ignore
     __sell = _sell;	// Valor al que se vende
-	
+	/// @ignore
     __canSell = true;	// Si puede vender	 
+	/// @ignore
 	__canBuy  = true;	// Si puede comprar
-    
+    /// @ignore
     __parts = 1;	// Cuantas partes necesita para ser equipado
-    
+    /// @ignore
     __stats    = {};    // Donde se guardan sus estadisticas    
+	/// @ignore
     __statsInv = {};    // Las estadisticas de arriba invertidas  
-    
+    /// @ignore
     __invert = false; // Devolver las estadisticas invertidas(true) o normales (false)
-     
-    // Effectos
-    __events = {   
-        inEquip:        MALL_DUMMY_METHOD,  // Metodo que se ejecuta al equiparse este objeto     
-        inDesequip:     MALL_DUMMY_METHOD,  // Metodo que se ejecuta al desequiparse este objeto
-        inEquipUpdate:  MALL_DUMMY_METHOD,  // Metodo que se ejecuta cada ciclo mientras se mantenga este objeto (fuera de la batalla)
-        
-        // En Batallas
-        inBattleStart : MALL_DUMMY_METHOD,  
-        inBattleUpdate: MALL_DUMMY_METHOD,
-        inBattleEnd:    MALL_DUMMY_METHOD,
-        inAttack:	MALL_DUMMY_METHOD,
-		inDefend:	MALL_DUMMY_METHOD,
-		
-        // En turnos
-        inTurnStart:    MALL_DUMMY_METHOD,  
-        inTurnUpdate:   MALL_DUMMY_METHOD,
-        inTurnEnd:      MALL_DUMMY_METHOD
-    };
 
 	#endregion
 
+    // Effectos
+	/// @ignore
+	static _nofun = function(caster, target, extra) {};
+    events = {   
+        inEquip:        other._nofun,  // Metodo que se ejecuta al equiparse este objeto     
+        inDesequip:     other._nofun,  // Metodo que se ejecuta al desequiparse este objeto
+        inEquipUpdate:  other._nofun,  // Metodo que se ejecuta cada ciclo mientras se mantenga este objeto (fuera de la batalla)
+        
+        // En Batallas
+        inBattleStart : other._nofun,	// Al iniciar la batalla  
+        inBattleUpdate: other._nofun,	// Al actualizar la batalla
+        inBattleEnd:    other._nofun,	// Al terminar la batalla
+        inAttack:	other._nofun,		// Al atacar
+		inDefend:	other._nofun,		// Al defender
+		
+        // En turnos
+        inTurnStart:    other._nofun,	// Al iniciar un turno
+        inTurnUpdate:   other._nofun,	// Al actualizar el turno
+        inTurnEnd:      other._nofun	// Al terminar el turno
+    };
+
     #region METHODS
     
-    /// @param _stat_key
-    /// @param _value
-    /// @param _type
+    /// @param	{String}		stat_key
+    /// @param	{Real}			value
+    /// @param	{Enum.NUMTYPES}	type
     /// @desc Pone valores a las estadisticas
 	/// @return {Struct.PocketItem}
-    static setStat = function(_stat_key, _value, _type=NUMTYPE.REAL) {
+    static setStat = function(_stat_key, _value, _type=NUMTYPES.REAL) 
+	{
         if (argument_count < 4) {
             __stats   [$ _stat_key] = numtype( _value, _type);
             __statsInv[$ _stat_key] = numtype(-_value, _type);
@@ -69,34 +77,21 @@ function PocketItem(_subtype, _buy, _sell) : MallComponent() constructor {
         return self;
     }
     
-	/// @desc Permite devolver las estadisticas de este objeto normal o invertidas (invert())
+	/// @param {Bool}	[invert_stats]
+	/// @desc Permite devolver las estadisticas de este objeto normal o invertidas
     /// @return {Struct.Array}
-    static getStats = function() {
-        return (!__invert) ? 
-			__stats		:
-			__statsInv;
+    static getStats = function(_invert=false) 
+	{
+        return (!_invert) ? __stats : __statsInv;
     }
 
-	/// @desc Indicar que devuelva las estadisticas al revez
+    /// @param	{Real}	buy_value
+    /// @param	{Real}	buy_sell
+    /// @param	{Bool}	[can_buy]
+    /// @param	{Bool}	[can_sell]
 	/// @return {Struct.PocketItem}
-	static invert = function() {
-		__invert = true;
-		return self;
-	}
-
-	/// @desc Indicar que devuelva las estadisticas normalmente
-	/// @return {Struct.PocketItem}
-	static normal = function() {
-		__invert = false;
-		return self;
-	}
-	
-    /// @param {Bool} _buy
-    /// @param {Real} _sell
-    /// @param {Bool} _can_buy
-    /// @param {Real} _can_sell
-	/// @return {Struct.PocketItem}
-    static setTrade  = function(_buy=0, _sell=0, _can_buy=true, _can_sell=true) {
+    static setTrade  = function(_buy=0, _sell=0, _can_buy=true, _can_sell=true) 
+	{
 		__sell = _sell;
 		__buy  =  _buy;
 	   
@@ -106,15 +101,37 @@ function PocketItem(_subtype, _buy, _sell) : MallComponent() constructor {
         return self;
     }
     
-    /// @param {String}		_event
-    /// @param {Function}	_function
-    static setEvents = function(_event, _function) {
-        __events[$ _event] = _function;    
+    /// @param {String}				events_key
+    /// @param {Function, String}	function_or_dark_key
+	/// @desc Event key: 
+	///			$ inEquip 
+	///			$ inDesequip
+	///			$ inEquipUpdate
+	///			$ inBattleStart
+	///			$ inBattleUpdate
+	///			$ inBattleEnd
+	///			$ inAttack                        function(caster, target, extra) {}
+	///			$ inDefend                        function(caster, target, extra) {} 
+	///			$ inTurnStart
+	///			$ inTurnUpdate
+	///			$ inTurnEnd
+    static setEvents = function(_event, _function) 
+	{
+		if (is_string(_function) )
+		{
+			events[$ _event] = dark_get(_function).getCommand();
+		}
+        else
+		{
+			events[$ _event] = method(undefined, _function);    	
+		}
         return self;    
     }
     
+	/// @param	{Real}	parts_number
     /// @desc Establecer cuantas partes necesita para poder equiparse
-    static setPartsNumber = function(_use = 1) {
+    static setPartsNumber = function(_use = 1) 
+	{
         __parts = _use;
         return self;
     }
@@ -122,7 +139,8 @@ function PocketItem(_subtype, _buy, _sell) : MallComponent() constructor {
     #endregion
 
     // Iniciar estadisticas rapidamente
-    var i = 3; repeat( (argument_count - 3) div 3) {
+    var i = 3; repeat( (argument_count - 3) div 3) 
+	{
         var _key = argument[i++];
         var _val = argument[i++];
         var _typ = argument[i++];

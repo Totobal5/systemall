@@ -2,9 +2,6 @@
 /// @return {Struct.List}
 function List() constructor {
 	#region PRIVATE
-	/// @ignore
-	__is = "List";
-
 	/// @type {Array}
 	__list = [];
 	
@@ -191,5 +188,5 @@ function List() constructor {
 /// @param {Struct.List} list
 /// @return {Bool}
 function is_list(_list) {
-	return (is_struct(_list) && _list.__is=="List");	
+	return (is_struct(_list) && (instanceof(_list) == "Line") );
 }

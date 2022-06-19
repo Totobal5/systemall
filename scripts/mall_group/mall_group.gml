@@ -2,138 +2,98 @@
 /// @param	{Bool} [start_now]
 /// @desc	Un grupo es como debe funcionar los componentes guardados (MallStorage) entre sí. Esto sirve para diferenciar clases, especies o razas en distintos rpg (Humanos distintos a Orcos por ejemplo)
 /// @return {Struct.MallGroup}
-function MallGroup(_key, _init=false) constructor {
+function MallGroup(_key, _init=false) : MallComponent(_key) constructor {
     #region PRIVATE
-	__key = _key; // Nombre del grupo (Humano, Guerrero, etc)
-    
+	/// @ignore
+	__is = instanceof(self);
+	
     // Se utiliza un struct para guardar los datos y acceder rapidamente
-    __stats    = {};
-    __states   = {}; 
+    /// @ignore
+	/// @type {Struct<Struct.MallStat>}
+	__stats    = {};
+    /// @ignore
+	__states   = {}; 
+	/// @ignore
     __elements = {}; 
+	/// @ignore
     __parts    = {}; 
     #endregion
 	
     #region METHODS  
 	#region CREATES
-	/// @desc Inicia todas las estructuras 
-    static create = function() {
-        createStats ();
-        createStates();
-        createParts ();
-        createElements();
+	/// @desc Rellena los structs de cada componente
+    static initialize = function() 
+	{
+		__initStats();
+		__iniStates();
+		__initElements();
+		
+        __initParts();
+		
+		return self;
     }
 	
-	/// @param {Array<String>} _delete_array
-	/// @desc Permite eliminar estadisticas del array para luego agregarlo al struct 
-    static createStats  = function(_delete_array) {    
+	/// @desc Inicia las estadisticas
+    static __initStats = function() 
+	{    
         var _keys = mall_get_stats();   // Obtener llaves
-		
-		var _len   = array_length(_keys);
-		var _delen = array_length(_delete_array);
         var _content = {};
         
         // Eliminar llaves
-		var _delete = false;
-		var i=0; repeat(_len) {
+		var i=0; repeat(array_length(_keys) )
+		{
 			var _key = _keys[i++];	
-			
-			var j=0; repeat(_delen) {
-				var _delkey = _delete_array[j++];
-				if (_key != _delkey) {
-					_delete = true; break;
-				}
-			}	
-			
-			if (!_delete) _content[$ _key] = new MallStat(_key);
-			_delete = false;
+			_content[$ _key] = new MallStat(_key);
 		}
-
+		// Establecer el struct
         __stats = _content;
     }
     
-    /// @param {Array<String>} _delete_array
-	/// @desc Permite eliminar estados del array para luego agregarlo al struct 	
-    static createStates = function(_delete_array) {
+	/// @desc Inicia los estados
+    static __iniStates = function() 
+	{
         var _keys = mall_get_states();   // Obtener llaves
-		
-		var _len   = array_length(_keys);
-		var _delen = array_length(_delete_array);
         var _content = {};
         
-        // Eliminar llaves
-		var _delete = false;
-		var i=0; repeat(_len) {
+		var i=0; repeat(array_length(_keys) )
+		{
 			var _key = _keys[i++];	
-			
-			var j=0; repeat(_delen) {
-				var _delkey = _delete_array[j++];
-				if (_key != _delkey) {
-					_delete = true; break;
-				}
-			}	
-			
-			if (!_delete) _content[$ _key] = new MallState(_key);
-			_delete = false;
+			_content[$ _key] = new MallState(_key);
 		}
-
+		// Establecer el struct
         __states = _content;
     }
     
-    /// @param {Array<String>} _delete_array
-	/// @desc Permite eliminar partes del array para luego agregarlo al struct 
-    static createParts  = function(_delete_array) {
+	/// @desc Inicia las partes
+    static __initParts  = function() 
+	{
         var _keys = mall_get_parts();   // Obtener llaves
-		
-		var _len   = array_length(_keys);
-		var _delen = array_length(_delete_array);
         var _content = {};
         
-        // Eliminar llaves
-		var _delete = false;
-		var i=0; repeat(_len) {
-			var _key = _keys[i++];	
-			
-			var j=0; repeat(_delen) {
-				var _delkey = _delete_array[j++];
-				if (_key != _delkey) {
-					_delete = true; break;
-				}
-			}	
-			
-			if (!_delete) _content[$ _key] = new MallPart(_key);
-			_delete = false;
+		var i=0; repeat(array_length(_keys) )
+		{
+			var _key = _keys[i++];
+			_content[$ _key] = new MallPart(_key);
 		}
-
-        __states = _content;
+		// Establecer el struct
+        __parts = _content;
     }
-    
-    /// @param {Array<String>} _delete_array
-	/// @desc Permite eliminar elementos del array para luego agregarlo al struct
-    static createElements = function(_delete_array) {
+ 
+	/// @desc Inicia las partes
+    static __initElements  = function() 
+	{
         var _keys = mall_get_elements();   // Obtener llaves
-		
-		var _len   = array_length(_keys);
-		var _delen = array_length(_delete_array);
         var _content = {};
         
-        // Eliminar llaves
-		var _delete = false;
-		var i=0; repeat(_len) {
-			var _key = _keys[i++];	
-			
-			var j=0; repeat(_delen) {
-				var _delkey = _delete_array[j++];
-				if (_key != _delkey) {
-					_delete = true; break;
-				}
-			}	
-			
-			if (!_delete) _content[$ _key] = new MallElement(_key);
-			_delete = false;
+		var i=0; repeat(array_length(_keys) )
+		{
+			var _key = _keys[i++];
+			_content[$ _key] = new MallElement(_key);
 		}
-
-        __states = _content;
-    }
+		// Establecer el struct
+        __elements = _content;
+    } 
+	
 	#endregion
 	
 	/// @param {String} _key
@@ -163,5 +123,5 @@ function MallGroup(_key, _init=false) constructor {
     #endregion
     
     // Iniciar
-    if (_init) create();
+    if (_init) initialize();
 }

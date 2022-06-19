@@ -3,13 +3,7 @@
 /// @param [x2]
 /// @param [y2]
 /// @return {Struct.Line}
-function Line(_x1=0, _y1=0, _x2=0, _y2=0) constructor {
-	#region PRIVATE
-	/// @ignore
-	__is = "Line";
-
-	#endregion
-	
+function Line(_x1=0, _y1=0, _x2=0, _y2=0) constructor {	
 	#region PUBLIC
 	pos1 = new Vector2(_x1, _y1);
 	pos2 = new Vector2(_x2, _y2);
@@ -102,5 +96,5 @@ function Line(_x1=0, _y1=0, _x2=0, _y2=0) constructor {
 /// @param {Struct.Line} line
 /// @returns {Bool}
 function is_line(_line) {
-	return (is_struct(_line) && (_line.__is == "Line") );	
+	return (is_struct(_line) && (instanceof(_line) == "Line") );	
 }

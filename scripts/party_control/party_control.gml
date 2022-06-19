@@ -1,98 +1,119 @@
-/// @param {String} _group_key
-/// @param {Bool}	_stats_unique
-/// @param {Bool}	_states_unique
-function PartyControl(_group_key, _stats_unique=false, _states_unique=true) : MallComponent(_group_key) constructor {
+/// @param {Bool}	[stats_unique]
+/// @param {Bool}	[states_unique]
+function PartyControl(_stats_unique=false, _states_unique=true) : MallComponent("") constructor 
+{
     #region PRIVATE
+	__key	= "";	// Referencia al grupo que pertenece la entity
+	__index = -1;	// Referencia a la posicion en el grupo que tiene la entity
+	
 	__allKeys = [];
 	__statUnique  = _stats_unique ;  // Si se permiten multiples ben/des a las estadisticas
     __stateUnique = _states_unique;  // Si se permiten más de un mismo estado
 	#endregion
 	
     #region METHODS
+	/// @ignore
 	/// @desc Iniciar control
-    static initialize = function() {
-        var _group = mall_get_group(__key);
-        
-        #region STATS
-        var _statMaster = mall_get_stats(); // Obtener estadisticas
-        var i = 0; repeat(array_length(_statMaster) ) {
-            var _key  = _statMaster[i++];		// Obtener llaves    
-            var _stat = _group.getStat(_key);    
-             
-			var _initial = _stat.__initial;
-			var _value = numtype_value(_initial);
-			var _type  = numtype_type (_initial);
-			var _div = numtype_div(_initial);
+    static initialize = function() 
+	{
+		var _foreach =  method(undefined, function(_mall, _key, i, _pass) {
+			var _initial = _mall.__initial, _atom;
+			if (_pass[0] == 0)
+			{
+				#region Stat
+				var _type  = _initial[NUMVALUE.TYPE];
+				var _value = _initial[NUMVALUE.VALUE];
+				
+				// Las estadisticas no utilizan el boleano
+				_atom = new __PartyControlAtom(_type, _value, false, _pass[1] );
+				#endregion
+			}
+			else
+			{
+				#region State
+				var _process = _mall.__process;
+				var _type  = _process[NUMVALUE.TYPE];
+				var _value = _process[NUMVALUE.VALUE];
+				
+				// Los estados utilizan el boleano
+				_atom = new __PartyControlAtom(_type, _value, _initial[NUMVALUE.VALUE], _pass[1] );
+				#endregion
+			}
 			
-			variable_struct_set(self, _key, new __PartyControlAtom(_type, _value, _div, __statUnique) );
+			variable_struct_set(self, _key, _atom);
 			array_push(__allKeys, _key);
-        }
-        #endregion
-        
-        #region STATES
-        var _stateMaster = mall_get_states();
-        var i = 0; repeat(array_length(_stateMaster) ) {
-            var _key   = _stateMaster[i++];		// Obtener llaves    
-            var _state = _group.getState(_key);    
-
-			var _initial = _stat.__initial;
-			var _value = numtype_value(_initial);
-			var _type  = numtype_type (_initial);
-			var _div = numtype_div(_initial);			
-			
-			variable_struct_set(self, _key, new __PartyControlAtom(_type, _value, _div, __statUnique) );
-			array_push(__allKeys, _key);
-        }        
-        #endregion
+		});
+		
+		mall_stat_foreach (__key, _foreach, [0, __statUnique]  );
+		mall_state_foreach(__key, _foreach, [1, __stateUnique] );
     }
     
-    /// @param _key
-    /// @param _value
-    /// @param _type
-    /// @desc Establece un nuevo valor en "update" con el tipo de numero default o diferente
-    static set = function(_key, _value, _type) {
+    /// @param	{String}		state_stat_key
+    /// @param	{Real}			value
+    /// @param	{Enum.NUMTYPES} number_type
+    /// @desc Establece un nuevo valor en "values" con el tipo de numero default o diferente
+    static set = function(_key, _value, _type) 
+	{
         var _control = get(_key);
-		_type ??= _control.type;
-        _control.update[_type] = _value;
+		_type ??= _control.__type;
+        _control.values[_type] = _value; 
 
 		return self;
     }
     
-    /// @param {String} _key
+    /// @param	{String} state_stat_key
 	/// @return {Struct.__PartyControlAtom}
-    static get = function(_key) {
+    static get = function(_key) 
+	{
         return (self[$ _key] );
     }
     
-    /// @param {String} _key
-    /// @param {Real}	_operate
-    /// @param {Real}	_type
-    static add = function(_key, _operate, _type) {
+	/// @param	{String} state_stat_key
+	/// @desc Indica si el estado/estadistica esta siendo afectado por algo
+	/// @return {Bool}
+	static isAffected = function(_key)
+	{
+		return (get(_key).affected );
+	}
+	
+    /// @param	{String}		state_stat_key
+    /// @param	{Any*}			operate
+    /// @param	{Enum.NUMTYPES}	number_type
+	/// @desc Añade un valor al control (suma/resta)
+    static add = function(_key, _operate, _type) 
+	{
         var _control = get(_key);
-		_type ??= _control.type;
+	
+		#region si es numtype
+		if (is_array(_operate) )
+		{
+			_type    = numtype_type (_operate);
+			_operate = numtype_value(_operate);
+		}
+		else _type ??= _control.__type;
 		
-        switch (_type) {
-			case NUMTYPE.REAL:		_control.update[_type] += _operate;			break;
-			case NUMTYPE.BOOLEAN:	_control.update[_type]  = abs(_operate);	break;
-			case NUMTYPE.PERCENT:	_control.update[_type] += _operate;			break;
-        }
-        
+		#endregion
+		
+		_control.values[_type] += _operate;
+
         return self;
     }
     
-    /// @param {String} _key
+    /// @param {String} state_stat_key
 	/// @desc Establebe el control a su valor inicial
-    static reset = function(_key) {
+    static reset = function(_key) 
+	{
         var _control = get(_key);
-        _control.update[NUMTYPE.REAL]	 = _control.init;
-		_control.update[NUMTYPE.PERCENT] = _control.init / 100;
-		_control.update[NUMTYPE.BOOLEAN] = abs(_control.init);
+        _control.values[0] = _control.__init[0];
+		_control.values[1] = _control.__init[1];
+		_control.values[2] = _control.__init[2]
 
         return self;
     }
     
 	/// @desc Devuelve todos los controles al valor inicial
-    static resetAll = function() {
+    static resetAll = function() 
+	{
 		var i=0; repeat(array_length(__allKeys) ) {
 			reset(__allKeys[i++] );	
 		}
@@ -100,157 +121,265 @@ function PartyControl(_group_key, _stats_unique=false, _states_unique=true) : Ma
         return self;
     }
     
-	/// @param {String} _key
-    /// @param _effect
-    /// @desc Agrega un efecto al control que afecta (stat/state/action)
-    static addEffect  = function(_effect) {
-        if (is_struct(_effect) ) {    
-            var _key = _effect.__key;  // Obtener stat/state/action a la que afecta
-			var _control = get(_key);
-			
-            // Existe
-            if (!is_undefined(_control) ) { 
-                // Agregar contenido a la box
-                var _box = _control.box;
-                
-                // Permite varios
-                if (is_array(_box) ) {
-                    // No permite repetidos
-                    if (!_control.same) {
-                        var i = 0; repeat(array_length(_box) ) {     
-                            var _in = _box[i++];
-                            
-                            if (_in.id == _effect.id) return false;
-                        }
-                    }
-					// Agregar efecto
-					else {
-						array_push(_box, _effect);	
-					}
-                }
-				// Solo permite 1
-				else {    
-                    reset(_key); // Reiniciar valores
-                    _control.box = _effect;
-                }
-                // Indicar que esta siendo afectado
-                _control.use = true;
-                
-				var _numtype = _effect.__value;
-                var _value = numtype_value(_numtype);
-                var _type  = numtype_type (_numtype);
-                
-                // Aumentar los valores de este control
-                add(_key, _value, _type);
-            }
-        }
-            
-        return self;
-    }
-    
-    /// @param {String} _key
-    /// @param _id
-    static deleteEffect = function(_key, _id) {
-        var _control = get(_key);
-        if (!is_undefined(_control) ) {
-            var _box = _control.box;    
-			// Permite varios
-            if (is_array(_box) ) {
-                // Buscar
-                var i=0; repeat(array_length(_box) ) {
-                    var _in = _box[i++];
-                    
-                    if (_in.id == _id) break;
-                }
-                
-                // Eliminar
-                array_delete(_box, i, 1);
-                
-                // Revisar si aun posee efectos
-                if (array_empty(_box) ) _control.use = false;
-            }
-			// Solo 1
-			else {
-                var _in = _control.box;
-
-                // Solo 1
-                _control.box = undefined;
-                _control.use = false;
-            }
-            
-            // Quitar valores de este efecto
-            add(_in.__key, -_in.__value[0], _in.__value[1] );            
-        }
-        
-        return self;
-    }
-    
-    /// @param {String} _key
-	/// @return {Array}
-    static update = function(_key) {
-        var _return = [];
+    /// @param {Struct.DarkEffect}	effect_constructor
+    /// @desc Agrega un efecto al control que afecta (stat/state/action). Si lo agrega "true" si no "false"
+	/// @return {Bool}
+    static addEffect  = function(_effect) 
+	{	
+		// No es un efecto de dark
+		if (!is_dark_effect(_effect) ) return self;
+		
+		var _key	 = _effect.getKey();
 		var _control = get(_key);
-		var _box = _control.box, _save;
-        
-        // Solo 1
-		if (!is_undefined(_box) && !is_array(_box) ) {
-			var _turns = _box.__turns;
-			var _work  = _turns.work();
-			var _count = _turns.getCount();
-
-			if (_work) {
-				// Si trabaja aumentar valor
-				add(_key, _box.executeUpdate(self, _count) );
-				_save = _control.update[_control.type];
+		
+		// Evitar errores
+		if (!is_undefined(_control) )
+		{
+			var _content = _control.content;	
+			if (is_array(_content) )
+			{
+				#region Guarda varios
+				if (!_control.same)
+				{
+					#region No repetidos
+					var i=0; repeat(array_length(_content) )
+					{
+						var _ineffect = _content[i++];
+						if (_ineffect.__id == _effect.__id) return false;	// No se puede agregar
+					}
+					
+					#endregion
+				}
+				
+				// Agregar al array
+				array_push(_content, _effect);
+				
+				#endregion
 			}
-			else {
-				_box.executeEnd(self, _count);
-				_save = _control.update[_control.type];				
+			else
+			{	
+				#region Guarda solo uno
 				reset(_key);
+				_control.content = _effect;	// Establece el efecto
+				#endregion
 			}
 			
-			return [_save, _work];
-		}
-		// Varios
-		else if (is_array(_box) ) {
-			var _save = 0;
-			for (var i=0, _len=array_length(_box); i<_len; i++) {
-				var _in = _box[i++];
-				var _turns = _in.__turns;
-				var _work  = _turns.work();
-				var _count = _turns.getCount();
-				_save += _control.update[_control.type];				
-
-				if (_work) {
-					_box.executeUpdate(self, _count);
-				}
-				else {
-					_box.executeEnd(self, _count);
-					array_delete(_box, i, 1);
-					_len--;
-				}
-			}
+			// Indicar que esta siendo afectado
+			_control.affected = true;
 			
-			return [_save, _work];
-		}
-    }
-    
-	/// @return {Array}
-    static updateAll = function() {
-		var _return = [];
-		var i=0; repeat(array_length(__allKeys) ) {
-			array_push(_return, update(__allKeys[i++] ) );	
+			// Aplicar valor inicial
+			add(_key,  _effect.getInit() );
+			updateStat(_key);			
 		}
 		
-        return _return;
+        return true;
     }
     
-	/// @param {String} _key
+    /// @param	{String}	state_stat_key
+    /// @param	{Function}	[filter]		function(dark_effect, i) {return true}
+	/// @desc Elimina un efecto, si el control permite varios entonces se debe pasar un filtro. Devuelve "true" si borra "false" si no.
+    static removeEffect = function(_key, _function) 
+	{
+        var _control = get(_key);
+		if (is_undefined(_control) ) return false;
+		
+		var _content = _control.content;
+		if (is_array(_content) )
+		{
+			if (is_undefined(_function) ) throw "Si es array se debe pasar un filtro"
+			var i=0; repeat(array_length(_content) )
+			{
+				var _effect = _content[i];
+				if (_function(_effect, i) ) break;	// Se borro
+				i++;
+			}
+			// Borrar del array
+			array_delete(_content, i, 1);
+			if (array_empty(_content) ) _control.use = false;	// Si ya no hay efectos
+		}
+		else
+		{
+			var _effect = _control.content;
+			_control.content = undefined;
+			_control.use = false;	
+		}
+		var _value = _effect.get();
+		add(_effect.__key, -_value[0], _value[1] );
+		updateStat(_key);
+		
+		return true;
+    }
+    
+    /// @param	{String} state_stat_key
+	/// @desc	Devuelve un array con los valores [value, finish?]
+	/// @return {Array}
+    static update = function(_key) 
+	{
+        var _return  = [0, 0, 0];
+		var _control = get(_key);
+		
+		if (!is_undefined(_control) ) return [_return, false];
+		
+		// Obtener
+		var _content = _control.content;
+		
+		if (is_array(_content) )
+		{
+			#region Varios
+			var _len = array_length(_content);
+			for (var i=0; i < _len; i++)
+			{
+				var _effect = _content[i];
+				var _turn = _effect.__turns;
+				var _work = _turn.work();
+
+				if (_work)
+				{
+					#region quedan turnos
+					_effect.update();
+					var _value = _effect.get();
+					var _num  = _value[0];
+					var _type = _value[1];
+				
+					add(_key, _num, _type);	// Aumenta el valor del control
+					_return[_type] += _num;
+					
+					#endregion
+				}
+				else
+				{
+					#region terminó
+					_effect.finish();
+					var _value = _effect.get();
+					var _num  = _value[0];
+					var _type = _value[1];					
+					// Disminuye el valor del control
+					add(_key, -_num, _type);	
+					
+					array_delete(_content, i, 1);
+					_len--;
+					
+					#endregion
+				}
+			}
+			
+			// Si ya no hay poner en true
+			_work = (array_length(_content) <= 0);
+			
+			#endregion
+		}
+		else
+		{
+			#region Solo 1
+			var _turn = _content.__turns;
+			var _work = _turn.work();
+			
+			if (_work)
+			{
+				#region Quedan turnos
+				_content.update();
+				var _value = _content.get();
+				var _num  = _value[0];
+				var _type = _value[1];
+				
+				add(_key, _num, _type);
+				_return[_type] += _num;
+				
+				#endregion
+			}
+			else
+			{
+				#region Terminó
+				_save = _control.values[_control.type];
+				_content.finish();
+						
+				// Reiniciar valores
+				reset(_key);
+				#endregion
+			}
+			
+			#endregion
+		}
+		
+		// Actualizar la estadistica
+		updateStat(_key);
+		
+		return [_return, _work];
+    }
+    
+	/// @desc Devuelve un struct con los valores {key: [ [value, percent, boolean], [value, percent, boolean] ] }
+	/// @return {Struct}
+    static updateAll  = function() 
+	{
+		var _values = {};
+		var i=0; repeat(array_length(__allKeys) ) 
+		{
+			var _key = __allKeys[i];
+			_values[$ _key] = update(_key);
+		}
+		
+        return (_values);
+    }
+    
+	/// @desc Actualiza el "valueControl" de una estadistica
+	static updateStat = function(_key)
+	{
+		var _control = get(_key);
+		var _stats = getReference().getStats();
+		var _stat  = _stats.get(_key);
+			
+		if (!is_undefined(_stat) ) 
+		{
+			var _real, _percent;
+			with (_stat)
+			{
+				_real	 = _control.values[NUMTYPES.REAL];
+				_percent = (valueEquipment * _control.values[NUMTYPES.PERCENT] );
+				valueControl = valueEquipment + _real + _perc;	
+			}
+		}		
+	}
+	
+	/// @param {String} state_stat_key
 	/// @return {Bool}
-    static exists = function(_key) {
+    static exists = function(_key) 
+	{
         return (variable_struct_exists(self, _key) );
     }
-    
+	
+	/// @param {String}	group_key
+	/// @param {Real}	group_index
+	static setKey = function(_key, _index)
+	{
+		__key	= _key;
+		__index = _index;
+		return self;
+	}
+ 
+ 	/// @desc Propio de cada PartyControl, crea una referencia rapida para conectarse a su entity
+	/// @return {Struct.PartyEntity}
+	getReference = function()
+	{
+		static ref = undefined;
+		static lastkey   = __key;
+		static lastindex = __index;
+		
+		if (ref == undefined)	
+		{
+			ref = party_get(__key, __index);	
+		}
+		else
+		{
+			// Si varian la llave y el indice
+			if (lastkey != __key && lastindex != __index)
+			{
+				ref = party_get(__key, __index);	
+			}
+		}
+		
+		return (ref);		
+	}
+	
     #endregion
     
     initialize();

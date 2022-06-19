@@ -2,8 +2,8 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Dark",
-    "path": "folders/Mall/Dark.yy",
+    "name": "Constructor",
+    "path": "folders/Mall/Dark/Constructor.yy",
   },
   "resourceVersion": "1.0",
   "name": "dark_Effect",

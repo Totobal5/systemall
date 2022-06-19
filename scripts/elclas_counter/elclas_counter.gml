@@ -155,3 +155,9 @@ function Counter(_min, _max, _amount=1, _type=false, _iterate_time=infinity, _re
 	
 	#endregion
 }
+
+/// @param {Struct.Counter} counter
+/// @return {Bool}
+function is_counter(_counter) {
+	return (is_struct(_counter) && (instanceof(_counter) == "Counter") );
+}

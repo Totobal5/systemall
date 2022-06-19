@@ -1,39 +1,44 @@
-/// @param {String} _group_key
-function PartyParts(_group_key) : MallComponent(_group_key) constructor {
-
-    #region Metodos 
+/// @param {String} group_key
+function PartyParts() : MallComponent("") constructor 
+{
+	#region PRIVATE
+	__key	= "";	// Referencia al grupo que pertenece la entity
+	__index = -1;	// Referencia a la posicion en el grupo que tiene la entity
+	
+	#endregion
+	
+    #region METHODS
+	/// @ignore
 	/// @desc Iniciar control de partes
-    static initialize = function() {
-        var _keys  = mall_get_parts();    
-        var _group = mall_get_group(__key);   // Obtener estadistica
-        
-        var i=0; repeat(array_length(_keys) ) {
-            var _key  = _keys[i++]; // Llave
-            var _part = _group.getPart(_key);    // obtener configuracion de parte
-            
-            if (!is_undefined(_part) ) {
-                #region Crear Parte
-                var _active = _part.__active;   // Es un array
-                var _number = max(1, _part.__numbers);  // Repeticiones de este objeto no puede ser 0                
-                var _itemtype   = _part.__items;         
-				var _inParticle = new __PartyPartsParticle(_key, _number, _itemtype);                
-                // Crear control de parte
-                variable_struct_set(self, _key, _inParticle);
-                
-				var _max   = _part.__itemMax;	// Cuantos objetos puede llevar
-                var _atoms = _inParticle.atoms;                
-                var j=0; repeat(_number) {
-					var _inAtom = new __PartyPartsAtom(_active[j], j++, _max);
-                    array_push(_atoms, _inAtom);
-                }
-                #endregion
-            }
-        }    
+    static initialize = function() 
+	{
+		var _foreach = method(undefined, function(_mall, _key, i, _pass) {
+			var _active  = _mall.__active;			// Como inicia (activo/desactivo)
+			var _itemMax = _mall.__itemMax;		// Cuantos objetos puede llevar
+			var _number = max(1, _mall.__numbers);	// Cantidad de la misma parte
+			
+			var _itemtype = _mall.__items;	// Que tipo de objetos puede llevar
+			var _particle = new __PartyPartsParticle(_number, _itemtype);
+			variable_struct_set(self, _key, _particle);
+			
+			with (_particle)
+			{
+				var i=0; repeat(_number)
+				{
+					var _atom = new __PartyPartsAtom(_active[i], i, _itemMax)
+					array_push(atoms, _atom);
+						
+					i++;
+				}
+			}
+		});
+		mall_part_foreach(__key, _foreach);
     }
 	
-    /// @param {String} _key
+    /// @param {String} part_key
 	/// @return {Struct.__PartyPartsParticle}
-    static get = function(_key) {
+    static get = function(_key) 
+	{
         return (self[$ _key] );
     } 
 

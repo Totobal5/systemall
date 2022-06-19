@@ -1,4 +1,4 @@
-/// @param {Array}		array_index	(Contiene structs)
+/// @param {Array}		array_index
 /// @param {Mixed}		value
 /// @param {Function}	method		function(value, in, i) {return false or true}
 /// @desc Se pasa un metodo en él se debe indicar si se encontro un valor o no. 

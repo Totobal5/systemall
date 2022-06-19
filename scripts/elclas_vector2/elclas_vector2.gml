@@ -14,9 +14,6 @@ function Vector2(_x=0, _y=0) constructor {
 	__xo = 0;
 	/* @ignore @type {Real} Origen y */
 	__yo = 0;
-	/// @ignore
-	__is = "Vector2";
-	
 	#endregion
 	
 	#region PUBLIC
@@ -356,5 +353,5 @@ function Vector2(_x=0, _y=0) constructor {
 /// @param {Struct.Vector2} Vector2
 /// @returns {Bool}
 function is_vector2(_vector2) {
-	return (is_struct(_vector2) && (_vector2.__is == "Vector2") );
+	return (is_struct(_vector2) && (instanceof(_vector2) == "Vector2") );
 }

@@ -1,8 +1,8 @@
-/// @param {Array} _array
+/// @param {Array<Real>} array_index
 /// @desc Devuelve el mayor numero en un array (Default=1)
-/// @returns {number} 
+/// @returns {Real} 
 function array_max(_array) {
-	var _temp=1;
+	var _temp = 1;
 	
 	if (!array_empty(_array) ) {
 		_temp = _array[0];
@@ -14,6 +14,3 @@ function array_max(_array) {
 	
 	return (_temp);
 }
-
-
-

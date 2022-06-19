@@ -2,8 +2,8 @@
 /// @desc Donde se guardan las propiedades de los estados
 function MallState(_key) : MallComponent(_key) constructor {
 	#region PRIVATE
-	__init    = numtype(false, NUMTYPE.BOOLEAN);	// Valor inicial
-	__compare = numtype(false, NUMTYPE.BOOLEAN);	// Con que valor comparar
+	__initial = numtype(false, NUMTYPES.BOOLEAN);	// Valor inicial
+	__process = numtype(0, NUMTYPES.REAL);			// Valor para processar
 	
 	__resists = {};	// Que estadistica resiste a este estado. Se usa un struct ya que es más rapido para buscar.
 	__action  = {}; // Que accion afecta este estado 

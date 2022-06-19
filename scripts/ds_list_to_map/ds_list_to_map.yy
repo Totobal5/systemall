@@ -2,8 +2,8 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Ds Type",
-    "path": "folders/ElClasico/Ds Type.yy",
+    "name": "ds_list",
+    "path": "folders/ElClasico/Ds Type/ds_list.yy",
   },
   "resourceVersion": "1.0",
   "name": "ds_list_to_map",
