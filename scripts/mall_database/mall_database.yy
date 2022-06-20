@@ -2,11 +2,11 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Party",
-    "path": "folders/Mall/Party.yy",
+    "name": "Mall",
+    "path": "folders/Mall.yy",
   },
   "resourceVersion": "1.0",
-  "name": "party_",
+  "name": "mall_database",
   "tags": [],
   "resourceType": "GMScript",
 }

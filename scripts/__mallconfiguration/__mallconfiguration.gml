@@ -2,8 +2,10 @@
 #macro MALL_DUMMY_METHOD	global.__mall_dummy_method
 
 // -- STATS
-#macro MALL_STAT_FUN	function(lvl, stat, extra)
-#macro MALL_STAT_ROUND 1 // 0: value, 1: round(x), 2: floor(x)
+#macro MALL_STAT_FUN		function(lvl, stat, extra)
+#macro MALL_STAT_ROUND		1								// 0: value, 1: round(x), 2: floor(x)
+#macro MALL_STAT_DEFAULT_MAX 9999	
+#macro MALL_STAT_DEFAULT_MIN 0
 
 // -- STATES
 	// PREFIJO PREDETERMINADO PARA LOS STATES
@@ -34,7 +36,8 @@
 
 #endregion
 
-function mall_data_init() {
+function mall_data_init() 
+{
 	#region Database
 	/// @ignore
 	global.__mall_groups_master  = (new Collection() );
@@ -84,12 +87,20 @@ function mall_data_init() {
 		
 	// Grupo default
 	/// @ignore
-	global.__mall_group_actual	= mall_add_group("default");	// Hay que iniciarlo
+	global.__mall_group_actual	= mall_add_group("default");	// Hay que iniciarlo altiro oe
 	/// @ignore
 	global.__mall_party_groups	= new Collection();	// Donde se guardan listas con distintas entidades	
 	/// @ignore
 	global.__mall_party_templates = {};					// Plantillas para crear entidades party	
 	/// party_key -> party_list	
+	
+	mall_database();
+	pocket_database();
+	dark_database();
+	
+	party_database();
+	
+	
 	#endregion
 }
 

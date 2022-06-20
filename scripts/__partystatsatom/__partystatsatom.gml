@@ -9,12 +9,13 @@ function __PartyStatsAtom(_key, _stat) : MallComponent(_key) constructor {
 	/// @ignore
 	__displayTextKey = _stat.__displayTextKey;	// Textos extras
 	/// @ignore
-	__return = method(self, _stat.__displayMethod);	// Como devolver sus valores
+	__return = method(undefined, _stat.__displayMethod);	// Como devolver sus valores
 	
 	#endregion
 	
 	#region PUBLIC
-	base = numtype_copy(_stat.__initial);
+	base	 = numtype_value(_stat.__initial);	// Se pone el valor inicial
+	baseType = numtype_type (_stat.__initial);
 	
 	// -- Single
 	level  = 1;					// Nivel de la estadistica si se usa individualmente

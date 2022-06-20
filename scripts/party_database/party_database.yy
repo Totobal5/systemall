@@ -2,11 +2,11 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "systemall",
-    "path": "systemall.yyp",
+    "name": "Party",
+    "path": "folders/Mall/Party.yy",
   },
   "resourceVersion": "1.0",
-  "name": "TimerSystem",
+  "name": "party_database",
   "tags": [],
   "resourceType": "GMScript",
 }

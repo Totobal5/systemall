@@ -1,5 +1,5 @@
 /// @param	{String}	party_group_key
-/// @param	{Function}	filter
+/// @param	{Function}	filter				function(party_entity, index) {}
 /// @desc Busca una entidad de party en un grupo utilizando un filtro (lento) y devuelve el indice
 function party_filter_index(_key, _filter)
 {

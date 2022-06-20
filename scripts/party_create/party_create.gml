@@ -1,12 +1,18 @@
-/// @param	{String}	template_key	LLave de la template
-/// @param  {Array}		template_array	Argumentos para pasar al metodo del template
-/// @param  {String}	party_group_key	Llave de un grupo de party
+/// @param	{String}	template_key	Llave de la template
+/// @param  {String}	group_key		Argumentos para pasar al metodo del template
+/// @param  {String}	level			Nivel en que se crea la entidad
+/// @param	{Array}		[arguments]		Más argumentos para pasar
 /// @desc	Devuelve un entidad de party a partir de un party template, permite agregarlo rapidamente a un grupo party
 /// @return {Struct.PartyEntity}
-function party_create(_key, _arg=[], _group) 
+function party_create(_key, _group, _level, _args) 
 {
-	var _entity = global.__mall_party_templates[$ _key] (_arg);
-	if (is_string(_group) )	party_group_add(_group, _execute)	
+	var _template = global.__mall_party_templates[$ _key];
+	var _entity   = _template(_group, _level, _args); 
+	
+	if (is_string(_group) ) 
+	{
+		party_group_add(_group, _entity);	
+	}
 	
 	return (_entity );
 }

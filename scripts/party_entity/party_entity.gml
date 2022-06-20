@@ -38,7 +38,9 @@ function PartyEntity(_name = "Test", _stats, _control, _parts, _group) : MallCom
     static getStats = function() {
         return __stats;
     }
-    
+    	
+	/// @param {String}	group_key
+	/// @param {String}	index
 	static setGroup = function(_key, _index)
 	{
 		__group = _key;
@@ -46,7 +48,7 @@ function PartyEntity(_name = "Test", _stats, _control, _parts, _group) : MallCom
 		
 		__stats	 .setKey(_key, _index);	// Establece la llave del grupo y el indice para crear la referencia.
 		__control.setKey(_key, _index);	
-		
+		__parts  .setKey(_key, _index);
 		return self;
 	}
   

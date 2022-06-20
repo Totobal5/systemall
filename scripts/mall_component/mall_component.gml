@@ -41,7 +41,7 @@ function MallComponent(_key="") constructor
 		if (is_method(_display_method) ) 
 		{
 			__displayKey	= _display_key;
-			__displayMethod = method(undefined, _display_method);
+			__displayMethod = _display_method;	// No pasar por method para no cargar tanto
 		}
 		return self;
 	}

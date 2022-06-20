@@ -1,4 +1,3 @@
-/// @param {String} group_key
 function PartyParts() : MallComponent("") constructor 
 {
 	#region PRIVATE
@@ -461,9 +460,17 @@ function PartyParts() : MallComponent("") constructor
         
         return (_difference);
     }
-    
+ 
+ 	/// @param {String}	group_key
+	/// @param {String}	index
+	static setKey = function(_key, _index)
+	{
+		__key	= _key;
+		__index = _index;
+		return self;
+	}
+ 
     #endregion
-    
     
     initialize();
 }

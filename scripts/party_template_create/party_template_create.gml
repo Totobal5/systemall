@@ -1,5 +1,5 @@
 /// @param {String}		template_name
-/// @param {Function}	create_method
+/// @param {Function}	create_method	function(args=[]) {}
 function party_template_create(_key, _create_method)
 {
 	if (variable_struct_exists(global.__mall_party_templates, _key) )

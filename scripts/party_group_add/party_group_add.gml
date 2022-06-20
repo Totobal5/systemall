@@ -5,6 +5,4 @@ function party_group_add(_key, _entity)
 {
 	var _group = party_group_get(_key);
 	array_push(_group, _entity)
-	// Indicar grupo y posicion en éste
-	_entity.setGroup(_key, array_length(_group) - 1);
 }

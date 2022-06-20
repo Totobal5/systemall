@@ -12,21 +12,22 @@ enum ALERTS_MODE {
 /// @param {Real} set_value
 /// @param {Real} deviation_high
 /// @param {Real} deviation_low
-/// @param {ALERTS_MODE} event_mode
+/// @param {Enums.ALERTS_MODE} event_mode
 /// @param {Function} event
 /// @desc Basado en el sensor de temperatura TZN Series
-function Alerts(entity, value_name, set_value, deviation_high, deviation_low, event_mode=ALERTS_MODE.ABS_HIGH, event) constructor {
+function Alerts(_entity, _value_name, _set_value, _deviation_high, _deviation_low, _event_mode=ALERTS_MODE.ABS_HIGH, event) constructor 
+{
 	#region PRIVATE
-	__entity = entity; // Entidad a seguir
-	__valueName  = value_name;	// Nombre de la variable
-	__value = 0;		// Valor de la variable	
+	__entity = _entity;			// Entidad a seguir
+	__valueName  = _value_name;	// Nombre de la variable
+	__value = 0;				// Valor de la variable	
 	
-	__setValue = set_value;		// Comparar a este valor
-	__devH = deviation_high;	// Limites arriba
-	__devL = deviation_low;		// Limites abajo
+	__setValue = _set_value;	// Comparar a este valor
+	__devH = _deviation_high;	// Limites arriba
+	__devL = _deviation_low;	// Limites abajo
 	
-	__event   = event ?? function() {};
-	__eventMode = event_mode;
+	__eventMode = _event_mode;
+	__event = event ?? __nofun__;
 	
 	__time = undefined;
 	#endregion
@@ -37,10 +38,13 @@ function Alerts(entity, value_name, set_value, deviation_high, deviation_low, ev
 	#endregion
 	
 	#region METHODS
-	static work = function() {
+	static work = function() 
+	{
+		// Obtener valor desde la entidad
 		__value = checkValue();
 		
-		switch (__eventMode) {
+		switch (__eventMode) 
+		{
 			case ALERTS_MODE.DEV_H:
 				#region Deviation High
 				if (__value - __setValue > __devH) {
@@ -104,18 +108,28 @@ function Alerts(entity, value_name, set_value, deviation_high, deviation_low, ev
 	
 	/// @desc Obtiene el valor
 	/// @returns {Real}
-	static checkValue = function() {
+	static checkValue = function() 
+	{
 		if (is_struct(__entity) ) {
-				
+			return (variable_struct_get(__entity, __valueName) );
 		}
 		else if (instance_exists(__entity) ) {
-			return (__entity[$ __valueName] );
+			return (variable_instance_get(__entity, __valueName) );
 		}
 	}
+	
+	/// @return {Bool}
+	static isTriggered = function()
+	{
+		return (trigger); 	
+	}
+	
+	/// @ignore
+	static __nofun__ = function() {}
 	
 	#endregion
 	
 	// -- Crear time_source
-	__time = time_source_create(time_source_global, 1, time_source_units_frames, work, 1, time_source_expire_after);
+	__time = time_source_create(time_source_game, 1, time_source_units_frames, work, [], -1);
 	time_source_start(__time);
 }

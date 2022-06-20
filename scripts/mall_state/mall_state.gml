@@ -9,7 +9,7 @@ function MallState(_key) : MallComponent(_key) constructor {
 	__action  = {}; // Que accion afecta este estado 
 	
 	/// @type {Struct.Counter}
-    __prop = (new Counter(0, 0) ).changeType(0);
+    //__prop = (new Counter(0, 0) );
     __eventStr = MALL_DUMMY_METHOD;  // Funcion a usar cuando se inicia el estado
     __eventUpd = MALL_DUMMY_METHOD;  // Funcion a usar cuando se actualiza el estado
     __eventEnd = MALL_DUMMY_METHOD;  // Funcion a usar cuando se finaliza el estado

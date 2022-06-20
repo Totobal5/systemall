@@ -1,12 +1,13 @@
 /// @param {Real} min
 /// @param {Real} max
 /// @param {Real} [amount]
-/// @param {Real} {type]
+/// @param {Real} [type]
 /// @param {Real} [iterate_time]
 /// @param {Bool} [repeat]
 /// @desc Devuelve un contador capaz de contar o iterar por ciclos.
 /// @return {Struct.Counter}
-function Counter(_min, _max, _amount=1, _type=false, _iterate_time=infinity, _repeat=false) constructor {
+function Counter(_min, _max, _amount=1, _type=false, _iterate_time=infinity, _repeat=false) constructor 
+{
 	#region PRIVATE
 		#region Iniciales
 	/// @ignore
@@ -47,13 +48,15 @@ function Counter(_min, _max, _amount=1, _type=false, _iterate_time=infinity, _re
 	
 	/// @desc Trabajar el contador. Posee 2 modos que dependen: Contador o Adiccion por ciclos
 	/// @return {Bool}
-	static work = function() {
+	static work = function() 
+	{
 		return (!__type ? count() : iterate() );
 	}
 		
 	/// @desc Trabajar como contador
 	/// @return {Bool}
-	static count = function() {
+	static count = function() 
+	{
 		if (!__active) return false;
 	
 		__count += __amount;
@@ -78,7 +81,8 @@ function Counter(_min, _max, _amount=1, _type=false, _iterate_time=infinity, _re
 	
 	/// @desc Trabajar como adicion por ciclos
 	/// @return {Bool}
-	static iterate = function() {
+	static iterate = function() 
+	{
 		if (!__active) return false;
 		
 		if (__iterateTime >= 0 || __iterateTime == infinity) {
@@ -93,9 +97,11 @@ function Counter(_min, _max, _amount=1, _type=false, _iterate_time=infinity, _re
 	
 	/// @param amount
 	/// @param iterate_time
-	/// @param [repeat]
+	/// @param [repeat]			Solo en adiccion por ciclo
+	/// @desc Modifica los valores del contador 
 	/// @return {Struct.Counter}
-	static modify = function() {
+	static modify = function() 
+	{
 		if (__type) {
 			__amount = argument0;
 			__iterateTime = argument1;
@@ -109,43 +115,60 @@ function Counter(_min, _max, _amount=1, _type=false, _iterate_time=infinity, _re
 		return self;
 	}
 	
+	/// @desc Regresa la cuenta del contador
 	/// @return {Real}
-	static getCount = function() {
-		return __count;	
+	static getCount = function() 
+	{
+		return (__count );	
 	}
 	
 	/// @param {Real} min
 	/// @param {Real} max
+	/// @desc Establece el valor minimo y maximo del contador
 	/// @return {Struct.Counter}
-	static setLimit = function(_min, _max) {
+	static setLimit = function(_min, _max) 
+	{
 		__min = _min;
 		__max = _max;
 		return self;
 	}
 	
+	/// @param {Real} [iterate_type]	Contador (True) o Adicion por ciclos (False) 
 	/// @param {Real} [iterate_time]
+	/// @desc Cambia el tipo que es este contador
 	/// @return {Struct.Counter}
-	static changeType = function(_iterate_time) {
-		__type = !__type;
+	static changeType = function(_type, _iterate_time) 
+	{
+		__type = _type ?? !__type;
 		__iterateTime = _iterate_time ?? __initIterate;
 		
 		return self;
 	}
 	
-	/// @param {Bool} [active]
+	/// @param {Bool} [active]	default: true
+	/// @desc Activa o desactiva el contador
 	/// @return {Struct.Counter}
-	static activate = function(_active=true) {
+	static activate = function(_active=true) 
+	{
 		__active = _active;
 		return self;
 	}
 	
+	/// @desc Regresa una copia de este contador
 	/// @return {Struct.Counter}
-	static copy = function() {
+	static copy = function() 
+	{
 		return (new Counter(__initMin, __initMax, __initAmount, __initType, __initIterate, __initRepeat) );
 	}
-		
+	
+	/// @desc	Regresa un string con los siguientes datos:
+	///			minimo
+	///			maximo
+	///			cuenta
+	///			activo?
 	/// @return {String}
-	static toString = function() {
+	static toString = function() 
+	{
 		return ("min: "      + string(__min) + 
 				"\nmax: "    + string(__max) + 
 				"\ncount: "  + string(__count) + 
@@ -158,6 +181,7 @@ function Counter(_min, _max, _amount=1, _type=false, _iterate_time=infinity, _re
 
 /// @param {Struct.Counter} counter
 /// @return {Bool}
-function is_counter(_counter) {
+function is_counter(_counter) 
+{
 	return (is_struct(_counter) && (instanceof(_counter) == "Counter") );
 }

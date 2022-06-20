@@ -36,6 +36,13 @@ function PartyStats(_level=1) : MallComponent("") constructor
 	static get = function(_key) {
 		return (self[$ _key] );
 	}
+	
+	/// @param {String} stat_key
+	/// @desc Ejecuta el displayMethod del stat.
+	static display = function(_key)
+	{
+		return (get(_key).__return() );	
+	}
 
 	/// @ignore
 	/// @param {String}	stat_key
@@ -130,15 +137,18 @@ function PartyStats(_level=1) : MallComponent("") constructor
     }
 
     /// @param {String}	stat_key	Llave de estadistica
-    /// @param {Array}	base		Numtype
+    /// @param {Real}	base_value	Respetar numtype global!!
 	/// @return {Struct.PartyStats}
     static setBase = function(_key, _base) {
-		if (argument_count > 2) {
-			var i=0; repeat((argument_count - 2) div 2) {
+		if (argument_count > 2) 
+		{
+			var i=0; repeat( (argument_count - 2) div 2) 
+			{
 				setBase(argument[i++], argument[i++] );	
 			}
 		}
-		else {
+		else 
+		{
 			get(_key).base = _base;
 		}
 
@@ -310,7 +320,9 @@ function PartyStats(_level=1) : MallComponent("") constructor
     static isBelow = function(_key, _value) {
         return (get(_key).valueActual < _value);
     }
-
+	
+	/// @param {String}	group_key
+	/// @param {String}	index
 	static setKey = function(_key, _index)
 	{
 		__key	= _key;
@@ -323,7 +335,7 @@ function PartyStats(_level=1) : MallComponent("") constructor
     static toString = function() {
         /// @return {String}
 		static p = function(_value, _type) {
-            var _in = ( (_type == NUMTYPE.PERCENT) ? 
+            var _in = ( (_type == NUMTYPES.PERCENT) ? 
 				string(_value) + "%" : 
 				string(_value)
             );
@@ -333,7 +345,8 @@ function PartyStats(_level=1) : MallComponent("") constructor
 
         var _keys  = mall_get_stats();  
 		var _print = "";
-        var i=0; repeat(array_length(_keys) ) {
+        var i=0; repeat(array_length(_keys) ) 
+		{
             var _key  = _keys[i++];
             var _stat = get(_key); 
 			var _type = numtype_type(_stat.base);
@@ -341,16 +354,22 @@ function PartyStats(_level=1) : MallComponent("") constructor
             // Nombre
             _print += _key + "\n";
             
-            if (_type == NUMTYPE.REAL) {
+			#region Obtener numtype
+            if (_type == NUMTYPES.REAL) 
+			{
 				_print += "type: Real \n";
 			} 
-			else {
+			else 
+			{
 				_print += "type: Percent \n"; 
 			}
             
-            _print += "equipment.value: "	+ p(_stat.valueEquipment, _type);
+			#endregion
+			
+			_print += "actual.value: "		+ p(_stat.valueActual	, _type);
             _print += "max.value: "			+ p(_stat.valueMax		, _type);
-            _print += "actual.value: "		+ p(_stat.valueActual	, _type);
+            _print += "equipment.value: "	+ p(_stat.valueEquipment, _type);
+			_print += "control.value: "		+ p(_stat.valueControl  , _type);            
         }
         
         show_debug_message(_print);
