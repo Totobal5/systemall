@@ -1,17 +1,17 @@
-/// @param {String}	state_key
-/// @param {Real}	start_value
-/// @param numtype
+/// @param	{String}	state_key
+/// @param	{Real}		boolean
+/// @param	{Real}		[limit]				def: -1
+/// @param	{Boolean}	[display]
+/// @param  {String}	[display_key]
+/// @param	{Function}	[display_method]	function(event) {return string; }
 /// @returns {Struct.MallState}
-function mall_customize_state(_key, _init, _numtype=NUMTYPES.BOOLEAN) 
+function mall_customize_state(_key, _boolean, _limit=-1, _display=true, _display_key, _display_method) 
 {
     var _state = mall_get_state(_key);
-    
-	_state.__init    = numtype(_init, _numtype);
-	_state.__compare = numtype(_init, _numtype);
-    
-    // Estadistica default que lo defiende [0]
-    _state.setResists (_key + MALL_STATE_PREFIX_DEFEND);
-	_state.SetAffected(_key + MALL_STATE_PREFIX_ATTACK);
+    _state.basic(_boolean, _limit)
+	
+	// Display
+	_state.setDisplay(_display, _display_key, _display_method);
 	
     return (_state);
 }

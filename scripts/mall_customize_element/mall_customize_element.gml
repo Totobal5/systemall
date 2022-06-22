@@ -1,19 +1,17 @@
-/// @param {String} element_key				Llave del elemento
-/// @param {String} produce_state			Estado que provoca
-/// @param {Real}   produce_probability		Probabilidad de provocarlo
+/// @param	{String}	element_key		Llave del elemento
+/// @param	{Function}	onHit_event		evento al ser atacado
+/// @param	{Function}	onAttack_event	evento al atacar
+/// @param	{Bool}		[display]			
+/// @param	{String}	[display_key]		
+/// @param	{Function}	[display_method]	function() {return string; }
 /// @returns {Struct.MallElement}
-function mall_element_customize(_key, _produce_state, _produce_probability) {
-    var _prefix  = mall_get_element_prefix(_key);
+function mall_customize_element(_key, _on_hit, _on_attack, _display, _display_key, _display_method) 
+{
     var _element = mall_get_element(_key);
+	_element.setDisplay(_display, _display_key, _display_method);
+	_element.setOnHit(_on_hit);
+	_element.setOnAttack(_on_attack);
 	
-	// Agregar defaults    
-	_element.addDefend(_key + MALL_ELEMENT_PREFIX_ATTACK);
-	_element.addAttack(_key + MALL_ELEMENT_PREFIX_DEFEND);
-
-    // Agregar que estado produce este elemento
-    var i = 1; repeat ( (argument_count - 1) div 2) {
-        _element.AddProduce(argument[i++], argument[i++] ); 
-    }
-    
-    return (_element);
+	// Obetener relacionados
+	return (_element.getRelated() );
 }

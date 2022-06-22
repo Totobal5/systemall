@@ -40,28 +40,20 @@ function mall_data_init()
 {
 	#region Database
 	/// @ignore
-	global.__mall_groups_master  = (new Collection() );
+	global.__mall_groups_master		= (new Collection() );
 	/// @ignore
-	global.__mall_stats_master  = [];
+	global.__mall_stats_master		= [];
 	/// @ignore	
-	global.__mall_states_master = [];
+	global.__mall_states_master		= [];
 	/// @ignore
-	global.__mall_states_prefix = {};
+	global.__mall_states_prefix		= {};
 	/// @ignore
-	global.__mall_elements_master = [];
+	global.__mall_elements_master	= [];
 	/// @ignore
-	global.__mall_elements_prefix = {};
+	global.__mall_elements_prefix	= {};
 	/// @ignore
-	global.__mall_parts_master    = [];
-	/// @ignore
-	global.__mall_itemstype_master = [];
-	/// @ignore
-	global.__mall_itemstype_index  = {};
-	/// @ignore	
-	global.__mall_actions_master = [];
-	/// @ignore
-	global.__mall_actions_index  = {};
-	
+	global.__mall_parts_master		= [];
+
 	#endregion
 	
 	#region Pocket
@@ -87,19 +79,18 @@ function mall_data_init()
 		
 	// Grupo default
 	/// @ignore
-	global.__mall_group_actual	= mall_add_group("default");	// Hay que iniciarlo altiro oe
+	global.__mall_group_actual	= undefined;			// Iniciar cuando se pueda noma oe
 	/// @ignore
 	global.__mall_party_groups	= new Collection();	// Donde se guardan listas con distintas entidades	
 	/// @ignore
 	global.__mall_party_templates = {};					// Plantillas para crear entidades party	
 	/// party_key -> party_list	
 	
-	mall_database();
-	pocket_database();
-	dark_database();
+	mall_database	();
+	pocket_database	();
+	dark_database	();
 	
-	party_database();
-	
+	party_database	();
 	
 	#endregion
 }

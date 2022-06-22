@@ -1,15 +1,10 @@
-/// @param	{String}	dark_subtype		Sub-Tipo
 /// @param	{Real}		consume				Cuanto gasta para usar este comando
 /// @param	{Bool}		[include_caster]	El caster tambien puede ser afectado
 /// @param	{Real}		[targets]			Cantidad de objetivos afectados
 /// @return {Struct.DarkCommand}
-function DarkCommand(_subtype, _consume=0, _include=true, _targets=1) : MallComponent("") constructor 
+function DarkCommand(_consume=0, _include=true, _targets=1) : MallComponent("") constructor 
 {
     #region PRIVATE
-	/// @ignore
-	__subtype = _subtype;   // El sub-tipo al que pertenece    
-	/// @ignore
-    __type = "";			// Se agrega al final    
     /// @ignore
     __include = _include;
 	/// @ignore
@@ -24,16 +19,8 @@ function DarkCommand(_subtype, _consume=0, _include=true, _targets=1) : MallComp
     conditions = undefined;	// Condiciones para usar este comando
     
 	consume = _consume;		// Cuanto gasta para usar este comando
-  
-    /// @param {String} dark_type
-	/// @return {Struct.DarkCommand}
-    static setType = function(_type) 
-	{
-		__type = _type; 
-		return self; 
-	}
-    
-    /// @param {Function} command_method	function(caster, target, extra)
+
+    /// @param	{Function} command_method	function(caster, target, extra)
 	/// @return {Struct.DarkCommand}
     static setCommand = function(_function) 
 	{

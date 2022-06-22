@@ -1,135 +1,83 @@
 /// @param {String}	state_key
 /// @desc Donde se guardan las propiedades de los estados
-function MallState(_key) : MallComponent(_key) constructor {
+function MallState(_key) : MallComponent(_key) constructor 
+{
 	#region PRIVATE
-	__initial = numtype(false, NUMTYPES.BOOLEAN);	// Valor inicial
-	__process = numtype(0, NUMTYPES.REAL);			// Valor para processar
-	
-	__resists = {};	// Que estadistica resiste a este estado. Se usa un struct ya que es más rapido para buscar.
-	__action  = {}; // Que accion afecta este estado 
-	
-	/// @type {Struct.Counter}
-    //__prop = (new Counter(0, 0) );
-    __eventStr = MALL_DUMMY_METHOD;  // Funcion a usar cuando se inicia el estado
-    __eventUpd = MALL_DUMMY_METHOD;  // Funcion a usar cuando se actualiza el estado
-    __eventEnd = MALL_DUMMY_METHOD;  // Funcion a usar cuando se finaliza el estado
+	__initial = false;	// Valor inicial siempre boleano
+	__limits = -1;		// Cuantos se pueden agregar en party. -1 para infinitos (NO PUEDE SER 0)
+
+		#region Callbacks
+	// function() {return "string"; }
+    __startCallback  = __nousestate__;  // Funcion a usar cuando se inicia el estado
+    __updateCallback = __nousestate__;  // Funcion a usar cuando se actualiza el estado
+    __endCallback    = __nousestate__;  // Funcion a usar cuando se finaliza el estado
     
     // Mensajes
-    __propKey = [noone, noone, noone]; // Llaves para traducir
-    __propInit   = "";  // Cuando inicia el estado
-    __propUpdate = "";  // Cuando se actualiza el estado 
-    __propEnd    = "";  // Cuando se termina el estado
+    __messages = [];
+	
+	#endregion
 	
 	#endregion
 
     #region METHODS
-    /// @param key
-    /// @param ...
-    /// @returns {MallState}
-    static setResists  = function() {
-        // Evitar indefenidos
-        if (is_undefined(argument0) ) return self;
-        
-        if (!is_array(argument0) ) {
-            var i=0; repeat(argument_count) {
-                var _key = argument[i++];
-                __resists[$ _key] = true;
-            }
-            
-        } else { // Soporte array
-            var _keys = argument0;
-            
-            var i=0; repeat(array_length(_keys) ) {
-                var _key = _keys[i++];
-                __resists[$ _key] = true;
-            }
-        }
-        
-        return self;
-    }
-    
-    /// @param stat_part_action
-    /// @param value
-    /// @param number_type
-    /// @param ...
-    /// @returns {MallState}
-    static SetAffected = function() {
-        var _inside, _class, _temp, _type, _value;
-		
-		var _gStats = mall_actual_group().__stats;
-		var _gParts = mall_actual_group().__parts;
-		var _gAction = global.__mall_actions_master;
-		
-        // -- Comprobar si es una parte o estadistica
-        var i = 0; repeat (argument_count div 3) {
-            /// @type {Struct.MallComponent}
-			_inside = argument[i++];
-            
-            _temp = argument[i++];
-            _type = argument[i++];
-            
-            _value = numtype(_temp, _type);  
-
-            if (!is_struct(_inside) ) {
-                var _key = _inside;
-                
-                if (variable_struct_exists(_gStats, _key) ) {           // Es una estadistica
-                    _class = _gStats[$ _key];    
-            
-                } else if (variable_struct_exists(_gParts, _key) ) {    // Es una parte
-                    _class = _gParts[$ _key];
-                    
-                } else { 
-                    // Guardar y seguir iterando
-                    if (array_find(_gAction, _key, function(value, in, i) {return in==value; } ) ) {
-                        __action[$ _key] = _value;
-                        continue;
-                    }
-                }
-                
-            } else _class = _inside;
-			
-			// Añadir efecto al componente pasado
-            _class.setAffected(__key, _value);
-        }
-
-        return self;
-    }
-    
-    /// @param start_message
-    /// @param update_message
-    /// @param end_message
-    static setMessages = function(_init, _update, _end) {
-        __propInit   =  _init;
-        __propUpdate = _update;
-        __propEnd    =    _end;
-            
+	
+	/// @param	{Boolean}	boolean
+	/// @param	{Real}		[limit]	
+	/// @desc Establece el valor inicial y el limite de este mismo estado (-1 es infinitos)
+	static basic = function(_boolean, _limit=-1)
+	{
+		__initial = _boolean;
+		__limits  = _limit;
+		return self;
+	}
+	
+    /// @param {String}	message
+	/// @param {String}	[message..]
+	/// @desc Permite almacenar llaves para los mensajes
+    static addMessages = function() 
+	{
+        var i=0; repeat(argument_count) array_push(__msgKeys, argument[i++] );
         return self;    
     }
     
-    /// @param _min
-    /// @param {Real} _max
-    /// @param {Real} _aument
-    /// @param {Real} _iterate_times
-    /// @param {Function} _event_start
-    /// @param {Function} _event_update
-    /// @param {Function} _event_end
-    static event = function(_min, _max, _aument, _iterate_times, _event_start, _event_update, _event_end) {
-        // Es para siempre o hasta que se cure u.u
-        if (is_undefined(_min) ) {
-			__prop = noone;
-            return self;
-        }
-        // Propiedades del counter
-		__prop.setLimit(_min, _max).modify(_aument, max(1, _iterate_times) );
-		
-        // -- Metodos a usar
-		__eventStr = _event_start  ?? __eventStr;
-		__eventUpd = _event_update ?? __eventUpd;
-		__eventEnd = _event_end    ?? __eventEnd;
-		
-        return self;
-    }
+	/// @param	{Function}	start_callback
+	/// @param	{Function}	update_callback
+	/// @param	{Function}	end_callback
+	static setCallback = function(_start, _update, _end)
+	{
+		__startCallback  = _start  ?? __startCallback;	
+		__updateCallback = _update ?? __updateCallback;
+		__endCallback = _end ?? __endCallback;
+		return self;
+	}
+	
+	/// @param	{Function}	start_callback
+	static setCallbackStart  = function(_start)
+	{
+		__startCallback  = _start  ?? __startCallback;	
+		return self;
+	}
+	
+	/// @param	{Function}	update_callback
+	static setCallbackUpdate = function(_update)
+	{
+		__updateCallback = _update ?? __updateCallback;
+		return self;
+	}
+
+	/// @param	{Function}	end_callback
+	static setCallbackEnd = function(_end)
+	{
+		__endCallback = _end ?? __endCallback;
+		return self;
+	}
+	
+	/// @ignore
+	/// @return {String}
+	static __nousestate__ = function()
+	{
+		return "";
+	}	
 
     #endregion
 }

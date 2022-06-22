@@ -9,7 +9,6 @@ function MallGroup(_key, _init=false) : MallComponent(_key) constructor {
 	
     // Se utiliza un struct para guardar los datos y acceder rapidamente
     /// @ignore
-	/// @type {Struct<Struct.MallStat>}
 	__stats    = {};
     /// @ignore
 	__states   = {}; 
@@ -17,6 +16,7 @@ function MallGroup(_key, _init=false) : MallComponent(_key) constructor {
     __elements = {}; 
 	/// @ignore
     __parts    = {}; 
+	
     #endregion
 	
     #region METHODS  
@@ -33,6 +33,7 @@ function MallGroup(_key, _init=false) : MallComponent(_key) constructor {
 		return self;
     }
 	
+	/// @ignore
 	/// @desc Inicia las estadisticas
     static __initStats = function() 
 	{    
@@ -49,6 +50,7 @@ function MallGroup(_key, _init=false) : MallComponent(_key) constructor {
         __stats = _content;
     }
     
+	/// @ignore
 	/// @desc Inicia los estados
     static __iniStates = function() 
 	{
@@ -64,6 +66,7 @@ function MallGroup(_key, _init=false) : MallComponent(_key) constructor {
         __states = _content;
     }
     
+	/// @ignore
 	/// @desc Inicia las partes
     static __initParts  = function() 
 	{
@@ -79,6 +82,7 @@ function MallGroup(_key, _init=false) : MallComponent(_key) constructor {
         __parts = _content;
     }
  
+	/// @ignore
 	/// @desc Inicia las partes
     static __initElements  = function() 
 	{
@@ -96,25 +100,25 @@ function MallGroup(_key, _init=false) : MallComponent(_key) constructor {
 	
 	#endregion
 	
-	/// @param {String} _key
+	/// @param {String} stat_key
 	/// @return {Struct.MallStat}
 	static getStat  = function(_key) {
 		return __stats [$ _key]; 
 	}
 	
-	/// @param {String} _key
+	/// @param {String} state_key
 	/// @return {Struct.MallState}
 	static getState = function(_key) {
 		return __states[$ _key]; 
 	}
 	
-	/// @param {String} _key
+	/// @param {String} part_key
 	/// @return {Struct.MallPart}
 	static getPart  = function(_key) {
 		return __parts [$ _key]; 
 	}
 	
-	/// @param {String} _key
+	/// @param {String} element_key
 	/// @return {Struct.MallElement}
 	static getElement = function(_key) {
 		return __elements[$ _key];

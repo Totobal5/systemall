@@ -1,13 +1,12 @@
-/// @param {String} dark_key
-/// @param {String} dark_type
-/// @param {Struct.DarkCommand} _spell
-function dark_add(_key, _type, _spell) 
+/// @param {String}				command_key
+/// @param {Struct.DarkCommand} command
+function dark_add(_key, _command) 
 {
 	// Añadir llave
     if (!dark_exists(_key) ) 
 	{
-		global.__mall_dark_database[$ _key] = (_spell.setType(_type) ).setKey(_key);
+		global.__mall_dark_database[$ _key] = _command;
     }
     
-    return (_spell);
+    return (_command);
 }

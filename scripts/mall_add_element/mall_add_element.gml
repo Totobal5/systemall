@@ -1,14 +1,16 @@
 /// @param {String} element_key
 /// @param [prefix_keys]
 /// @desc Crea un elemento y agrega estadistica al storage en base a este, mediante prefijos para trabajar con ellos
-function mall_add_element(_key) {
+function mall_add_element(_key) 
+{
     var _prefix = [MALL_ELEMENT_PREFIX_ATTACK, MALL_ELEMENT_PREFIX_DEFEND];
     // Agregar estadisticas default
 	mall_add_stat(_key + MALL_ELEMENT_PREFIX_ATTACK);
 	mall_add_stat(_key + MALL_ELEMENT_PREFIX_DEFEND);
 	
 	#region Agregar estadisticas extras
-    var i = 1; repeat(argument_count - 1) {
+    var i=1; repeat(argument_count - 1) 
+	{
         var _in = argument[i++];    
             
         // Guardar los prefijos de elemento    

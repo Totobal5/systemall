@@ -4,7 +4,7 @@
 /// @param {Real}			active_turns
 /// @param {Function}		update_callback
 /// @param {Function}		end_callback
-/// @return {Struct.DarkEffect}
+/// @return {Struct.MallEffect}
 function DarkEffect(_key, _init_value, _number_type, _active_turns, _update_callback, _end_callback) : MallComponent(_key) constructor {
     #region PRIVATE
 	/// @ignore

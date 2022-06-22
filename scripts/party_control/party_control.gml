@@ -18,25 +18,22 @@ function PartyControl(_stats_unique=false, _states_unique=true) : MallComponent(
 	{
 		var _foreach =  method(undefined, function(_mall, _key, i, _pass) {
 			var _initial = _mall.__initial, _atom;
-			if (_pass[0] == 0)
+			var _type  = _initial[NUMVALUE.TYPE];
+			
+			if (_pass.type == 0)
 			{
 				#region Stat
-				var _type  = _initial[NUMVALUE.TYPE];
-				var _value = _initial[NUMVALUE.VALUE];
-				
 				// Las estadisticas no utilizan el boleano
-				_atom = new __PartyControlAtom(_type, _value, false, _pass[1] );
+				_atom = new __PartyControlAtom(_type, false, _pass.unique, _mall.__limits);
+				
 				#endregion
 			}
 			else
 			{
 				#region State
-				var _process = _mall.__process;
-				var _type  = _process[NUMVALUE.TYPE];
-				var _value = _process[NUMVALUE.VALUE];
-				
 				// Los estados utilizan el boleano
-				_atom = new __PartyControlAtom(_type, _value, _initial[NUMVALUE.VALUE], _pass[1] );
+				var _boolean = _initial[NUMVALUE.VALUE];
+				_atom = new __PartyControlAtom(_type, _boolean, _pass.unique,  _mall.__limits);
 				#endregion
 			}
 			
@@ -44,8 +41,8 @@ function PartyControl(_stats_unique=false, _states_unique=true) : MallComponent(
 			array_push(__allKeys, _key);
 		});
 		
-		mall_stat_foreach (__key, _foreach, [0, __statUnique]  );
-		mall_state_foreach(__key, _foreach, [1, __stateUnique] );
+		mall_stat_foreach (__key, _foreach, {type: 0, unique:  __statUnique} );
+		mall_state_foreach(__key, _foreach, {type: 1, unique: __stateUnique} );
     }
     
     /// @param	{String}		state_stat_key
@@ -73,7 +70,8 @@ function PartyControl(_stats_unique=false, _states_unique=true) : MallComponent(
 	/// @return {Bool}
 	static isAffected = function(_key)
 	{
-		return (get(_key).affected );
+		var _atom = get(_key);
+		return (_atom.__isAffected() );
 	}
 	
     /// @param	{String}		state_stat_key
@@ -104,9 +102,8 @@ function PartyControl(_stats_unique=false, _states_unique=true) : MallComponent(
     static reset = function(_key) 
 	{
         var _control = get(_key);
-        _control.values[0] = _control.__init[0];
-		_control.values[1] = _control.__init[1];
-		_control.values[2] = _control.__init[2]
+        _control.values[0] = 0;
+		_control.values[1] = 0;
 
         return self;
     }
@@ -114,8 +111,10 @@ function PartyControl(_stats_unique=false, _states_unique=true) : MallComponent(
 	/// @desc Devuelve todos los controles al valor inicial
     static resetAll = function() 
 	{
-		var i=0; repeat(array_length(__allKeys) ) {
-			reset(__allKeys[i++] );	
+		var i=0; repeat(array_length(__allKeys) ) 
+		{
+			var _key = __allKeys[i++];
+			reset(_key);	
 		}
 
         return self;
@@ -139,16 +138,20 @@ function PartyControl(_stats_unique=false, _states_unique=true) : MallComponent(
 			if (is_array(_content) )
 			{
 				#region Guarda varios
+				// Que no supere el limite
+				if (_control.limit > 0) // limite activo
+				{
+					if (array_length(_content) > _control.limit) return false;	// hay demasiados
+				}				
+				
 				if (!_control.same)
 				{
-					#region No repetidos
+					// No repetidos
 					var i=0; repeat(array_length(_content) )
 					{
 						var _ineffect = _content[i++];
 						if (_ineffect.__id == _effect.__id) return false;	// No se puede agregar
 					}
-					
-					#endregion
 				}
 				
 				// Agregar al array
@@ -215,7 +218,7 @@ function PartyControl(_stats_unique=false, _states_unique=true) : MallComponent(
 	/// @return {Array}
     static update = function(_key) 
 	{
-        var _return  = [0, 0, 0];
+        var _return  = [0, 0];
 		var _control = get(_key);
 		
 		if (!is_undefined(_control) ) return [_return, false];
@@ -324,12 +327,12 @@ function PartyControl(_stats_unique=false, _states_unique=true) : MallComponent(
 	/// @desc Actualiza el "valueControl" de una estadistica
 	static updateStat = function(_key)
 	{
-		var _control = get(_key);
 		var _stats = getReference().getStats();
 		var _stat  = _stats.get(_key);
 			
 		if (!is_undefined(_stat) ) 
 		{
+			var _control = get(_key);
 			var _real, _percent;
 			with (_stat)
 			{

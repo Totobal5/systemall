@@ -15,8 +15,9 @@ function PartyEntity(_name = "Test", _stats, _control, _parts, _group) : MallCom
     __control = _control;   // Control de estados / buffos      
     __parts   = _parts  ;   // Equipo y partes
             
-    __commands = {};        // Que comandos puede realizar
-    
+    __commands  = {};       // Que comandos puede realizar
+	__effective = {};		// Si un ataque utiliza un elemento revisar de que manera afecta a esta entidad
+	
     #region Metodos
     
     // Al pasar un turno actualiza los valores
@@ -38,7 +39,8 @@ function PartyEntity(_name = "Test", _stats, _control, _parts, _group) : MallCom
     static getStats = function() {
         return __stats;
     }
-    	
+    
+	/// @ignore
 	/// @param {String}	group_key
 	/// @param {String}	index
 	static setGroup = function(_key, _index)
@@ -52,6 +54,25 @@ function PartyEntity(_name = "Test", _stats, _control, _parts, _group) : MallCom
 		return self;
 	}
   
-  
+	/// @param	{String}	element_key
+	/// @param	{Function}	calculate_method
+	static setEffective = function(_key, _method)
+	{
+		__effective[$ _key] = _method;
+		return self;
+	}
+	
+	/// @return {Function}
+	static getEffective = function(_key)
+	{
+		return (__effective[$ _key] );
+	}
+
+	static getEffectiveCount = function()
+	{
+		return (variable_struct_names_count(__effective) );	
+	}
+	
+
     #endregion
 }

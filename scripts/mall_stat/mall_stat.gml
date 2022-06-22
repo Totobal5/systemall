@@ -5,8 +5,8 @@ function MallStat(_key) : MallComponent(_key) constructor {
 	// -- Lider y súbdito
     __leader = "";
     
-    __minion   = [];
-    __affected = {};
+    __minion = [];
+    __effect = {};	// Que efecto tiene un estado sobre esta estadistica
 
 		#region Configuracion
 	__initial = numtype(0, NUMTYPES.REAL);
@@ -112,12 +112,15 @@ function MallStat(_key) : MallComponent(_key) constructor {
 	/// @return {Struct.MallStat}	
     static setLimits = function(_min, _max) 
 	{
-		if (!is_array(_min) ) {
+		if (!is_array(_min) ) 
+		{
 	    	__limits[0] = _min;
 	    	__limits[1] = _max;
-		} else {
+		} 
+		else 
+		{
 			__limits[0] = _min[0];
-			__limits[1] = _min[0];
+			__limits[1] = _min[1];
 		}
 		
         return self;
@@ -178,30 +181,23 @@ function MallStat(_key) : MallComponent(_key) constructor {
         return self;
     }
     
-    /// @param {String} state_key	LLave de estado
-    /// @param			value		Valor que afecta el estado a esta estadistica	
-	/// @param			number_type	Tipo de numero	
+    /// @param	{String}	state_key		LLave de estado
+	/// @param	{Function}	effect_method	Que provoca el estado en esta estadistica
 	/// @return {Struct.MallStat}
-    static setAffected = function(_stateKey, _value, _type=NUMTYPES.REAL) 
+    static setEffect = function(_key, _method) 
 	{
-		if (!is_array(_value) ) {
-			__affected[$ _stateKey] = numtype(_value, _type); 	
-		}
-		else {
-			__affected[$ _stateKey] = _value; 	
-		}
-		
+		__effect[$ _key] = _method;
         return self;
     }
     
     /// @param {String} state_key
 	/// @desc Devuelve que estado lo afecta
-    static getAffected = function(_key) 
+    static getEffect = function(_key) 
 	{
-        return (__affected[$ _key] );    
+        return (__effect[$ _key] );    
     }
 	
-	/// @param {Real}							lvl
+	/// @param {Real}							level
 	/// @param {Struct.__PartyStatsComponent}	stat
 	/// @param {Struct.PartyStats}				self
 	static execute = function(_lvl, _stat, _self) 

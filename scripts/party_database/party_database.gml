@@ -13,7 +13,14 @@ function party_database()
 		
 		_stats.setBase("PS" , 15, "PM", 15, "EXP", 25);
 		_stats.setBase("FUE", 51, "INT", 51, "DEF", 60);
-		_stats.setBase("FIRE.ATK" , 51,  "AQUA.ATK", 100, "EARTH.ATK", 25);
+		_stats.setBase("FIRE.ATTACK" , 51,  "AQUA.ATTACK", 100, "EARTH.ATTACK", 25);
+		_stats.setBase("FIRE.DEFEND" ,  0,  "AQUA.DEFEND",   0, "EARTH.DEFEND",  0);
+		
+	mall_add_state("LIFE");
+	mall_add_state("VEN");
+	mall_add_state("SIL");
+	mall_add_state("STO");
+	mall_add_state("BURN");		
 		
 		// Condicion global
 		_stats.setCondition(,function() {

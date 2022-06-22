@@ -2,14 +2,16 @@
 /// @param	{String} [prefix_keys]
 /// @desc	Crea un estado y agrega una estadistica al Storage en base al nuevo estado 
 /// 		utiliza prefijos para crear las estadisticas relacionadas
-function mall_add_state(_key) {
+function mall_add_state(_key) 
+{
     var _prefix = [MALL_STATE_PREFIX_ATTACK, MALL_STATE_PREFIX_DEFEND];
     // Agregar estadisticas default
 	mall_add_stat(_key + MALL_STATE_PREFIX_ATTACK);
 	mall_add_stat(_key + MALL_STATE_PREFIX_DEFEND);
 	
 	#region Agregar estadisticas extras
-    var i=1; repeat(argument_count - 1) {
+    var i=1; repeat(argument_count - 1) 
+	{
         var _in = argument[i++]; // Obtener prefijos de Stat
         
         // Guardar los prefijos de stats

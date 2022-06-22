@@ -16,7 +16,7 @@ function MallComponent(_key="") constructor
     // -- Display
 	__display = true;				// Mostrar este valor
 	__displayKey = __key;			// Llave para usar en lexicon
-	__displayMethod = _nofundisp_;	// Función para mostrar valor
+	__displayMethod = _nofundisp_;	// Función para mostrar valor	function(event) {return {string}; }
 
 	#endregion
 

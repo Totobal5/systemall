@@ -109,7 +109,7 @@ function PartyStats(_level=1) : MallComponent("") constructor
 			
 			// Depende del number type
             switch (_type) {
-                case NUMTYPE.PERCENT:	
+                case NUMTYPES.PERCENT:	
 					#region Porcentaje
 					var _use = 0;
 					#region Valor a usar
