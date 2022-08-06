@@ -1,107 +1,121 @@
 /// @desc EN ESTE SCRIPT SE DEBE CREAR Y CUSTOMIZAR CADA ELEMENTO MALL
 function mall_database()
 {
-	mall_add_stat("PS", "EXP", "PM", "FUE", "INT", "DEF", "SPD");
+	/* Ejemplo pokemon */
+	mall_add_stat ("PS", "ATTACK", "DEFENSA", "ESPECIAL", "VELOCIDAD", "CRITICAL", "EXP");
+	mall_add_state("VIVO", "VENENO", "CONGELADO", "PARALIZADO", "DORMIDO", "QUEMADO");
+	mall_add_mod  ("FUEGO", "HIELO", "TIERRA", "ELECTRICO", "FANTASMA", "PSIQUICO", "INSECTO", "LUCHA", "NORMAL", "AGUA", "PLANTA");
 	
-	mall_add_element("FIRE");
-	mall_add_element("AQUA");
-	mall_add_element("EARTH");
+	#region Stats
+	var _ps = mall_customize_stat("PS", 1, 0, 0, 9999, true, "STATS.PS", function() {
+		/// @self {Struct.__PartyStatsAtom}
+		return (lexicon_text(displayKey) + ": " + string(valueActual) + " / " + string(valueMax) );
+	}).
+	setLevel(function(_LEVEL, _ATOM, _USER) {
+		return _LEVEL + (10 + (_LEVEL / 100 * (_ATOM.base * 2) ) );
+	});
 	
-	mall_add_state("LIFE");
-	mall_add_state("VEN");
-	mall_add_state("SIL");
-	mall_add_state("STO");
-	mall_add_state("BURN");
+	mall_customize_stat("FUERZA", 1, 0, 0, 999, true, "STATS.FUE", function() {
+		/// @self {__PartyStatsAtom}
+		return (lexicon_text(displayKey) + ": " + string(valueActual) );			
+	}).
+	setLevel(function(_LEVEL, _ATOM, _USER) {
+		return 5 + (_LEVEL / 100 * (_ATOM.base*2) );	
+	});
+		
+	mall_customize_stat("DEFENSA"  , "FUERZA", true, true, true);
+	mall_customize_stat("ESPECIAL" , "FUERZA", true, true, true);
+	mall_customize_stat("VELOCIDAD", "FUERZA", true, true, true);
 	
-	mall_add_part("HEAD", "TORSO", "HAND", "FEET");
+	mall_customize_stat("CRITICAL", 0, 1, 0, 255, false).
+	setLevel(function(_LEVEL, _ATOM, _USER) {
+		var _speed = _USER.get("VELOCIDAD");
+		return (_speed.valueMax / 2);	
+	});
+		
+	mall_customize_stat("EXP", 0, 0, 0, 999999, true, "STATS.EXP", function() {
+		return (lexicon_text(displayKey) + ": " + string(valueActual) + " / " + string(valueMax));
+	}).
+	// usa flag
+	setLevel(function(_LEVEL, _ATOM, _USER) {
+		switch (_ATOM.flag)	
+		{
+			case "Medium Slow":
+			return (1.2 * power(_LEVEL, 3) ) - (15 * power(_LEVEL, 3) ) + (100 * _LEVEL) - 140;
+			break;
+		}
+	});
+		
+	#endregion
 	
-	mall_add_group("NORM", true);	// Crear grupo actual
+	#region States	
+	mall_customize_state("VIVO", true, 1, false);
+	
+	mall_customize_state("VENENO", false, 1, true, "STATE.VENENO", function() {return "VEN";} ).
+	setUpdate("onStart", function(_STATS, _EQUIPMENT, _CONTROL, _USER)  {
+		_STATS.add("PS", -5, 1, 4);	// el 5% de la vida maxima y la quita de la actual
+	});
+	
+	mall_customize_state("CONGELADO",  false, 1, true, "STATE.CONGELADO",  function() {return "CON";} ).
+	setStart(function(_STATS, _EQUIPMENT, _CONTROL, _USER) {
+		_USER.__pass = true;
+		_USER.__passReset = -1;
+	}).
+	setUpdate("onStart", function(_STATS, _EQUIPMENT, _CONTROL, _USER)  {
+		var _random = irandom(100);
+		if (_random > 50)
+		{
+			_USER.__pass = false;
+			_USER.__passReset = 0;
+			_USER.__passCount = 0;
+		}
+	});
+	
+	mall_customize_state("PARALIZADO", false, 1, true, "STATE.PARALIZADO", function() {return "PAR";} ).
+	setUpdate("onCombat", function(_STATS, _EQUIPMENT, _CONTROL, _USER) {
+		var _random = irandom(100);
+		if (_random > 80)
+		{
+			_USER.__pass = true;
+			_USER.__passReset = 1;	// Proximo turno puede actuar nuevamente
+		}
+	});
+	
+	mall_customize_state("DORMIDO",    false, 1, true, "STATE.DORMIDO",    function() {return "DOR";} ).
+	setStart (function(_STATS, _EQUIPMENT, _CONTROL, _USER) {
+		_USER.__pass = true;
+		_USER.__passReset = -1;
+	}).
+	setUpdate("onCombat", function(_STATS, _EQUIPMENT, _CONTROL, _USER) {
+		var _more   = 100 * ( (_USER.__turnControl - _CONTROL.__turnStart) / 14);
+		var _random	= irandom(100);
+		
+		// Salir de dormido
+		if (_random > (90 - _more) )
+		{
+			_USER.__pass = false;
+			_USER.__passReset = 0;
+			
+			_CONTROL.__ready = true;
+		}
+	});
 
-	#region Customize Stats
-	var _displayMethod = function() {
-		return string(valueActual); 
-	}
-	
-	mall_customize_stat("PS", 0, 0, 9999, NUMTYPES.REAL, true,, _displayMethod).setLevel(,,function(_level) {
-		var _t = (base * _level * 3) div 2;
-		return (_t + 10);	
-	});
-	mall_customize_stat("PM", "PS", true, true, true);
-	
-	mall_customize_stat("EXP", 0, 0, 9999999, NUMTYPES.REAL, true,, _displayMethod).setLevel(,,function(_level) {
-		/// @context {Struct.__PartyStatsAtom}
-		var _t = (_level * base * 7);
-		return (_t + (_level * 2) + 60);
+	mall_customize_state("QUEMADO",    false, 1, true, "STATE.QUEMADO",    function() {return "DOR";} ).
+	setStart(function(_STATS, _EQUIPMENT, _CONTROL, _USER) {
 	});
 	
-	mall_customize_stat("FUE", 0, 0, 220, NUMTYPES.REAL, true,, _displayMethod).setLevel(,,function(_level) {
-		var _t = ( (base * _level) / 15);
-		return (_t + 5);
-	});
-	mall_customize_stat("INT", "FUE", true, true, true);
-	mall_customize_stat("INT", "DEF", true, true, true);
-	mall_customize_stat("INT", "SPD", true, true, true);
-	
 	#endregion
 	
-	#region Customize State
-	mall_customize_state("LIFE", true);
-	mall_customize_state("VEN", false);
-	mall_customize_state("SIL", false);
-	mall_customize_state("STO", false);
-	
-	#endregion
-	
-	#region Customize element
-	/// @param {Struct.PartyEntity}	caster
-	/// @param {Struct.PartyEntity}	target
-	/// @param {Any*}				[extra]		Daño en este caso
-	var _fireonhit = function(caster, target, extra) {
-		// Si la defensa del target >= 100 entonces lo absorbe
-		#region Get
-		var _cstats   = caster.getStats();
-		var _cattk = _cstats.get("FIRE.ATTACK");
+	mall_customize_mod("FUEGO").setOnAttack(function(_USER, _TARGET, _VALUE) {
+		var _apply=1;
+		var _mods =_TARGET.__mods;
 		
-		var _tstats   = target.getStats();
-		var _tcontr   = target.getControl();
-		var _tdef = _tstats.get("FIRE.DEFENSE");
-		#endregion
+		if (variable_struct_exists(_mods, "PLANTA") )	_apply += .5;
+		if (variable_struct_exists(_mods, "INSECTO"))	_apply += .5;
+		if (variable_struct_exists(_mods, "TIERRA") )	_apply -= .5;
+		if (variable_struct_exists(_mods, "TIERRA") )	_apply -= .5;	
 		
-		// Obtener si es efectivo
-		var _effective = target.getEffective("FIRE");
+		return (_VALUE * _apply);
+	});	
 		
-		// Salir
-		if (_effective == undefined) return extra;
-		
-		if (_tcontr.isAffected("BURN") )
-		{
-				
-		}
-		else
-		{
-			// Es porcentaje
-			if (_tdef.valueControl >= 100)
-			{
-				dark_execute("DARK.HEAL", caster,, extra);	
-			}
-			else
-			{
-				dark_execute("DARK.DAMAGE", caster,,extra);	
-			}
-		}
-		
-	}
-	
-	mall_customize_element("FIRE");
-	mall_customize_element("AQUA");
-	mall_customize_element("EARTH");
-	
-	#endregion
-	
-	#region Customize Parts
-	mall_customize_part("HEAD" ,  true, 1);
-	mall_customize_part("TORSO",  true, 1);
-	mall_customize_part("HAND" ,  true, 2);
-	mall_customize_part("FEET" ,  true, 1);
-	#endregion
 }

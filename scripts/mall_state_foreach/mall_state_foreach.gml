@@ -1,17 +1,15 @@
-/// @param {String}		group_key
-/// @param {Function}	foreach_method	function(mall_state, state_name, i, [arguments])
+/// @desc Ejecuta un codigo por cada estado
+/// @param {Function}	foreach_method	function(STATE, KEY, I, [ARGUMENTS])
 /// @param {Any}		[arguments]
-/// @desc Ejecuta un codigo por cada estadistica en el grupo
-function mall_state_foreach(_group, _function, _pass=[])
+function mall_state_foreach(_FUN, _PASS=[])
 {
-	var _group  = mall_get_group(_group)
-	var _states = mall_get_states();
-	
+	var _states = mall_get_state_keys();	
 	var i=0; repeat(array_length(_states) )
 	{
-		var _state = _states[i];
-		var _mall = _group.getState(_state);
-		_function(_mall, _state, i, _pass);
-		++i;
+		var _key   = _states[i];
+		var _state = global.__mallStatesMaster[$ _key];
+		_FUN(_key, _state, i, _PASS);
+		
+		i += 1;
 	}
 }

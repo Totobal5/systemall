@@ -1,21 +1,14 @@
-#macro MALL_TRACE			true
+#macro MALL_TRACE	true
+#macro MALL_ERROR	true
 #macro MALL_DUMMY_METHOD	global.__mall_dummy_method
 
 // -- STATS
-#macro MALL_STAT_FUN		function(lvl, stat, extra)
-#macro MALL_STAT_ROUND		1								// 0: value, 1: round(x), 2: floor(x)
+#macro MALL_STAT_ROUND	1		// 0: value, 1: round(x), 2: floor(x)
 #macro MALL_STAT_DEFAULT_MAX 9999	
 #macro MALL_STAT_DEFAULT_MIN 0
 
-// -- STATES
-	// PREFIJO PREDETERMINADO PARA LOS STATES
-#macro MALL_STATE_PREFIX_ATTACK	".ATTACK"
-#macro MALL_STATE_PREFIX_DEFEND	".DEFEND"
-
-// -- ELEMENTS
-	// PREFIJO PREDETERMINADO PARA LOS ELEMENTS
-#macro MALL_ELEMENT_PREFIX_ATTACK ".ATTACK"
-#macro MALL_ELEMENT_PREFIX_DEFEND ".DEFEND"
+#macro MALL_STAT_DEFAULT_LEVEL_MIN 0
+#macro MALL_STAT_DEFAULT_LEVEL_MAX 100
 
 #region PARTY
 #macro MALL_PARTY_SHOW_MESSAGE true
@@ -32,7 +25,13 @@
 #region DARK
 #macro MALL_DARK function(caster, target, extra)
 #macro MALL_DARK_TYPE_MAGIC	"MAGIA"
-#macro MALL_DARK_TYPE_TICK		"TICK"
+#macro MALL_DARK_TYPE_TICK	"TICK"
+
+#endregion
+
+#region ENUMS
+enum MALL_NUMTYPE {REAL , PERCENT}
+enum MALL_NUMVAL  {VALUE, TYPE}
 
 #endregion
 
@@ -40,51 +39,66 @@ function mall_data_init()
 {
 	#region Database
 	/// @ignore
-	global.__mall_groups_master		= (new Collection() );
+	global.__mallTypesMaster = {};
 	/// @ignore
-	global.__mall_stats_master		= [];
-	/// @ignore	
-	global.__mall_states_master		= [];
+	global.__mallTypesKeys   = [];
+
+	/// @type {Struct<Struct.MallStat>}
 	/// @ignore
-	global.__mall_states_prefix		= {};
+	global.__mallStatsMaster = {};
+	/// @type {Array<String>}
 	/// @ignore
-	global.__mall_elements_master	= [];
+	global.__mallStatsKeys   = [];
+
 	/// @ignore
-	global.__mall_elements_prefix	= {};
+	global.__mallStatesMaster = {};
 	/// @ignore
-	global.__mall_parts_master		= [];
+	global.__mallStatesKeys   = [];
+	
+	/// @ignore
+	// Un modifier puede ser un elemento o algun tipo de propiedad.
+	global.__mallModsMaster = {};
+	/// @ignore
+	global.__mallModsKeys  = [];
+	
+	/// @ignore
+	global.__mallEquipmentMaster = {};
+	/// @ignore
+	global.__mallEquipmentKeys   = [];
 
 	#endregion
 	
 	#region Pocket
 	/// @ignore
-	global.__mall_pocket_bag = {};		// Bolsillos			
+	global.__mallPocketBag  = {}; // Bolsillos			
 	/// @ignore
-	global.__mall_pocket_database = {};	// Guardar informacion	
+	global.__mallPocketData = {}; // Guardar informacion	
 	
 	#endregion
 	
 	#region Dark
 	/// @ignore
-	global.__mall_dark_database = {};
+	global.__mallDarkData   = {};
 	/// @ignore
-	global.__mall_dark_effects_active = [];
+	global.__mallDarkActive = [];
 	
 	#endregion
 	
 	#region Utils
 	/// @ignore
 	/// @desc Metodo sin nada para no crear infinitos 
-	global.__mall_dummy_method = function(_temp=0) {return (_temp ); }
-		
-	// Grupo default
+	global.__mallDummyMethodReal   = function(_TEMP=0)  {return (_TEMP); }
+	
 	/// @ignore
-	global.__mall_group_actual	= undefined;			// Iniciar cuando se pueda noma oe
+	/// @desc Metodo sin nada para no crear infinitos
+	global.__mallDummyMethodString = function(_TEMP="") {return (_TEMP); }
+	
+	// -- Grupo
+	
 	/// @ignore
-	global.__mall_party_groups	= new Collection();	// Donde se guardan listas con distintas entidades	
+	global.__mallPartyGroups   = {};
 	/// @ignore
-	global.__mall_party_templates = {};					// Plantillas para crear entidades party	
-	/// party_key -> party_list	
+	global.__mallPartyTemplate = {};
 	
 	mall_database	();
 	pocket_database	();
@@ -96,10 +110,20 @@ function mall_data_init()
 }
 
 /// @param message Mensaje a mostrar
-function __mall_trace(_msg) 
+function __mall_trace(_MSG) 
 {
-	if (MALL_TRACE) show_debug_message("MALL: " + string(_msg) );
+	if (MALL_TRACE) 
+	{
+		show_debug_message("Mall: " + string(_MSG) );
+	}
 }
+
+/// @param message Mensaje a mostrar
+function __mall_error(_MSG)
+{
+	if (MALL_ERROR) show_error("Mall Error: " + string(_MSG) );	
+}
+
 
 // Llamar al inicio.
 mall_data_init();

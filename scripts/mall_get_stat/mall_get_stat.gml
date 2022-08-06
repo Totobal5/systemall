@@ -1,7 +1,7 @@
 /// @param	{String} stat_key
 /// @desc	Devuelve la estructura de la estadistica
 /// @return {Struct.MallStat}
-function mall_get_stat(_key) 
+function mall_get_stat(_KEY) 
 {
-	return (mall_group_get_actual().__stats[$ _key] );
+	return (global.__mallStatsMaster[$ _KEY] );
 }

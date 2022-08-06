@@ -7,6 +7,5 @@
   },
   "resourceVersion": "1.0",
   "name": "party_Stat",
-  "tags": [],
   "resourceType": "GMScript",
 }

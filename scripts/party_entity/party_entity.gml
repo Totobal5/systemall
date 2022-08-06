@@ -13,11 +13,21 @@ function PartyEntity(_name = "Test", _stats, _control, _parts, _group) : MallCom
     // Estructuras        
     __stats   = _stats;		// Estadisticas        
     __control = _control;   // Control de estados / buffos      
-    __parts   = _parts  ;   // Equipo y partes
-            
+    __equipment = _parts;   // Equipo y partes
+    
+	__turnCombat  = 0;	// En que turno se mueve
+	__turnControl = 0;	// Numero de turnos que han habido 
+	
+	__pass = false;		// Si se salta un turno
+	__passCount = 0;	// Cuantos turnos a saltado
+	__passReset = 0;	// Reiniciar __pass a esta cantidad de turnos -1 es infinito
+	
     __commands  = {};       // Que comandos puede realizar
 	__effective = {};		// Si un ataque utiliza un elemento revisar de que manera afecta a esta entidad
-	
+
+	__mods = {};
+	// {modificador: []}
+
     #region Metodos
     
     // Al pasar un turno actualiza los valores

@@ -1,7 +1,7 @@
 /// @param {String} state_key
 /// @desc Obtiene el estado en el grupo actual
 /// @return {Struct.MallState}
-function mall_get_state(_key)
+function mall_get_state(_KEY)
 {
-	return (mall_group_get_actual().__states[$ _key] );
+	return (global.__mallStatesMaster[$ _KEY] );
 }

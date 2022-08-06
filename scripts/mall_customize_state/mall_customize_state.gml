@@ -1,17 +1,15 @@
 /// @param	{String}	state_key
 /// @param	{Real}		boolean
 /// @param	{Real}		[limit]				def: -1
-/// @param	{Boolean}	[display]
+/// @param	{Bool}		[display]
 /// @param  {String}	[display_key]
 /// @param	{Function}	[display_method]	function(event) {return string; }
 /// @returns {Struct.MallState}
-function mall_customize_state(_key, _boolean, _limit=-1, _display=true, _display_key, _display_method) 
+function mall_customize_state(_KEY, _BOOL, _LIMIT=-1, _DISPLAY=true, _DISPLAY_KEY, _DISPLAY_METHOD) 
 {
-    var _state = mall_get_state(_key);
-    _state.basic(_boolean, _limit)
-	
-	// Display
-	_state.setDisplay(_display, _display_key, _display_method);
+    var _state = mall_get_state(_KEY);
+    _state.basic(_BOOL, _LIMIT);
+	_state.setDisplay(_DISPLAY, _DISPLAY_KEY, _DISPLAY_METHOD);
 	
     return (_state);
 }

@@ -1,9 +1,9 @@
-/// @param {String}		template_name
-/// @param {Function}	create_method	function(args=[]) {}
-function party_template_create(_key, _create_method)
+/// @param {String}		template_key
+/// @param {Function}	create_method	function(GROUP, LEVEL, ARGS) {}
+function party_template_create(_KEY, _METHOD)
 {
-	if (variable_struct_exists(global.__mall_party_templates, _key) )
+	if (!variable_struct_exists(global.__mallPartyTemplate, _KEY) )
 	{
-		global.__mall_party_templates[$ _key] = _create_method;
+		global.__mallPartyTemplate[$ _KEY] = _METHOD;
 	}
 }

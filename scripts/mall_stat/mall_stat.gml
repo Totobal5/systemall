@@ -1,225 +1,293 @@
 /// @param {String}	stat_key
 /// @desc Donde se guardan las propiedades de una estadistica
-function MallStat(_key) : MallComponent(_key) constructor {
+function MallStat(_KEY) : MallComponent(_KEY) constructor 
+{
     #region PRIVATE
-	// -- Lider y súbdito
-    __leader = "";
-    
-    __minion = [];
     __effect = {};	// Que efecto tiene un estado sobre esta estadistica
 
-		#region Configuracion
-	__initial = numtype(0, NUMTYPES.REAL);
-    __limits  = [0, 0];
+	__valueInit = array_create(2, 0);	// Valor inicial default
+    __valueLims = array_create(2, 0);	// Limites del valor global
     
-    // No hay cambios
-    __levelMethod = MALL_DUMMY_METHOD;
-    
-    __levelLimits = [0, 0];   // Nivel minimo y maximo
-    __levelSingle =  false;   // Si sube de nivel aparte de otras estadisticas con su propia experencia etc
-    
-	/// @type {Struct.Counter}
-    __toMin = (new Counter(0, 1, 1, true) );
-	/// @type {Struct.Counter}
-    __toMax = (new Counter(0, 1, 1, true) );
-   
-    __toMaxLevel = false;	// Luego de subir de nivel la primera vez dejar con el valor maximo
-    	
+	__modifyCount	= -1;	// Cuantas modificaciones puede tener
+	__modifyPercent =  0;	// Probabilidad default
+	__modifyAcceptSame = false;	// Si permite el mismo efecto varias veces
+	
+	#region Level
+	__levelLims = [MALL_STAT_DEFAULT_LEVEL_MIN, MALL_STAT_DEFAULT_LEVEL_MAX]; // Nivel minimo y maximo 
+	__levelSingle = false; // Si sube de nivel aparte de otras estadisticas con su propia experencia etc
+	
+	/// @param {Struct.PartyStats}		 stat_entity
+	/// @param {Struct.__PartyStatsAtom} stat_atom
+	/// @param {Any} [Any]
+	/// @return {Real}
+	__levelEvent = function(STAT_ENTITY, STAT_ATOM, _FLAG) {return 0; }; // Forma de subir de nivel
+	
+	/// @param {Struct.PartyStats}	[stat_entity]
+	/// @return {Bool}
+    __levelCheck = function(STAT_ENTITY=undefined)  {return true; }; // Indicar si puede o no subir de nivel si sube individual
+	
 	#endregion
+	
+	__toValue = new makeTo();
 	
 	#endregion
 	
     #region METHODS
-	/// @param {Struct.MallStat, String}	stat				MallStat o llave
-	/// @param {Bool}						[inherit_limit]		Heredar limites
-	/// @param {Bool}						[inherit_lvl]		Heredar formula de nivel
-	/// @param {Bool}						[inherit_display]	Heredar metodo de display
+	/// @param {Struct.MallStat or String}	stat				MallStat o llave
+	/// @param {Bool}						[inherit_limit]		Heredar valor
+	/// @param {Bool}						[inherit_lvl]		Heredar nivel
+	/// @param {Bool}						[inherit_display]	Heredar display
 	/// @desc Copia el limite, valor inicial y formula de otro MallStat
 	/// @return {Struct.MallStat}
-    static inherit = function(_stat, _inh_limit=true, _inh_lvl=true, _inh_display=false) 
+    static inherit = function(_STAT, _LIMIT=true, _LVL=true, _DISPLAY=false) 
 	{
-		if (is_string(_stat) ) {
-			/// @type {Struct.MallStruct}
-			_stat = mall_get_stat(_stat);
-		}
-
+		// Se paso un string y se debe buscar la estadistica
+		if (is_string(_STAT) ) _STAT = mall_get_stat(_STAT);
+		
 		// Copiar valor inicial
-		numtype_copy(__initial, _stat.__initial);
+		__valueInit[0] = _STAT.__valueInit[0];
+		__valueInit[1] = _STAT.__valueInit[1];
+
+		// Heredar limite de valor
+        if (_LIMIT) setLimits(_STAT.__valueLims);
+	
+		// Hereda nivel
+		if (_LVL) setLevel(method(undefined, _STAT.__levelMethod), _STAT.__levelLims[0], _STAT.__levelLims[1] );
 		
-        // Si se hereda el limite de valor
-        if (_inh_limit) setLimits(_stat.__limits);
-		
-		#region Hereda nivel
-		if (_inh_lvl) 
-		{
-	        __levelMethod = method(undefined, _stat.__levelMethod);	// Copiar formula para subir de nivel
-			array_copy(__levelLimits, 0, _stat.__levelLimits, 0, 2);	// Copiar limite de nivel
-		}
-        
-		#endregion
-		
-		#region Heredar display
-        if (_inh_display) 
-		{
-			__display	 = _stat.__display;
-			__displayKey = _stat.__displayKey;
-			__displayMethod = method(undefined, _stat.__displayMethod);	
-		}
+		// Heredar display
+        if (_DISPLAY) setDisplay(_STAT.__displayKey, method(undefined, _STAT.__displayMethod) );
 		
 		#endregion
         
         return self;
     }
     
-    /// @param {Struct.MallStat} _stat
-    static setLeader = function(_stat) 
+	static makeTo = function() constructor 
 	{
-		if (is_string(_stat) ) {
-			/// @type {Struct.MallStruct}
-			_stat = mall_get_stat(_stat);
+		__active = false;	
+		__tomin = true;	// true: to min, false: to max
+		
+		__count = 0;	// Valor de la cuenta
+		__countLim = 1;	// Limite de la cuenta	
+		
+		__reset = false;
+		__resetCount = 0; // Veces que se ha reseteado	
+		__resetLim	 = 1; // Limite de resets
+		
+		static copy = function()
+		{
+			var _to = new makeTo();
+			_to.__active = __active;
+			_to.__tomin  =  __tomin;
+			_to.__count    = __count;	 // Valor de la cuenta
+			_to.__countLim = __countLim; // Limite de la cuenta	
+			
+			_to.__reset = __reset;
+			_to.__resetCount = __resetCount; // Veces que se ha reseteado	
+			_to.__resetLim	 = __resetLim;   // Limite de resets
+			return _to;
+		}
+	
+		/// @desc  Devuelve true al completar la iteracion, false si aun no se cumple
+		/// @returns {bool} Description		
+		static iterate = function()
+		{
+			if (__count > __countLim)
+			{
+				__count += 1;
+				return false;
+			}
+			else
+			{
+				return (reset() );
+			}
+		}	
+		
+		/// @desc Function Description
+		/// @returns {bool} Description		
+		static reset = function()
+		{
+			if (__reset)
+			{
+				if (__resetLim > 0)
+				{
+					if (__resetCount < __resetLim) 
+					{
+						__resetCount += 1;	
+						
+						return false;
+					}
+					else
+					{
+						__active = false;
+						__count    = 0;
+						__countLim = 0;
+						
+						return true;
+					}
+				}
+				else
+				{
+					__count = 0;
+					return true;
+				}
+			}
+			else
+			{
+				__active = false;	
+				__count  = 0;
+				
+				return true;
+			}
 		}
 		
-        // Agregar a los hijos del otro MallStat
-		_stat.AddMinion(__key);
-        __leader = _stat.__key; // Llave del lider
-			
-		setLimit(_stat.__limits);
+		/// @desc Devuelve si es toMin (true) o toMax (false)
+		/// @returns {bool} Description			
+		static type = function()
+		{
+			return (__tomin);
+		}
 		
-		#region LVL
-        __lvlMethod = undefined;	// eliminar funcion ya que ahora sube de nivel de acuerdo al lider.
-        __lvlSingle =	  false;	// tiene el mismo nivel que su maestro.	
-        setLevelLimit(_stat.__lvlLimits);
-		
-		#endregion
-		
-        return self;
-    }
-    
+		/// @desc Devuelve si esta activo
+		/// @returns {bool} Description		
+		static active = function()
+		{
+			return (__active);	
+		}
+	}
+	
 	/// @param {Real} initial_value
 	/// @param {Real} number_type
 	/// @param {Real} min
 	/// @param {Real} max
 	/// @desc	Establece el valor inicial, tipo de numero, el valor minimo y maximo
 	/// @return {Struct.MallStat}
-	static set = function(_initial, _type, _min, _max) 
+	static set = function(_INITIAL, _TYPE, _MIN, _MAX) 
 	{ 
-		__initial = numtype(_initial, _type);	
-		return (setLimits(_min, _max) );
+		__valueInit = [_INITIAL, _TYPE];
+		return (setLimits(_MIN, _MAX) );
 	}
 	
     /// @param {Real} min
     /// @param {Real} [max]
 	/// @return {Struct.MallStat}	
-    static setLimits = function(_min, _max) 
+    static setLimits = function(_MIN, _MAX) 
 	{
-		if (!is_array(_min) ) 
+		if (!is_array(_MIN) ) 
 		{
-	    	__limits[0] = _min;
-	    	__limits[1] = _max;
+	    	__valueLims[0] = _MIN;
+	    	__valueLims[1] = _MAX;
 		} 
 		else 
 		{
-			__limits[0] = _min[0];
-			__limits[1] = _min[1];
+			__valueLims[0] = _MIN[0];
+			__valueLims[1] = _MIN[1];
 		}
 		
         return self;
     }
     
-    /// @param {Real}		min_level		Nivel minimo def: 0
-    /// @param {Real}		max_level		Nivel maximo def: 100
-	/// @param {Function}	level_method	Forma de subir de nivel  function(level) (contexto __PartyStatAtom)
+	/// @param {Function}	level_method	Forma de subir de nivel  function(LEVEL, STAT_ATOM, STAT_ENTITY) {return Real}
+    /// @param {Real}		min_level		Nivel minimo
+    /// @param {Real}		max_level		Nivel maximo
     /// @param {Bool}		[solo_level]	Aumenta de nivel ignorando el sistema para subir establecido.
+	/// @param {Function}	[check_level]	Comprobacion para subir de nivel inidividualmente function(LEVEL, STAT_ATOM, STAT_ENTITY) {return Bool}
 	/// @return {Struct.MallStat}	
-    static setLevel = function(_min=0, _max=100, _method, _single=false) 
+    static setLevel = function(_METHOD, _MIN, _MAX, _SINGLE=false, _CHECK) 
 	{
-    	// Si ya existe un lider no usar
-    	if (__leader == "") {
-		    __levelMethod = _method;	// No usar scope local
-		    __levelLimits = [_min, _max];
-		    __levelSingle = _single;
-		}
+		// Niveles de nivel minimo y maximo
+		_MIN ??= MALL_STAT_DEFAULT_LEVEL_MIN;
+		_MAX ??= MALL_STAT_DEFAULT_LEVEL_MAX;
+		
+		__levelLims = [_MIN, _MAX];
+		__levelEvent = _METHOD; // No usar method (se utiliza luego en los componentes individuales)
+		__levelCheck = _CHECK ?? __levelCheck;
+		
+		__levelSingle = _SINGLE;
+		
         return self;
     }
     
-    /// @param {Real} min_level	Nivel minimo
-    /// @param {Real} max_level	Nivel maximo
-    static setLevelLimits = function(_min, _max) 
+    /// @param {Real} level_min	Nivel minimo
+    /// @param {Real} level_max	Nivel maximo
+    static setLevelLimits = function(_MIN, _MAX) 
 	{
-    	if (!is_array(_min) ) {
-			__lvlLimits[0] = _min;
-			__lvlLimits[1] = _max;
-		} else {
-			__lvlLimits[0] = _min[0];
-			__lvlLimits[1] = _max[1];
+    	if (!is_array(_MIN) ) 
+		{
+			__levelLims[0] = _MIN;
+			__levelLims[1] = _MAX;
+		} 
+		else 
+		{
+			__levelLims[0] = _MIN[0];
+			__levelLims[1] = _MIN[1];
 		}
 
     	return self;
     }
     
-	/// @param {Real} iterate	cada cuantas ciclos deja la estadistica en su mayor nivel
-    /// @param {Bool} [repeat]	si se repite luego al completar el trabajo
+	/// @param {Real} iterate			cada cuantas ciclos deja la estadistica en su mayor nivel
+    /// @param {Bool} [repeat]			si se repite luego al completar el trabajo
+	/// @param {Real} [repeat_iterate]	en que iteracion se desactiva la repeticion
     /// @desc Al subir de nivel deja esta estadistica en su menor valor
 	/// @return {Struct.MallStat}
-    static toMin = function(_iterate=1, _repeat=true) {
-		// Desactiva toMax
-		__toMax.activate(false);
-		__toMin.modify(_iterate, 1, _repeat).activate(true); 
+    static toMin = function(_ITERATE=1, _REPEAT=true, _REPEAT_ITER=-1)
+	{
+		__toValue.__active = true;
+		__toValue.__tomin  = true;	
+
+		__toValue.__count = 0;
+		__toValue.__countLim = _ITERATE;
+		
+		__toValue.__reset = _REPEAT;
+		__toValue.__resetCount = 0;
+		__toValue.__resetLim   = _REPEAT_ITER;
 		
         return self;
     }
     
 	/// @param {Real} iterate	cada cuantas ciclos deja la estadistica en su mayor nivel
     /// @param {Bool} [repeat]	si se repite luego al completar el trabajo
-    /// @desc Al subir de nivel deja esta estadistica en su nivel mayor. 
+	/// @param {Real} [repeat_iterate]	en que iteracion se desactiva la repeticion
+    /// @desc Al subir de nivel deja esta estadistica en su mayor valor. 
 	/// @return {Struct.MallStat}
-    static toMax = function(_iterate=1, _repeat=false) {
-        // Desactiva toMin
-        __toMin.activate(false);
-        __toMax.modify(_iterate, 1, _repeat).activate(true);
+    static toMax = function(_ITERATE=1, _REPEAT=true, _REPEAT_ITER=-1) 
+	{
+		__toValue.__active =  true;
+		__toValue.__tomin  = false;	
 
+		__toValue.__count = 0;
+		__toValue.__countLim = _ITERATE;
+		
+		__toValue.__reset = _REPEAT;
+		__toValue.__resetCount = 0;
+		__toValue.__resetLim   = _REPEAT_ITER;
+		
         return self;
     }
     
-    /// @param	{String}	state_key		LLave de estado
-	/// @param	{Function}	effect_method	Que provoca el estado en esta estadistica
-	/// @return {Struct.MallStat}
-    static setEffect = function(_key, _method) 
+	/// @param {Struct.PartyStats}		 stat_entity
+	/// @param {Struct.__PartyStatsAtom} stat_atom
+	static executeLevel = function(_STAT_ENTITY, _STAT_ATOM) 
 	{
-		__effect[$ _key] = _method;
-        return self;
-    }
-    
-    /// @param {String} state_key
-	/// @desc Devuelve que estado lo afecta
-    static getEffect = function(_key) 
-	{
-        return (__effect[$ _key] );    
-    }
-	
-	/// @param {Real}							level
-	/// @param {Struct.__PartyStatsComponent}	stat
-	/// @param {Struct.PartyStats}				self
-	static execute = function(_lvl, _stat, _self) 
-	{
-		return (__levelMethod(_lvl, _stat, _self) );	
+		return (__levelEvent(_STAT_ENTITY, _STAT_ATOM) );	
 	}
-	
+
 	/// @return {String}
 	static toString = function() 
 	{
 		return (
-			"value: " + string(__initial[0] ) + "\ntype: " + string(__initial[1] ) +
-			"\nmin: " + string(__limits[0] )  + "\nmax: "  + string(__limits[1] )  +
-			"\ntoMin: " + string(__toMin) + "\ntoMax: " + string(__toMax)
+			"value: " + string(__valueInit[MALL_NUMVAL.VALUE] )  + "\ntype: " + string(__valueInit[MALL_NUMVAL.TYPE] ) +
+			"\nmin: " + string(__valueLims[0] )  + "\nmax: "  + string(__valueLims[1] )  +
+			"\ntoValue: " + string(__toValue)
 		);
 	}
 	
     #endregion
 }
-	
+
 /// @param {Real} value
-function __mall_stat_rounding(_x) 
+function __mall_stat_rounding(_x)
 {
 	switch (MALL_STAT_ROUND) 
 	{	

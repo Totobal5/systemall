@@ -2,8 +2,8 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Dark",
-    "path": "folders/Mall/Dark.yy",
+    "name": "Mall",
+    "path": "folders/Mall.yy",
   },
   "resourceVersion": "1.0",
   "name": "dark_database",

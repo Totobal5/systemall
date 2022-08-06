@@ -1,29 +1,23 @@
-/// @param	{Real}	number_type
-/// @param	{Bool}	start_boolean
-/// @param	{Bool}	[unique]
-/// @param  {Real}	[limits]
+/// @param	{Bool}	bool_start
+/// @param  {Real}	default_type
+/// @param  {Real}	limit
 /// @return {Struct.__PartyControlAtom}
-function __PartyControlAtom(_type, _boolean, _unique=false, _limits) constructor 
+function __PartyControlAtom(_BOOL, _TYPE, _LIMITS=-1) constructor 
 {
-	#region Private
-	__type = _type;		// Que tipo de numero usa la estadistica/estado
-	__init = _boolean;	// Valor al que reinicia la estadistica/estado
-	
-	#endregion
+	__init = _BOOL;			// Valor al que reinicia la estadistica/estado
+	__defaultType = _TYPE	// Al sumar o obtener utilizar este al no especificar
 	
 	// Valores que varian en el tiempo [real, percentual] son actualizados por los effectos.
-	values  = array_create(2, 0);		
-	content = (_unique) ? undefined : []; 	// Donde se guardan los contenidos
+	__values  = array_create(2, 0);
+	__content = [];	// Donde se guardan los contenidos
 	
-	affected = false;	// Si es objetivo de un/os efecto
-	same  = false;		// Si acepta el mismo control varias veces
-	limit = _limits;	// Solo si unique es false. -1 indica que se pueden agregar elementos infinitos.
+	__affected = false;	// Si es objetivo de un/os efecto
+	__same  = false;	// Si acepta el mismo control varias veces
+	__limit = _LIMITS;	// -1 se pueden agregar elementos infinitos
 	
-	// Evitar errores
-	if (limit == 0) limit = -1;
-	
-	static __isAffected = function()
+	/// @return {Array<Struct.DarkEffect>}
+	static get = function() 
 	{
-		return (affected != __init);	
+		return __content;
 	}
 }

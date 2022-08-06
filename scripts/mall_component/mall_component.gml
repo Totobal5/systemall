@@ -1,22 +1,27 @@
 /// @param {String} component_key
 /// @desc Crea componente de Mall (sistema RPG)
 /// @return {Struct.MallComponent}
-function MallComponent(_key="") constructor 
+function MallComponent(_KEY="") constructor 
 {
     #region PRIVATE	
 	/// @ignore
 	__is = instanceof(self);
 	
 	/// @ignore
-    __key  = _key;	// Llave propia
+    __key  = _KEY;	// Llave propia
 	
 	/// @ignore
     __from =   "";	// Llave de a quien pertenece	
 	
-    // -- Display
-	__display = true;				// Mostrar este valor
-	__displayKey = __key;			// Llave para usar en lexicon
-	__displayMethod = _nofundisp_;	// Función para mostrar valor	function(event) {return {string}; }
+    #region display (se implica que siempre se usa)
+	/// @ignore
+	__displayKey = _KEY;	// Llave para usar en lexicon
+	/// @param {String}	[flag]
+	/// @return {String}
+	/// @ignore
+	__displayMethod = function(_FLAG="") {return __key;};	// Función para mostrar valor
+	
+	#endregion
 
 	#endregion
 
@@ -24,37 +29,43 @@ function MallComponent(_key="") constructor
 	/// @param {String} key			Llave propia
 	/// @param {String} [from_key]	De quien proviene
 	/// @return {Struct.MallComponent}
-	static setKey = function(_key, _key_from="") 
+	static setKey = function(_KEY, _KEY_FROM="") 
 	{
-		__key  = _key;
-		__from = _key_from;
+		__key  = _KEY;
+		__from = _KEY_FROM;
 		
 		return self;
 	}
-
-	/// @param	{Bool}		use_display
+	
 	/// @param	{String}	display_key
 	/// @param	{Function}	display_method	function() {return string; }
-	static setDisplay = function(_display=true, _display_key, _display_method)
+	static setDisplay = function(_DISPLAY_KEY, _DISPLAY_METHOD)
 	{
-		__display = _display;
-		if (is_method(_display_method) ) 
-		{
-			__displayKey	= _display_key;
-			__displayMethod = _display_method;	// No pasar por method para no cargar tanto
-		}
+		if (!is_method(_DISPLAY_METHOD) ) __mall_error("display_method tiene que ser method dah");
+		
+		__displayKey = _DISPLAY_KEY;
+		
+		/// @param {String}	[flag]
+		/// @return {String}
+		__displayMethod = _DISPLAY_METHOD;	// No pasar por method para no cargar tanto
+	
 		return self;
 	}
 	
 	/// @desc Regresa el texto de display
+	/// @param {String}	[flag]
 	/// @return {String}
-	static getDisplay = function()
+	static getDisplay = function(_FLAG)
 	{
-		return (__display) ? __displayMethod() : __key;	
+		return __displayMethod(_FLAG);
 	}
 	
-	/// @ignore
-	static _nofundisp_ = function() {return ""; }
-	
+	/// @desc Devuelve la llave del componente
+	/// @return {String}
+	static getKey = function()
+	{
+		return (__key);
+	}
+
 	#endregion
 }
