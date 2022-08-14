@@ -1,6 +1,6 @@
-/// @param	{String}	bag_key
 /// @desc	Regresa un bolsillo a partir de la llave
-function pocket_bag_get(_key)
+/// @param	{String} bag_key
+function pocket_bag_get(_KEY)
 {
-	return (global.__mall_pocket_bag[$ _key] );
+	return (global.__mallPocketBag[$ _KEY] );
 }

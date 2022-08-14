@@ -1,11 +1,11 @@
 {
+  "resourceType": "GMScript",
+  "resourceVersion": "1.0",
+  "name": "__PartyStatsAtom",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "__PartyAtoms",
-    "path": "folders/Mall/Party/Constructor/__PartyAtoms.yy",
+    "name": "Atoms",
+    "path": "folders/Mall/Party/Constructor/Atoms.yy",
   },
-  "resourceVersion": "1.0",
-  "name": "__PartyStatsAtom",
-  "resourceType": "GMScript",
 }

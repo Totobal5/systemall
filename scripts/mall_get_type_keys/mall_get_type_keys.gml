@@ -1,13 +1,13 @@
 // Feather ignore all
 
-/// @desc Devuelve un array con las llaves de todos las estadisticas creadas
+/// @desc Devuelve un array con las llaves de todos los tipos creados
 /// @return {Array<String>}
 function mall_get_type_keys() 
 {
 	return (global.__mallTypesKeys);
 }
 
-/// @desc Devuelve una copia de todas las llaves de las estadisticas creadas
+/// @desc Devuelve una copia de las llaves de todos los tipos
 /// @return {Array<String>}
 function mall_get_type_keys_copy() 
 {

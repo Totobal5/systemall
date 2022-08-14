@@ -1,97 +1,66 @@
-/// @param {String}	state_key
 /// @desc Donde se guardan las propiedades de los estados
-function MallState(_KEY) : MallComponent(_KEY) constructor 
+/// @param {String}	state_key
+function MallState(_KEY) : MallModify(_KEY) constructor 
 {
 	#region PRIVATE
-	__initial = false;	// Valor inicial siempre boleano
-	__limits = -1;		// Cuantos se pueden agregar en party. -1 para infinitos (NO PUEDE SER 0)
-	__same = false;		// Si acepta el mismo efecto varias veces
-	
-	__probability = 0;	// Probabilidad default
-
-	__checkAtack  = function() {};
-	__checkDefend = function() {};
-
-		#region Callbacks
-	/// @param {String}	[flag]
-	/// @return {String}
-    __startCallback  = function(_FLAG="") {return __key; };  // Funcion a usar cuando se inicia el estado
-	
-	__updateCallback = {
-		/// @param {String}	[flag]
-		/// @return {String}
-		onStart:	function(_FLAG="") {return __key; },	// Al iniciar turno
-		
-		/// @param {String}	[flag]
-		/// @return {String}		
-		onFinish:	function(_FLAG="") {return __key; },	// Al terminar turno
-		
-		/// @param {String}	[flag]
-		/// @return {String}
-		onCombat:	function(_FLAG="") {return __key; },	// Al intentar actuar (todo lo que se indique que es combate)
-		
-		/// @param {String}	[flag]
-		/// @return {String}
-		onObject:	function(_FLAG="") {return __key; }	// Al intentar actuar (todo lo que se indique que no es combate)
-	}
-
-	/// @param {String}	[flag]
-	/// @return {String}
-    __finishCallback = function(_FLAG="") {return __key; }; // Funcion a usar cuando se finaliza el estado
-    
-    // Mensajes
-	__message = {
-		noSet: ""
-	};
+	__is = instanceof(self);
 	
 	#endregion
 	
+	init = false; // Valor inicial del estado
+	type = MALL_NUMTYPE.REAL; // Tipo de numero que utiliza
+	
+	controls = -1;	// Cuantos se pueden agregar en party. -1 para infinitos (NO PUEDE SER 0)
+	
+	percent = 0;	// Probabilidad default
+	same = false;	// Si acepta el mismo efecto varias veces
+	
+	/// @desc Si puede actuar en PartyControl
+	/// @param {Any*} [flag]=""
+	checkStart  = function(_FLAG="") {return false};
+	
+	/// @desc Comprobar si puede usar su final event
+	/// @param {Any*} [flag]=""
+	checkFinish = function(_FLAG="") {return false;};
+	
+	#region METHODS
+	/**
+	* Establece el valor inicial y el limite de este mismo estado (-1 es infinitos)
+	* @param {Bool} initial_bool		Description
+	* @param {Real} default_probability	Description
+	* @param {Real} [control_max]=-1	Description
+	* @param {Bool} [accept_same]=true	Description
+	*/
+	static setControl = function(_BOOL, _PROBABILITY, _CONTROLS=-1, _SAME=true)
+	{
+		init = _BOOL;
+		percent = _PROBABILITY;
+		
+		controls = _CONTROLS;
+		same = _SAME;
+		
+		return self;
+	}
+
+	/**
+	* Function Description
+	* @param {Function} check_affect Description
+	*/
+	static setCheckAffect = function(_CHECK)
+	{
+		checkAffect = _CHECK;
+		return self;
+	}
+	
+	/**
+	* Function Description
+	* @param {Function} check_last Description
+	*/
+	static setCheckLast = function(_CHECK)
+	{
+		__checkLast = _CHECK;
+		return self;
+	}
+
 	#endregion
-
-    #region METHODS
-	
-	/// @param	{Bool}	initial_bool
-	/// @param	{Real}	[limit]	
-	/// @desc Establece el valor inicial y el limite de este mismo estado (-1 es infinitos)
-	static basic = function(_BOOL, _LIMIT=-1)
-	{
-		__initial =  _BOOL;
-		__limits  = _LIMIT;
-		return self;
-	}
-	
-    /// @param {String}	message_key
-	/// @param {String}	message
-	/// @desc Permite almacenar llaves para los mensajes
-    static addMessage = function(_KEY, _MSG) 
-	{
-		__message[$ _KEY] = _MSG;
-        return self;    
-    }
-
-	/// @param	{Function}	start_callback
-	static setStart  = function(_START)
-	{
-		__startCallback  = _start  ?? __startCallback;	
-		return self;
-	}
-	
-	/// @param	{String}	update_key onStart, onEnd, onCombat, onObject
-	/// @param  {Function}	method 
-	static setUpdate = function(_UPDATE_KEY, _METHOD)
-	{
-		__updateCallback[$ _UPDATE_KEY] = _METHOD;
-		return self;
-	}
-
-	/// @param	{Function}	end_callback
-	static setEnd = function(_END)
-	{
-		__endCallback = _end ?? __endCallback;
-		return self;
-	}
-	
-    #endregion
 }
-
-

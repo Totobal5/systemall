@@ -7,6 +7,5 @@
   },
   "resourceVersion": "1.0",
   "name": "__lexicon_init",
-  "tags": [],
   "resourceType": "GMScript",
 }

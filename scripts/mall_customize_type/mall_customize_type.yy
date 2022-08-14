@@ -7,6 +7,5 @@
   },
   "resourceVersion": "1.0",
   "name": "mall_customize_type",
-  "tags": [],
   "resourceType": "GMScript",
 }

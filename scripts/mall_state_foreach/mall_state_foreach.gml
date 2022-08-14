@@ -3,7 +3,7 @@
 /// @param {Any}		[arguments]
 function mall_state_foreach(_FUN, _PASS=[])
 {
-	var _states = mall_get_state_keys();	
+	var _states = mall_get_state_keys();
 	var i=0; repeat(array_length(_states) )
 	{
 		var _key   = _states[i];

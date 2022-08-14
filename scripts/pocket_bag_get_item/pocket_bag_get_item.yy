@@ -7,6 +7,5 @@
   },
   "resourceVersion": "1.0",
   "name": "pocket_bag_get_item",
-  "tags": [],
   "resourceType": "GMScript",
 }

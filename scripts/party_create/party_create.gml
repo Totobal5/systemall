@@ -7,12 +7,9 @@
 function party_create(_KEY, _GROUP, _LEVEL, _ARGS) 
 {
 	var _template = global.__mallPartyTemplate[$ _KEY];
-	var _entity   = _template(_GROUP, _LEVEL, _ARGS); 
-	
-	if (is_string(_GROUP) ) 
-	{
-		party_group_add(_GROUP, _entity);	
-	}
-	
+	var _entity   = _template(_GROUP, _LEVEL, _ARGS).setKey(_KEY);
+	party_group_add(_GROUP, _entity);	
+	if (is_string(_GROUP) ) party_group_add(_GROUP, _entity);
+
 	return (_entity);
 }

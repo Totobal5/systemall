@@ -1,49 +1,47 @@
 /// @param {String} stat_key
 /// @param {Struct.MallStat} stat_entity
 /// @return {Struct.__PartyStatsAtom}
-function __PartyStatsAtom(_KEY, _STAT) : MallComponent(_KEY) constructor 
+function __PartyStatsAtom(_KEY, _STAT) constructor 
 {
 	#region PRIVATE
-	// Establecer localmente el display
-	setDisplay(_STAT.__displayKey, method(undefined, _STAT.__displayMethod));
-
+	__is  = instanceof(self);
+	
+	#endregion
+	
+	key = _KEY;
+	displayMethod = method(,_STAT.displayMethod);
+	displayKey = _STAT.displayKey;
+	
 	// -- Configuracion
-	/// @ignore
-	__flag = "";  // Algo que pasar en la formula para subir de nivel
-	/// @ignore
-	__single = _STAT.__levelSingle; // Si sube de nivel individualmente
+	flag   = "";  // Algo que pasar en la formula para subir de nivel
+	single = _STAT.levelSingle; // Si sube de nivel individualmente
 	
 	/// @param {Struct.PartyStats}		 stat_entity
 	/// @param {Struct.__PartyStatsAtom} stat_atom
 	/// @param {Any} [flag]
 	/// @return {Real}
 	/// @ignore
-	__event = function(_STAT_ENTITY, _STAT_ATOM, _FLAG) {};
-	__event = method(undefined, _STAT.__levelEvent); // Forma en que sube de nivel
+	event = function(_STAT_ENTITY, _STAT_ATOM, _FLAG) {};
+	event = method(undefined, _STAT.eventLevel); // Forma en que sube de nivel
 	
 	/// @param {Struct.PartyStats}	[stat_entity]
 	/// @return {Bool}
 	/// @ignore
-	__check = function(_STAT_ENTITY) {};
-	__check = method(undefined, _STAT.__levelCheck); // Condicion que debe cumplir para subir de nivel
+	check = function(_STAT_ENTITY) {};
+	check = method(undefined, _STAT.checkLevel); // Condicion que debe cumplir para subir de nivel
 	
-	// Iteradores
-	/// @ignore
-	__toValue = _STAT.__toValue.copy();
-	
-	#endregion
-	
-	#region PUBLIC
+	iterator = _STAT.iterator.copy();
 	
 	// Se pone el valor inicial
-	base  = _STAT.__valueInit;	// Se utiliza el array
-	level = 1; // Nivel de la estadistica si se usa individualmente
+	base = _STAT.start;
+	type = _STAT.type;
 	
+	level = 1; // Nivel de la estadistica si se usa individualmente
 	// Valores que posee
-	limMin = _STAT.__valueLims[0];	// Valor maximo en que la estadistica puede estar
-	limMax = _STAT.__valueLims[1];	// Valor minimo en que la estadistica puede estar
-	control = 0;
-	control = base[MALL_NUMVAL.VALUE]; // El valor final tomando en cuenta el control
+	limitMin = _STAT.limitMax;	// Valor maximo en que la estadistica puede estar
+	limitMax = _STAT.limitMin;	// Valor minimo en que la estadistica puede estar
+	
+	control   = base;	 // El valor final tomando en cuenta el control
 	equipment = control; // El valor final tomando en cuenta el equipamiento
 	
 	peak   = control; // Valor de la estadistica actual maximo respecto al nivel

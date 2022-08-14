@@ -1,12 +1,8 @@
-/// @param {String}				command_key
+/// @param {String}	dark_key
 /// @param {Struct.DarkCommand} command
-function dark_add(_key, _command) 
+function dark_add(_KEY, _COMMAND) 
 {
 	// Añadir llave
-    if (!dark_exists(_key) ) 
-	{
-		global.__mall_dark_database[$ _key] = _command;
-    }
-    
-    return (_command);
+    if (!dark_exists(_KEY) ) global.__mallDarkData[$ _KEY] = _COMMAND.setKey(_KEY);
+    return (_COMMAND);
 }

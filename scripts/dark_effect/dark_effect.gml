@@ -1,90 +1,51 @@
-/// @param {String}			dark_effect_key	A que componente de mall afecta
-/// @param {Real}			start_value
-/// @param {Enum.NUMTYPES}	number_type
-/// @param {Real}			active_turns
-/// @param {Function}		update_callback
-/// @param {Function}		end_callback
 /// @return {Struct.DarkEffect}
-function DarkEffect(_KEY, _INIT_VALUE, _NUMBER_TYPE, _ACTIVE_TURNS, _UPDATE_CALLBACK, _END_CALLBACK) : MallComponent(_KEY) constructor 
+function DarkEffect(_KEY, _START, _TURNS_START, _TURNS_FINISH, _TURN_EVENT_START, _TURN_EVENT_FINISH) : MallStat(_KEY) constructor 
 {
     #region PRIVATE
-	/// @ignore
 	__is = instanceof(self);
 	__id = "DE000"; // ID unica del efecto
-    
-	__ready = false;	// Se marca que el efecto termino
-    __init  = [_INIT_VALUE, _NUMBER_TYPE];	// Valor inicial para reinicio etc  
-    __value = [_INIT_VALUE, _NUMBER_TYPE];	// Valor que aumenta con cada update
-	
-    // Siempre es contador
-	__turns = {
-		count: 0,
-		limit: _ACTIVE_TURNS,
-		reset: self.count,
-		resetCount: 0,
-		resetLimit: 0
-	}
 
-	__turnStart = 0;	// En que turno del combate se inicio
+	inTurn = 0;	// 0 en el inicio del turno 1 en el final del turno 2 en ambos
+	value = _START;	// Valor que cambia real/porcentual
+	ready = false;	// Se marca que el efecto termino
 	
-	// Actualiza el value
-	__startEvent = function(_USER) {return "update control"};
-	__updateEvent = {
-		onStart: other.__nofun,
-		onEnd:	 other.__nofun,
+	turnStart = 0;	// En que turno empezo
+	turn = 0;		// En que turno va
+	turnEnd = 0;	// En que turno termino ?
+	
+	delete iterator;
+	iteratorStart = new __MallIterator();
+	iteratorStart.countLimits = (is_array(_TURNS_START) ) ?
+		irandom_range(_TURNS_START[0], _TURNS_START[1] ) :
+		_TURNS_START;
+	
+	iteratorFinish = new __MallIterator();
+	iteratorFinish.countLimits = (is_array(_TURNS_FINISH) ) ?
+		irandom_range(_TURNS_FINISH[0], _TURNS_FINISH[1] ) :
+		_TURNS_FINISH;
+
+	setEventTurnStart (_TURN_EVENT_START);
+	setEventTurnFinish(_TURN_EVENT_FINISH);
+
+	eventRemove = function()
+	{
 		
-		onCombat: other.__nofun,
-		onObject: other.__nofun
 	}
-	__endEvent = _nofun;
 	
 	#endregion
 	
 	#region METHODS
-	/// @ignore
-	static __nofun = function() {};
-	
-	/// @return {String}
-	static startEvent = function(_ENTITY)
+	static set = function(_VALUE, _TYPE)
 	{
-		return (__startEvent(_ENTITY) );
+		_TYPE ??= type;
+		value[_TYPE] = _VALUE;
 	}
 	
-	/// @return {String}
-	static updateEvent = function()
+	static add = function(_VALUE, _TYPE)
 	{
-		return (__updateCallback() );	
+		_TYPE ??= type;
+		value[_TYPE] += _VALUE;
 	}
-	
-	static resetEvent  = function()
-	{
-		return (__resetCallback() );
-	}
-	
-	static finish  = function()
-	{
-		__endCallback();	
-	}
-	
-	static get = function()
-	{
-		return (__value);	
-	}
-	
-	static getInit = function()
-	{
-		return (__init);	
-	}
-	
-	static getID = function()
-	{
-		return (__id) ;	
-	}
-	
-	static getTurns = function()
-	{
-		return (__turns );	
-	}
-	
+
 	#endregion
 }

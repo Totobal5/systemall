@@ -1,88 +1,60 @@
-/// @param	{String}	item_subtype
+/// @param	{String}	equipment_key
 /// @param	{Real}		[buy]
 /// @param	{Real}		[sell]
-/// @param	{String}	[stat_key]
-/// @param				[stat_value]
 /// @return {Struct.PocketItem}
-function PocketItem(_subtype, _buy=0, _sell=0) : MallComponent() constructor 
+function PocketItem(_KEY, _TYPE, _BUY=0, _SELL=0) : MallModify(_KEY) constructor 
 {
     #region PRIVATE
-	/// @ignore
-	__type		= mall_get_itemtype_sub(_subtype); // Buscar tipo esto
-	/// @ignore
-    __subtype	= _subtype;    
-	/// @ignore 
-	__buy  = _buy;	// Valor al que se compra
-	/// @ignore
-    __sell = _sell;	// Valor al que se vende
-	/// @ignore
-    __canSell = true;	// Si puede vender	 
-	/// @ignore
-	__canBuy  = true;	// Si puede comprar
-    /// @ignore
-    __parts = 1;	// Cuantas partes necesita para ser equipado
-    /// @ignore
-    __stats    = {};    // Donde se guardan sus estadisticas    
-	/// @ignore
-    __statsInv = {};    // Las estadisticas de arriba invertidas  
-    /// @ignore
-    __invert = false; // Devolver las estadisticas invertidas(true) o normales (false)
+	
+	type = _TYPE;
+	buy  = _BUY;	// Valor al que se compra
+    canBuy  = true;	// Si puede compra
+	
+	sell = _SELL;		// Valor al que se vende
+	canSell = true;	// Si puede vender
+    
+    statsNormal = {};	// Donde se guardan sus estadisticas [value, type]
+    statsInvert = {};	// Las estadisticas de arriba invertidas
+	
+	modifyers = {};	// Modificaciones que utiliza este objeto
+
+	eventBuy  = function() {}
+	eventSell = function() {}
+	
+	eventEquip	  = function() {};
+	eventDesequip = function() {}
+	
+	eventWorld = function() {}
 
 	#endregion
 
-    // Effectos
-	/// @ignore
-	static _nofun = function(caster, target, extra) {};
-    events = {   
-        inEquip:        other._nofun,  // Metodo que se ejecuta al equiparse este objeto     
-        inDesequip:     other._nofun,  // Metodo que se ejecuta al desequiparse este objeto
-        inEquipUpdate:  other._nofun,  // Metodo que se ejecuta cada ciclo mientras se mantenga este objeto (fuera de la batalla)
-        
-        // En Batallas
-        inBattleStart : other._nofun,	// Al iniciar la batalla  
-        inBattleUpdate: other._nofun,	// Al actualizar la batalla
-        inBattleEnd:    other._nofun,	// Al terminar la batalla
-        inAttack:	other._nofun,		// Al atacar
-		inDefend:	other._nofun,		// Al defender
-		
-        // En turnos
-        inTurnStart:    other._nofun,	// Al iniciar un turno
-        inTurnUpdate:   other._nofun,	// Al actualizar el turno
-        inTurnEnd:      other._nofun	// Al terminar el turno
-    };
-
     #region METHODS
     
-    /// @param	{String}		stat_key
-    /// @param	{Real}			value
-    /// @param	{Enum.NUMTYPES}	type
-    /// @desc Pone valores a las estadisticas
+	/// @desc Pone valores a las estadisticas
+	/// @param	{String}	stat_key
+	/// @param	{Real}		value
+	/// @param	{Enum.MALL_NUMTYPE}	type
 	/// @return {Struct.PocketItem}
-    static setStat = function(_stat_key, _value, _type=NUMTYPES.REAL) 
+	static setStat = function(_STAT_KEY, _VALUE, _TYPE=MALL_NUMTYPE.REAL) 
 	{
-        if (argument_count < 4) {
-            __stats   [$ _stat_key] = numtype( _value, _type);
-            __statsInv[$ _stat_key] = numtype(-_value, _type);
-        } else {
-            // Varios argumentos
-            var i = 0; repeat(argument_count) {
-                var _key = argument[i++];
-                var _val = argument[i++];
-                var _typ = argument[i++];
-                
-                setStat(_key, _val, _typ);    
-            }
-        }   
-        
-        return self;
+		var i=0; repeat(argument_count div 3)
+		{
+			var _key = argument[i];
+			var _val = argument[i + 1];
+			var _type = argument[i + 2];
+			
+			__statsNormal[$ _key] = [ _val, _type];
+			__statsInvert[$ _key] = [-_val, _type];
+		}
+		
+		return self;
     }
     
-	/// @param {Bool}	[invert_stats]
 	/// @desc Permite devolver las estadisticas de este objeto normal o invertidas
-    /// @return {Struct.Array}
-    static getStats = function(_invert=false) 
+	/// @param {Bool}	[invert_stats]
+    static getStats = function(_INVERT=false) 
 	{
-        return (!_invert) ? __stats : __statsInv;
+        return (!_INVERT) ? __statsNormal : __statsInvert;
     }
 
     /// @param	{Real}	buy_value
@@ -90,61 +62,26 @@ function PocketItem(_subtype, _buy=0, _sell=0) : MallComponent() constructor
     /// @param	{Bool}	[can_buy]
     /// @param	{Bool}	[can_sell]
 	/// @return {Struct.PocketItem}
-    static setTrade  = function(_buy=0, _sell=0, _can_buy=true, _can_sell=true) 
+    static setTrade  = function(_BUY=0, _SELL=0, _CAN_BUY=true, _CAN_SELL=true) 
 	{
-		__sell = _sell;
-		__buy  =  _buy;
-	   
-		__canSell = _can_sell;
-		__canBuy  =  _can_buy;
+		__buy  = _BUY;
+		__sell = _SELL;
+		__canBuy  =  _CAN_BUY;
+		__canSell = _CAN_SELL;
 		
         return self;
     }
-    
-    /// @param {String}				events_key
-    /// @param {Function, String}	function_or_dark_key
-	/// @desc Event key: 
-	///			$ inEquip 
-	///			$ inDesequip
-	///			$ inEquipUpdate
-	///			$ inBattleStart
-	///			$ inBattleUpdate
-	///			$ inBattleEnd
-	///			$ inAttack                        function(caster, target, extra) {}
-	///			$ inDefend                        function(caster, target, extra) {} 
-	///			$ inTurnStart
-	///			$ inTurnUpdate
-	///			$ inTurnEnd
-    static setEvents = function(_event, _function) 
+	
+	static setEventEquip = function(_EVENT)
 	{
-		if (is_string(_function) )
-		{
-			events[$ _event] = dark_get(_function).getCommand();
-		}
-        else
-		{
-			events[$ _event] = method(undefined, _function);    	
-		}
-        return self;    
-    }
-    
-	/// @param	{Real}	parts_number
-    /// @desc Establecer cuantas partes necesita para poder equiparse
-    static setPartsNumber = function(_use = 1) 
+		__eventEquip = _EVENT;
+		return self;
+	}
+	
+	static setEventDesequip = function(_EVENT)
 	{
-        __parts = _use;
-        return self;
-    }
-    
+		__eventDesequip = _EVENT;
+	}
+	
     #endregion
-
-    // Iniciar estadisticas rapidamente
-    var i = 3; repeat( (argument_count - 3) div 3) 
-	{
-        var _key = argument[i++];
-        var _val = argument[i++];
-        var _typ = argument[i++];
-        
-        setStat(_key, _val, _typ);
-    }
 }

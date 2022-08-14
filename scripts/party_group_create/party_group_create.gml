@@ -1,10 +1,12 @@
-/// @param party_group_key
 /// @desc Crea una party en donde se agregan entidades de party
-function party_group_create(_key)
+/// @param	{String} party_group_key
+function party_group_create(_KEY)
 {
-	if (!global.__mall_party_groups.exists(_key) )
-	{
-		// Crear party
-		global.__mall_party_groups.set(_key, []);	
+	var _partyGroup = undefined;
+	if (!variable_struct_exists(global.__mallPartyGroups, _KEY) )
+	{	
+		var _partyGroup = {__order: [] };
+		global.__mallPartyGroups[$ _KEY] = _partyGroup;
 	}
+	return (_partyGroup );
 }

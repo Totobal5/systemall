@@ -1,4 +1,4 @@
-/// @param	{Struct}	dark_effect
+/// @param	{Struct.DarkEffect}	dark_effect
 /// @return {Bool}
 function is_dark_effect(_effect)
 {

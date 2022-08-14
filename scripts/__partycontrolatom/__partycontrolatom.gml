@@ -1,23 +1,43 @@
-/// @param	{Bool}	bool_start
-/// @param  {Real}	default_type
-/// @param  {Real}	limit
+// Feather ignore all
+
+/// @param	{String} component_key
+/// @param	{Struct.MallStat} component
 /// @return {Struct.__PartyControlAtom}
-function __PartyControlAtom(_BOOL, _TYPE, _LIMITS=-1) constructor 
+function __PartyControlAtom(_KEY, _MALL) constructor 
 {
-	__init = _BOOL;			// Valor al que reinicia la estadistica/estado
-	__defaultType = _TYPE	// Al sumar o obtener utilizar este al no especificar
-	
+	// Configuracion
+	key = _KEY
+	init = _MALL.init;	// Valor al que reinicia la estadistica/estado
+	type = _MALL.type;	// Tipo de numero que utiliza normalmente
+
+	control = _MALL.controls;	// -1 se pueden agregar elementos infinitos
+	same	= _MALL.same;		// Si acepta el mismo control varias veces
+
 	// Valores que varian en el tiempo [real, percentual] son actualizados por los effectos.
-	__values  = array_create(2, 0);
-	__content = [];	// Donde se guardan los contenidos
+	values = array_create(2, 0);
 	
-	__affected = false;	// Si es objetivo de un/os efecto
-	__same  = false;	// Si acepta el mismo control varias veces
-	__limit = _LIMITS;	// -1 se pueden agregar elementos infinitos
+	// Contenidos
+	content = [];
+	contentKey = {};
 	
+	// Si algo evita que esta en el valor de bool
+	isAffected = false;
+
 	/// @return {Array<Struct.DarkEffect>}
-	static get = function() 
+	static getContent = function()
 	{
-		return __content;
+		return content;
+	}
+	
+	static set = function(_VALUE, _TYPE)
+	{
+		_TYPE ??= type;
+		values[_TYPE] = _VALUE;
+	}
+	
+	static add = function(_VALUE, _TYPE)
+	{
+		_TYPE ??= type;
+		values[_TYPE] += _VALUE;
 	}
 }

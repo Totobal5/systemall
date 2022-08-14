@@ -1,4 +1,4 @@
-/// @desc	Crear un (o varios) partes globalmente
+/// @desc	Crear un (o varios) equipos globalmente
 /// @param	{String} equipment_key	Llaves
 function mall_add_equipment() 
 {

@@ -1,12 +1,11 @@
-/// @param	{String}	bag_key		
-/// @return {Array}
-function pocket_bag_create(_key)
+/// @param	{String} bag_key
+function pocket_bag_create(_KEY)
 {
-	if (!variable_struct_exists(global.__mall_pocket_bag, _key) )
+	if (!variable_struct_exists(global.__mallPocketBag, _KEY) )
 	{
-		var _array = []
-		global.__mall_pocket_bag[$ _key] = _array;
+		var _bag = {order: [], items:{} };
+		global.__mallPocketBag[$ _KEY] = _bag;
 		
-		return (_array);
+		return (_bag);
 	}
 }

@@ -32,58 +32,54 @@
 #region ENUMS
 enum MALL_NUMTYPE {REAL , PERCENT}
 enum MALL_NUMVAL  {VALUE, TYPE}
+// Para ciclar entre componentes (??)
+enum MALL_COMPONENTS {MODIFY, STATES, STAT, EQUIPMENT, TYPE, COMPONENT}
+global.__mallComponentsTypes = [0, 1, 2, 3, 4, 5];
+global.__mallComponentsIsOff = [];
 
 #endregion
 
+/// @ignore
 function mall_data_init() 
 {
 	#region Database
-	/// @ignore
+	
 	global.__mallTypesMaster = {};
-	/// @ignore
 	global.__mallTypesKeys   = [];
 
-	/// @type {Struct<Struct.MallStat>}
-	/// @ignore
 	global.__mallStatsMaster = {};
-	/// @type {Array<String>}
-	/// @ignore
 	global.__mallStatsKeys   = [];
 
-	/// @ignore
 	global.__mallStatesMaster = {};
-	/// @ignore
 	global.__mallStatesKeys   = [];
 	
-	/// @ignore
 	// Un modifier puede ser un elemento o algun tipo de propiedad.
-	global.__mallModsMaster = {};
-	/// @ignore
-	global.__mallModsKeys  = [];
+	global.__mallModifyMaster = {};
+	global.__mallModifyKeys  = [];
 	
-	/// @ignore
 	global.__mallEquipmentMaster = {};
-	/// @ignore
 	global.__mallEquipmentKeys   = [];
 
 	#endregion
 	
 	#region Pocket
-	/// @ignore
-	global.__mallPocketBag  = {}; // Bolsillos			
-	/// @ignore
-	global.__mallPocketData = {}; // Guardar informacion	
+	global.__mallPocketBag  = {}; // Bolsillos
+	global.__mallPocketData = {}; // Guardar informacion
 	
 	#endregion
 	
 	#region Dark
-	/// @ignore
 	global.__mallDarkData   = {};
-	/// @ignore
 	global.__mallDarkActive = [];
 	
 	#endregion
-	
+
+	#region Party
+	global.__mallPartyTemplate = {};
+	global.__mallPartyGroups   = {};
+
+	#endregion
+
 	#region Utils
 	/// @ignore
 	/// @desc Metodo sin nada para no crear infinitos 
@@ -92,14 +88,7 @@ function mall_data_init()
 	/// @ignore
 	/// @desc Metodo sin nada para no crear infinitos
 	global.__mallDummyMethodString = function(_TEMP="") {return (_TEMP); }
-	
-	// -- Grupo
-	
-	/// @ignore
-	global.__mallPartyGroups   = {};
-	/// @ignore
-	global.__mallPartyTemplate = {};
-	
+		
 	mall_database	();
 	pocket_database	();
 	dark_database	();
@@ -123,7 +112,6 @@ function __mall_error(_MSG)
 {
 	if (MALL_ERROR) show_error("Mall Error: " + string(_MSG) );	
 }
-
 
 // Llamar al inicio.
 mall_data_init();

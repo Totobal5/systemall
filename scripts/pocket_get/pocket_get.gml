@@ -1,6 +1,6 @@
 /// @param {String} pocket_key
 /// @return {Struct.PocketItem}
-function pocket_get(_key) 
+function pocket_get(_KEY) 
 {
-    return (global.__mall_pocket_database[$ _key] );
+    return (global.__mallPocketData[$ _KEY] );
 }

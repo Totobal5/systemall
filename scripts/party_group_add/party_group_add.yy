@@ -7,6 +7,5 @@
   },
   "resourceVersion": "1.0",
   "name": "party_group_add",
-  "tags": [],
   "resourceType": "GMScript",
 }

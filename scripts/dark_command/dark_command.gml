@@ -2,72 +2,25 @@
 /// @param	{Bool}		[include_caster]	El caster tambien puede ser afectado
 /// @param	{Real}		[targets]			Cantidad de objetivos afectados
 /// @return {Struct.DarkCommand}
-function DarkCommand(_consume=0, _include=true, _targets=1) : MallComponent("") constructor 
+function DarkCommand(_CONSUME=0, _INCLUDE=true, _TARGETS=1) : MallComponent("") constructor 
 {
-    #region PRIVATE
-    /// @ignore
-    __include = _include;
-	/// @ignore
-    __targets = _targets;
-    /// @ignore
+	#region PRIVATE
 	__is = instanceof(self);
 	
 	#endregion
 	
-    command = undefined;	// Funcion a usar si cumple la condicion
-	fail	= undefined;	// Funcion a usar si no se comple la condicion
-    conditions = undefined;	// Condiciones para usar este comando
-    
-	consume = _consume;		// Cuanto gasta para usar este comando
-
-    /// @param	{Function} command_method	function(caster, target, extra)
-	/// @return {Struct.DarkCommand}
-    static setCommand = function(_function) 
+	flag = "";
+	consume = _CONSUME;	// Cuanto de algo consume
+	include = _INCLUDE;	// Si el caster es incluido
+	targets = _TARGETS;	// Cuantos targets puede incluir en el hechizo
+	
+	checkExecute = function(_CASTER, _TARGET, _FLAG) {}	// Para check
+	eventExecute = function(_CASTER, _TARGET, _FLAG) {}	// Evento que ejecuta al ser usado
+	eventFail = function(_CASTER, _TARGET, _FLAG)	{}	// Evento que ejecuta al 
+	
+	static setEventExecute = function(_METHOD)
 	{
-        spell = method(undefined, _method);	// contexto propio
-        return self;
-    }
-
-    /// @param {Function} fail_method		function(caster, target, extra)
-	/// @return {Struct.DarkCommand}
-	static setFail = function(_function)
-	{
-		fail = method(undefined, _function);
+		eventExecute = _METHOD;
 		return self;
-	}
-	
-	/// @param {Function} condition_method
-	static setConditions = function(_function)
-	{
-		conditions = method(undefined, _function);
-		return self;
-	}
-	
-    /// @param	{Bool}	include_caster
-    /// @param	{Real}	targets
-	/// @return {Struct.DarkCommand}	
-    static customize = function(_include, _targets) 
-	{
-        __include = _include;
-        __targets = _targets;
-        
-        return self;
-    }
-	
-	static execute = function(_caster, _target, _extra)
-	{
-		if (conditions(_caster, _target, _extra) )
-		{
-			return (command(_caster, _target, _extra) );
-		}
-		else
-		{
-			return (fail(_caster, _target, _extra) );
-		}
-	} 
-	
-	static getCommand = function()
-	{
-		return (command);	
 	}
 }

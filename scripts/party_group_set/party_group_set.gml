@@ -1,9 +1,12 @@
-/// @param			party_group_key
-/// @param			party_entity
-/// @param {Real}	[index]
 /// @desc Agrega una entidad party en un grupo en la posicion indicada
-function party_group_set(_key, _entity, _index=0)
+/// @param	{String}	party_group_key
+/// @param	{Struct.PartyEntity}	party_entity
+/// @param	{Real}	[index]	defautl es 0
+function party_group_set(_KEY, _ENTITY, _INDEX=0)
 {
-	var _group = party_group_get(_key);
-	array_insert(_group, _index, _entity);
+	var _group = party_group_get(_KEY);
+	array_insert(_group.__order, _INDEX, _ENTITY);
+	_group[$ _KEY] = _ENTITY;
+	
+	return (_group );
 }
