@@ -11,37 +11,45 @@ function MallModify(_KEY) : MallComponent(_KEY) constructor
 	
 	// -- Eventos --
 	
+	/// @param {Any*}	entity
 	/// @param {String}	[flag]
 	/// @return {String}
-	eventStart = function(_FLAG="") {return messages.noSet; };				// Funcion a usar cuando se inicia el estado
+	eventStart = function(_ENTITY, _FLAG="") {return ""};		// Funcion a usar cuando se inicia el estado
 
+	/// @param {Any*}	entity
 	/// @param {String}	[flag]
 	/// @return {String}
-	eventTurnStart  = function(_ENTITY, _FLAG="") {return messages.noSet;}	// Al iniciar turno
+	eventTurnStart  = function(_ENTITY, _FLAG="") {return ""}	// Al iniciar turno
 	
+	/// @param {Any*}	entity
 	/// @param {String}	[flag]
 	/// @return {String}
-	eventTurnFinish = function(_ENTITY, _FLAG="") {return messages.noSet;}	// Al terminar turno
+	eventTurnFinish = function(_ENTITY, _FLAG="") {return ""}	// Al terminar turno
 	
+	/// @param {Any*}	entity
 	/// @param {String}	[flag]
 	/// @return {String}
-	eventCombatStart  = function(_FLAG="") {return messages.noSet; }		// Al intentar actuar inicio (todo lo que se indique que es combate)
+	eventCombatStart  = function(_ENTITY, _FLAG="") {return ""; }	// Al intentar actuar inicio (todo lo que se indique que es combate)
 
+	/// @param {Any*}	entity
 	/// @param {String}	[flag]
 	/// @return {String}
-	eventCombatFinish = function(_FLAG="") {return messages.noSet; }		// Al intentar actuar final(todo lo que se indique que es combate)
+	eventCombatFinish = function(_ENTITY, _FLAG="") {return ""}		// Al intentar actuar final(todo lo que se indique que es combate)
 	
+	/// @param {Any*}	entity
 	/// @param {String}	[flag]
 	/// @return {String}
-	eventObjectStart = function(_FLAG="") {return messages.noSet; }			// Al intentar actuar inicio (todo lo que se indique que no es combate)
+	eventObjectStart = function(_ENTITY, _FLAG="") {return ""}		// Al intentar actuar inicio (todo lo que se indique que no es combate)
 	
+	/// @param {Any*}	entity
 	/// @param {String}	[flag]
 	/// @return {String}
-	eventObjectFinish = function(_FLAG="") {return messages.noSet; }		// Al intentar actuar final  (todo lo que se indique que no es combate)	
+	eventObjectFinish = function(_ENTITY, _FLAG="") {return ""}		// Al intentar actuar final  (todo lo que se indique que no es combate)	
 
+	/// @param {Any*}	entity
 	/// @param {String}	[flag]
 	/// @return {String}B
-	eventFinish = function(_FLAG="") {return messages.noSet; };				// Funcion a usar cuando se finaliza el estado
+	eventFinish = function(_ENTITY, _FLAG="") {return ""};			// Funcion a usar cuando se finaliza el estado
 	
 	#region METHODS	
 

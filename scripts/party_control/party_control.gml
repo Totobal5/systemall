@@ -2,7 +2,7 @@
 function PartyControl(_ENTITY) : __PartyComponent(_ENTITY) constructor 
 {
 	with (_ENTITY) control = other;
-	stats	  = _ENTITY.getStat();
+	stats	  = _ENTITY.getStats();
 	equipment = _ENTITY.getEquipment();
 	
     #region METHODS
@@ -11,9 +11,11 @@ function PartyControl(_ENTITY) : __PartyComponent(_ENTITY) constructor
     static initialize = function() 
 	{
 		if (__initialize) exit;
-		var _foreach =  method(,function(_MALL, _KEY) {
+		var _foreach =  method(,function(_KEY, _MALL) {
 			variable_struct_set(self, _KEY, new __PartyControlAtom(_KEY, _MALL) );
 			array_push(__keys, _KEY);
+			
+			if (MALL_PARTY_SHOW_MESSAGE) __mall_trace("State Control " + string(_KEY) + " creado");
 		});
 		mall_stat_foreach (_foreach);
 		mall_state_foreach(_foreach);
@@ -216,7 +218,7 @@ function PartyControl(_ENTITY) : __PartyComponent(_ENTITY) constructor
 				
 				if (_upd == 0)
 				{
-					_effect.eventTurnStart();
+					_effect.eventTurnStart(__entity.ref);
 					add(_KEY, _effect.value);
 					
 					_return[0] += _effect.value[0];
@@ -224,7 +226,7 @@ function PartyControl(_ENTITY) : __PartyComponent(_ENTITY) constructor
 				}
 				else if (_upd == -1)
 				{
-					_effect.eventFinish();
+					_effect.eventFinish(__entity.ref);
 					sub(_KEY, _effect.value);
 					array_delete(_content, i, 1);
 					_lenght--;
@@ -263,13 +265,14 @@ function PartyControl(_ENTITY) : __PartyComponent(_ENTITY) constructor
 		return {value: _return, work: true};
     }
     
-	static updateAll  = function() 
+	static updateAll  = function(_TYPE=0) 
 	{
 		var _values = {};
 		var i=0; repeat(array_length(__keys) ) 
 		{
 			var _key = __keys[i];
-			_values[$ _key] = update(_key);
+			_values[$ _key] = update(_key, _TYPE);
+			i = i+1;
 		}
 		
         return (_values);
@@ -284,7 +287,7 @@ function PartyControl(_ENTITY) : __PartyComponent(_ENTITY) constructor
 	
 	static getComponents = function()
 	{
-		stats	  = __entity.ref.getStat();
+		stats	  = __entity.ref.getStats();
 		equipment = __entity.ref.getEquipment();
 	}
 	

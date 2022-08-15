@@ -2,7 +2,7 @@
 function PartyEquipment(_ENTITY) : __PartyComponent(_ENTITY) constructor 
 {	
 	with (_ENTITY) equipment = other;
-	stats   = _ENTITY.getStat();
+	stats   = _ENTITY.getStats();
 	control = _ENTITY.getControl();
 	
     #region METHODS
@@ -10,9 +10,11 @@ function PartyEquipment(_ENTITY) : __PartyComponent(_ENTITY) constructor
 	/// @desc Iniciar control de partes
 	static initialize = function() 
 	{
-		mall_equipment_foreach(method(undefined, function(mall, key) {
+		mall_equipment_foreach(method(,function(key, mall) {
 			variable_struct_set(self, key, new __PartyEquipmentAtom(key, mall))
 			array_push(__keys, key);
+			
+			if (MALL_TRACE) __mall_trace("Equipment " + string(key) + " creado");
 		}));
     }
 	
@@ -23,11 +25,38 @@ function PartyEquipment(_ENTITY) : __PartyComponent(_ENTITY) constructor
         return (self[$ _key] );
     } 
 	
+	static setPermited = function(_KEY, _ITEM_KEY)
+	{
+		var _equipment = get(_KEY);
+		// Si se paso un tipo
+		if (variable_struct_exists(global.__mallPocketTypes, _ITEM_KEY) )
+		{
+			// Permitir a todos los objetos
+			_equipment.items = global.__mallPocketTypes[$ _ITEM_KEY];
+		}
+		else
+		{
+			// Si existe el objeto
+			if (variable_struct_exists(global.__mallPocketData, _ITEM_KEY) )
+			{
+				_equipment.items[$ _ITEM_KEY] = _ITEM_KEY;	
+			}
+		}
+		
+		return self;
+	}
+	
+	static remPermited = function(_KEY, _ITEM_KEY)
+	{
+		variable_struct_remove(get(_KEY), _ITEM_KEY);
+		return self;
+	}
+	
 	/// @param {String} equipment_key
 	/// @param {String} item_key
 	/// @desc False: no se logro equipar el objeto True: objeto equipado
 	/// @return {Bool}
-	static equip	= function(_KEY, _ITEM_KEY) 
+	static equip = function(_KEY, _ITEM_KEY) 
 	{
 		var _equipment = get(_KEY);
 		var _item = pocket_get(_ITEM_KEY);
@@ -39,8 +68,8 @@ function PartyEquipment(_ENTITY) : __PartyComponent(_ENTITY) constructor
 			{
 				_equipment.previous = _equipment.equipped;
 				_equipment.equipped = _item;
-				
-				var _keys = variable_struct_get_names(_item.statsNormal);
+				// Actualiza todas las estadisticas que este objeto afecta
+				var _keys = variable_struct_get_names(_item.stats);
 				var i=0; repeat(array_length(_keys) )
 				{
 					var _stat = _keys[i];
@@ -66,17 +95,18 @@ function PartyEquipment(_ENTITY) : __PartyComponent(_ENTITY) constructor
 			var _item = _equipment.equipped;
 			if (is_undefined(_item) ) return false;
 			
-			var _keys = variable_struct_get_names(_item.statsNormal);
+			_equipment.previous = _equipment.equipped;
+			_equipment.equipped = undefined;
+			_equipment.desequip = true;
+			
+			var _keys = variable_struct_get_names(_item.stats);
 			var i=0; repeat(array_length(_keys) )
 			{
 				var _stat = _keys[i];
-				stats.updateEquipment(_stat, true);
+				stats.updateEquipment(_stat);
 				stats.updateControl  (_stat);
 				i = i + 1;
-			}			
-
-			_equipment.previous = _equipment.equipped;
-			_equipment.equipped = undefined;
+			}
 			
 			return true;
 		}
@@ -117,7 +147,7 @@ function PartyEquipment(_ENTITY) : __PartyComponent(_ENTITY) constructor
 
 	static getComponents = function()
 	{
-		stats	= __entity.ref.getStat();
+		stats	= __entity.ref.getStats();
 		control = __entity.ref.getControl();
 	}
 	

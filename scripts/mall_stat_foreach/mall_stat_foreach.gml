@@ -9,6 +9,6 @@ function mall_stat_foreach(_FUN, _PASS=[])
 		var _key = _stats[i];
 		var _mall = global.__mallStatsMaster[$ _key];
 		_FUN(_key, _mall, i, _PASS);
-		i += 1;
+		i = i+1;
 	}
 }

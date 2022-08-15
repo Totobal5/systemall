@@ -1,21 +1,19 @@
-/// @param	{String}	equipment_key
+/// @param	{String}	type_key
 /// @param	{Real}		[buy]
 /// @param	{Real}		[sell]
 /// @return {Struct.PocketItem}
-function PocketItem(_KEY, _TYPE, _BUY=0, _SELL=0) : MallModify(_KEY) constructor 
+function PocketItem(_KEY, _BUY=0, _SELL=0) : MallModify("") constructor 
 {
     #region PRIVATE
 	
-	type = _TYPE;
+	type = _KEY;
 	buy  = _BUY;	// Valor al que se compra
     canBuy  = true;	// Si puede compra
 	
 	sell = _SELL;		// Valor al que se vende
 	canSell = true;	// Si puede vender
     
-    statsNormal = {};	// Donde se guardan sus estadisticas [value, type]
-    statsInvert = {};	// Las estadisticas de arriba invertidas
-	
+    stats = {};	// Donde se guardan sus estadisticas [value, type]
 	modifyers = {};	// Modificaciones que utiliza este objeto
 
 	eventBuy  = function() {}
@@ -42,9 +40,17 @@ function PocketItem(_KEY, _TYPE, _BUY=0, _SELL=0) : MallModify(_KEY) constructor
 			var _key = argument[i];
 			var _val = argument[i + 1];
 			var _type = argument[i + 2];
+			if (variable_struct_exists(global.__mallStatsMaster, _key) ) 
+			{
+				stats[$ _key] = [ _val, _type];
+			}
+			else
+			{
+				__mall_trace("Pocket Item " + string(_key) + " no existe!" );
+			}
 			
-			__statsNormal[$ _key] = [ _val, _type];
-			__statsInvert[$ _key] = [-_val, _type];
+			
+			i = i+3;
 		}
 		
 		return self;
@@ -54,7 +60,7 @@ function PocketItem(_KEY, _TYPE, _BUY=0, _SELL=0) : MallModify(_KEY) constructor
 	/// @param {Bool}	[invert_stats]
     static getStats = function(_INVERT=false) 
 	{
-        return (!_INVERT) ? __statsNormal : __statsInvert;
+        return (!_INVERT) ? statsNormal : statsInvert;
     }
 
     /// @param	{Real}	buy_value
@@ -64,23 +70,24 @@ function PocketItem(_KEY, _TYPE, _BUY=0, _SELL=0) : MallModify(_KEY) constructor
 	/// @return {Struct.PocketItem}
     static setTrade  = function(_BUY=0, _SELL=0, _CAN_BUY=true, _CAN_SELL=true) 
 	{
-		__buy  = _BUY;
-		__sell = _SELL;
-		__canBuy  =  _CAN_BUY;
-		__canSell = _CAN_SELL;
+		buy  = _BUY;
+		sell = _SELL;
+		
+		canBuy  =  _CAN_BUY;
+		canSell = _CAN_SELL;
 		
         return self;
     }
 	
 	static setEventEquip = function(_EVENT)
 	{
-		__eventEquip = _EVENT;
+		eventEquip = _EVENT;
 		return self;
 	}
 	
 	static setEventDesequip = function(_EVENT)
 	{
-		__eventDesequip = _EVENT;
+		eventDesequip = _EVENT;
 	}
 	
     #endregion

@@ -1,5 +1,8 @@
 function party_database() 
 {
+	party_group_create("Heroes");
+	
+	
 	party_template_create("HERO", function(_GROUP, _LEVEL, _ARGS) {
 		static display = function() {};
 		// Primero crear entity 
@@ -27,7 +30,17 @@ function party_database()
 		_stats.setFlag("EXP", "Medium Slow");
 
 		// Subir de nivel
-		_stats.eventLevel(_LEVEL, true);
+		_stats.eventLevel(true, _LEVEL, true);
+		
+		// Permite todos
+		_equip.setPermited("ARMA",			"ARMA");
+		_equip.setPermited("ARMADURA",		"ARMADURA");
+		_equip.setPermited("PANTALONES",	"PANTALONES");
+		_equip.equip("ARMA",		"ESPADA.COBRE");
+		_equip.equip("ARMADURA",	"ARMADURA.CUERO");
+		_equip.equip("PANTALONES",	"PANTALONES.CUERO");
+		
+		return (_entity );
 	});
 	
 }

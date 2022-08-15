@@ -1,0 +1,4 @@
+function PartyGroup() constructor
+{
+	order = [];
+}

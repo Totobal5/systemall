@@ -10,6 +10,6 @@ function mall_modify_foreach(_FUN, _PASS=[])
 		var _mall = global.__mallModifyMaster[$ _key];
 		
 		_FUN(_mall, _key, i, _PASS);
-		i += 1;
+		i = i+1;
 	}
 }

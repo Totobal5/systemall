@@ -12,6 +12,6 @@ function mall_add_stat()
 			array_push(global.__mallStatsKeys, _key);
 		}
 
-		i += 1;
+		i = i+1;
 	}
 }

@@ -45,13 +45,22 @@ function MallStat(_KEY) : MallState(_KEY) constructor
 		type  = _stat.type;
 		
 		// Heredar limite de valor
-		if (_LIMIT)	setValueLimits(_stat.limitMin. _stat.limitMax);
+		if (_LIMIT)	
+		{
+			setLimits(_stat.limitMin, _stat.limitMax);
+		}
 		
 		// Hereda nivel
-		if (_LVL)	setEventLevel(_stat.eventLevel, _stat.levelLimitMin, _stat.levelLimitMax, _stat.levelSingle, _stat.checkLevel);
+		if (_LVL)
+		{
+			setEventLevel(_stat.eventLevel, _stat.levelLimitMin, _stat.levelLimitMax, _stat.levelSingle, _stat.checkLevel);
+		}
 		
 		// Heredar display
-        if (_DISPLAY)	setDisplay(_stat.displayKey, _stat.displayMethod);
+        if (_DISPLAY)	
+		{
+			setDisplay(_stat.displayKey, _stat.displayMethod);
+		}
 		
 		#endregion
         
@@ -68,7 +77,7 @@ function MallStat(_KEY) : MallState(_KEY) constructor
 	{ 
 		start = _VALUE;
 		type  =  _TYPE;
-		return (setValueLimits(_MIN, _MAX) );
+		return (setLimits(_MIN, _MAX) );
 	}
 	
 	/// @desc Establecer limites de los valores

@@ -5,9 +5,7 @@ function MallEquipment(_KEY) : MallStat(_KEY) constructor
 	#region PRIVATE
 	__is = instanceof(self);
 	#endregion
-	
-	items = {};	// Que tipos de objetos puede llevar y si posee un bonus o no.
-	
+
 	/// @desc Ejecuta un evento al pasar un tipo de objeto
 	eventItemtype = function(_ITEM_KEY, _FLAG) {return [0, 0];};
 	
@@ -58,33 +56,6 @@ function MallEquipment(_KEY) : MallStat(_KEY) constructor
 	}
 	
 	#region METHODS
-	
-	/// @desc Indica que tipos de objetos puede equipar
-	/// @param	{String}	itemtype_key
-	/// @param	{Real}		bonus_value
-	/// @param	{Real}		number_type
-	/// @param ...
-	static setItemtype = function(_KEY, _VALUE, _TYPE=0) 
-	{
-		var i=0; repeat(argument_count div 3)
-		{
-			items[$ argument[i] ] = [
-				argument[i + 1], 
-				argument[i + 2] 
-			];
-			
-			i = i + 1;
-		}
-		
-        return self;
-    }
-	
-	/// @param {String} item_key
-	/// @return {Array<Real>}
-	static getBonusType = function(_KEY) 
-	{
-        return (__items[$ _KEY] );
-    }
-	
+
 	#endregion
 }

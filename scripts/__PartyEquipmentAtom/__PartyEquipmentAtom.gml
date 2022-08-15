@@ -7,11 +7,12 @@ function __PartyEquipmentAtom(_KEY, _EQUIPMENT) constructor
 	displayKey = _EQUIPMENT.displayKey;
 	displayMethod = method(,_EQUIPMENT.displayMethod);
 	
-	items = _EQUIPMENT.items;
+	items = {};
 	active = true;	// Si se puede usar
 	// Weak ref
 	equipped = undefined;	// Donde se almacenan los objetos que lleva
 	previous = undefined;	// Objeto anterior que se llevo
+	desequip = false;	// Si fue desequipado anteriormente
 	
 	eventCompare = _EQUIPMENT.eventCompare;
 	

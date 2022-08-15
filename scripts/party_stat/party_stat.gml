@@ -23,9 +23,8 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
 	/// @desc Crear cada estadistica
     static initialize = function() 
 	{
-		mall_stat_foreach(method(undefined, function(_STAT, _KEY) {
-			var _statAtom = new __PartyStatsAtom(_KEY, _STAT);
-			variable_struct_set(self, _KEY, _statAtom);
+		mall_stat_foreach(method(undefined, function(_KEY, _STAT) {
+			variable_struct_set(self, _KEY, new __PartyStatsAtom(_KEY, _STAT) );
 			array_push(__keys, _KEY);
 			
 			if (MALL_PARTY_SHOW_MESSAGE) __mall_trace("Stat " + string(_KEY) + " creado");
@@ -37,16 +36,19 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
 	/// @param {Real}				base_value	valor de base
     /// @param {ENUM.MALL_NUMTYPE}	base_type	tipo de numero
 	/// @return {Struct.PartyStats}
-    static setBase = function(_KEY, _VALUE, _TYPE) 
+    static setBase = function() 
 	{
 		var i=0; repeat(argument_count div 3)
 		{
 			var _key  = argument[i];
 			var _atom = get(_key);
 			// Actualizar valores bases
-			_atom.base = _VALUE;
-			_atom.type = _TYPE;
-			i = i+1;
+			_atom.base = argument[i + 1];
+			_atom.type = argument[i + 2];
+			
+			if (MALL_TRACE) __mall_trace("Stat Base " + string(_key) + " " + string(argument[i + 1] ) + " " + string(argument[i + 2] ) );
+			
+			i = i+3;
 		}
 
         return self;
@@ -220,53 +222,67 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
 		{
 			with (_stat)
 			{
-				var _sumR = (equipment + _control.values[0] );
+				var _sumR = (_control.values[0] );
 				var _sumP = (equipment * _control.values[1] ) / 100;
-				control = _sumR + _sumP;
+				control = equipment + _sumR + _sumP;
 			}
 		}
 		return self;
 	}
 	
 	/// @desc actualiza el valor del equipment
-	static updateEquipment = function(_KEY, _INVERT=false)
+	static updateEquipment = function(_KEY)
 	{
+		// Feather ignore all
 		var _stat = get(_KEY);
-		var _equipment = equipment.get(_KEY);
-		
-		if (!is_undefined(_stat) )
+		var _keys = mall_get_equipment_keys();
+		var _sum = 0;
+		var i=0; repeat(array_length(_keys) )
 		{
-			var _item = _equipment.equipped, _value=0, _type=MALL_NUMTYPE.REAL;
-			if (_item != undefined)
+			var _key = _keys[i];
+			var _equip = equipment.get(_key);
+			// se desequipo algo
+			var _item = (_equip.desequip) ? _equip.previous : _equip.equipped;
+			var _value, _type;
+			
+			#region Obtener valores
+			if (is_undefined(_item) )
 			{
-				if (!_INVERT)
-				{
-					_value = _item.statsNormal[$ _KEY][0];
-					_type  = _item.statsNormal[$ _KEY][1];
-				}
-				else
-				{
-					_value = _item.statsInvert[$ _KEY][0];
-					_type  = _item.statsInvert[$ _KEY][1];
-				}
+				i = i + 1;
+				continue;
 			}
-
-			with (_stat)
+			else
 			{
-				switch (_type)
+				var _t = _item.stats[$ _KEY];
+				if (is_undefined(_t) ) 
 				{
-					case MALL_NUMTYPE.REAL:
-					var _sum  = (peak + _value);
-					equipment = _sum;
-					break;
+					i = i + 1;
+					continue;
+				}
+				_value = _t[0];
+				_type  = _t[1];
+				if (_equip.desequip) _value = _value * -1;
+			}
+			#endregion
+			
+			switch (_type)
+			{
+				case MALL_NUMTYPE.REAL:
+				_sum += _value;
+				break;
 					
-					case MALL_NUMTYPE.PERCENT:
-					var _sumP = (peak * _value) / 100;
-					equipment = _sum;
-					break;
-				}
-			}
+				case MALL_NUMTYPE.PERCENT:
+				_sum += (_stat.peak * _value) / 100;
+				break;
+			}	
+			
+			_equip.desequip = false;
+			i = i + 1;
 		}
+		
+		// Actualizar valor
+		_stat.equipment = _stat.peak + _sum;
+		__mall_trace("Stat Equipment " + string(_stat.equipment) + " sum: " + string(_sum) );
 		
 		return self;
 	}
@@ -297,9 +313,10 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
         return self;
     }
     
-    /// @param {Real} [add_level]	Sumar/restar el nivel actual
-    /// @param {Bool} [force_level]	Fuerza a subir de nivel
-    static eventLevel = function(_LEVEL=0, _FORCE=false) 
+	/// @param {Bool}	[set_or_add]	Sumar o establecer el nivel
+    /// @param {Real}	[add_level]		Sumar/restar el nivel actual
+    /// @param {Bool}	[force_level]	Fuerza a subir de nivel
+    static eventLevel = function(_SET=false, _LEVEL=0, _FORCE=false) 
 	{
 		var _size = array_length(__keys);
 		// Para feather
@@ -317,7 +334,7 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
 		var _globalCheck = undefined;
 		
 		// operar level
-		level = level + _LEVEL;
+		level = (!_SET) ? level + _LEVEL : _LEVEL;
 		
 		// Ejecutar funcion al ejecutar
 		eventLevelStart();
@@ -333,7 +350,7 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
 			var _localLevel = 1;
 			if (stat.single)
 			{
-				stat.level += _LEVEL;
+				stat.level  = (!_SET) ? stat.level + _LEVEL : _LEVEL;
 				_localLevel = stat.level;
 				_localCheck = stat.check(self);
 			}
@@ -353,8 +370,9 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
 				stat.equipment = _sum + _equipment;
 				stat.control   = _sum + _equipment + _control;
 				
-				var _iter = stat.iterator.iterate();
-				if (_iter == 2)
+				var _iter = stat .iterator;
+				var _work = _iter.iterate();
+				if (_work == 2)
 				{
 					stat.actual = (_iter.type) ? 
 						stat.control :
@@ -363,21 +381,30 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
 				
 				if (!__initialize) 
 				{
-					stat.lastPeak   = stat.event(self, stat, max(1, _localLevel - 1) );
-					if (_iter == 2)
+					stat.lastPeak = stat.event(self, stat, max(1, _localLevel - 1) );
+					
+					if (_iter.active)
 					{
-						stat.lastActual = (_iter.type) ? 
-							stat.lastPeak + _equipment + _control :
-							stat.limitMin;
+						stat.actual = (_iter.type) ?
+							stat.control  :
+							stat.limitMin ;
+					}
+					else
+					{
+						// Dejar en el maximo solo en el inicio
+						stat.actual		= stat.control;
+						stat.lastActual = stat.control;
 					}
 				}
 				
 				// Mostrar los valores en el debugger
-				__mall_trace(_key + ": " + string(_toAdd) );
+				__mall_trace(_key + ": " + string(_sum) );
 				
 				// Poner valores para regresar
 				_return[$ _key] = stat.send(); 
 			}
+			
+			i = i+1;
         }
         
 		#endregion
@@ -460,17 +487,6 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
         show_debug_message(_print);
         return _print;
     }
-	
-	/// @desc Un foreach para cada llave
-	static Stream = function(_FUN, _MORE)
-	{
-		var i=0; repeat(array_length(__keys) )
-		{
-			var _key = __keys[i];
-			_FUN(get(_key), _key, i, _MORE);
-			i = i+1;
-		}
-	}
 
 	static getComponents = function()
 	{

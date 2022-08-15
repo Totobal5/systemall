@@ -38,8 +38,8 @@ function __PartyStatsAtom(_KEY, _STAT) constructor
 	
 	level = 1; // Nivel de la estadistica si se usa individualmente
 	// Valores que posee
-	limitMin = _STAT.limitMax;	// Valor maximo en que la estadistica puede estar
-	limitMax = _STAT.limitMin;	// Valor minimo en que la estadistica puede estar
+	limitMin = _STAT.limitMin;	// Valor maximo en que la estadistica puede estar
+	limitMax = _STAT.limitMax;	// Valor minimo en que la estadistica puede estar
 	
 	control   = base;	 // El valor final tomando en cuenta el control
 	equipment = control; // El valor final tomando en cuenta el equipamiento
@@ -56,15 +56,16 @@ function __PartyStatsAtom(_KEY, _STAT) constructor
 	/// @desc Devuelve un struct con los valores actuales
 	static send = function()
 	{
+		var _me = self;
 		return 
 		{
-			key: other.__key,
-			control:	other.control,
-			equipment:	other.equipment,
-			peak:		other.peak,
-			actual:		other.actual,
-			lastPeak:	other.lastPeak,
-			lastActual:	other.lastActual
+			key: _me.key,
+			control:	_me.control,
+			equipment:	_me.equipment,
+			peak:		_me.peak,
+			actual:		_me.actual,
+			lastPeak:	_me.lastPeak,
+			lastActual:	_me.lastActual
 		}
 	}
 	

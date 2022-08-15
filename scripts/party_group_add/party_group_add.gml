@@ -4,8 +4,10 @@
 function party_group_add(_KEY, _ENTITY)
 {
 	var _group = party_group_get(_KEY);
+	if (is_undefined(_group) ) return undefined;
+	// Agregar al grupo
 	_group[$ _KEY] = _ENTITY;
-	array_push(_group.__order, _ENTITY);
+	array_push(_group.order, _ENTITY);
 	
 	return (_group );
 }

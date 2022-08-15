@@ -22,7 +22,7 @@ function PartyEntity(_GROUP_KEY, _DISPLAY_KEY, _DISPLAY_METHOD) : MallComponent(
 	
 	#region Metodos
 	/// @return {Struct.PartyStats}
-	static getStat		= function()
+	static getStats		= function()
 	{
 		return (stats);	
 	}

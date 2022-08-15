@@ -5,8 +5,9 @@ function party_group_create(_KEY)
 	var _partyGroup = undefined;
 	if (!variable_struct_exists(global.__mallPartyGroups, _KEY) )
 	{	
-		var _partyGroup = {__order: [] };
+		var _partyGroup = new PartyGroup();
 		global.__mallPartyGroups[$ _KEY] = _partyGroup;
 	}
+	
 	return (_partyGroup );
 }

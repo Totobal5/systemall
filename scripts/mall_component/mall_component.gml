@@ -18,10 +18,6 @@ function MallComponent(_KEY="") constructor
 	displayKey = _KEY; // Llave para usar en lexicon
 	
 	// -- Others
-	messages = {
-		noSet: ""
-	};
-
 	iterator = new __MallIterator();
 
     #region METHODS
@@ -52,41 +48,16 @@ function MallComponent(_KEY="") constructor
 		return self;
 	}
 	
-	/// @param	{String}	display_key
-	/// @param	{Function}	display_method	function(flag) {return string; }
+	/// @param	{String}	display_key			llave para acceder en lexicon
+	/// @param	{Function}	[display_method]	function(flag) {return string; }
 	static setDisplay = function(_DISPLAY_KEY, _DISPLAY_METHOD)
 	{
-		if (!is_method(_DISPLAY_METHOD) ) __mall_error("display_method tiene que ser method dah");
-		
 		/// @param {String}	[flag]
 		/// @return {String}
 		displayMethod = _DISPLAY_METHOD ?? displayMethod;	// No pasar por method para no cargar tanto
 		displayKey = _DISPLAY_KEY;
 		
 		return self;
-	}
-	
-	/// @param {String}	message_key
-	/// @param {String}	message
-	static addMessage = function(_KEY, _MESSAGE)
-	{
-		messages[$ _KEY] = _MESSAGE;
-		return self;
-	}
-
-	/// @param {String}	message_key
-	/// @return {String}
-	static getMessage = function(_KEY)
-	{
-		return (messages[$ _KEY] );
-	}
-
-	/// @param {String}		message_key
-	/// @param {Function}	message_function	function(MESSAGE, MESSAGE_KEY) {return string; }
-	/// @return {String}
-	static getMessageExt = function(_KEY, _FUN)
-	{
-		return (_FUN(messages[$ _KEY], _KEY) );
 	}
 
 	/// @desc Regresa el texto de display
@@ -114,9 +85,9 @@ function MallComponent(_KEY="") constructor
 	
 	/**
 	 * Function Description
-	 * @param {any*} [_COUNT_LIMITS]=1 Description
-	 * @param {any*} [_REPEAT]=true Description
-	 * @param {any*} [_REPEAT_LIMITS]=-1 Description
+	 * @param {Real} [count_limit=-1]	Description
+	 * @param {Bool} [repeat=true]		Description
+	 * @param {Real} [repeat_limits=-1] Description
 	 * @returns {struct} Description
 	 */
 	static iterToMin = function(_COUNT_LIMITS=1, _REPEAT=true, _REPEAT_LIMITS=-1)
@@ -235,22 +206,28 @@ function __MallIterator(_ACTIVE=false) constructor
 		if (reset)
 		{	
 			#region Cuenta para el reinicio
-			if (resetCount > 0)
+			if (resetCount < resetLimits) 
 			{
-				if (resetCount < resetLimits) 
+				resetCount = resetCount + 1;
+				return 1;
+			}
+			else
+			{
+				count  = 0;
+				resetCount = 0;
+				// Reinicio infinito
+				if (resetMax == -1) return 2;
+				// Veces que puede reiniciar
+				if (resetNumber > resetMax) 
 				{
-					resetCount = resetCount + 1;
-					return 1;
+					active = false; 
+				} 
+				else 
+				{
+					resetNumber = resetNumber + 1; 
 				}
-				else
-				{
-					count  = 0;
-					resetCount = 0;
-					// Veces que puede reiniciar
-					if (resetNumber > resetMax) {active = false; } else {resetNumber = resetNumber + 1; }
 
-					return 2;
-				}
+				return 2;
 			}
 			#endregion
 		}

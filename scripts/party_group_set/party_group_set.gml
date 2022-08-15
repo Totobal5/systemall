@@ -5,7 +5,7 @@
 function party_group_set(_KEY, _ENTITY, _INDEX=0)
 {
 	var _group = party_group_get(_KEY);
-	array_insert(_group.__order, _INDEX, _ENTITY);
+	array_insert(_group.order, _INDEX, _ENTITY);
 	_group[$ _KEY] = _ENTITY;
 	
 	return (_group );

@@ -10,6 +10,6 @@ function mall_state_foreach(_FUN, _PASS=[])
 		var _state = global.__mallStatesMaster[$ _key];
 		_FUN(_key, _state, i, _PASS);
 		
-		i += 1;
+		i = i+1;
 	}
 }

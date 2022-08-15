@@ -1,11 +1,11 @@
 {
   "resourceType": "GMScript",
   "resourceVersion": "1.0",
-  "name": "party_template_create",
+  "name": "party_Group",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Party",
-    "path": "folders/Mall/Party.yy",
+    "name": "Constructor",
+    "path": "folders/Mall/Party/Group/Constructor.yy",
   },
 }

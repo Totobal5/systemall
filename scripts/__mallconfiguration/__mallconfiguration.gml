@@ -63,9 +63,9 @@ function mall_data_init()
 	#endregion
 	
 	#region Pocket
-	global.__mallPocketBag  = {}; // Bolsillos
-	global.__mallPocketData = {}; // Guardar informacion
-	
+	global.__mallPocketBag   = {}; // Bolsillos
+	global.__mallPocketData  = {}; // Guardar informacion
+	global.__mallPocketTypes = {}; // Tipos de objetos
 	#endregion
 	
 	#region Dark
@@ -81,21 +81,15 @@ function mall_data_init()
 	#endregion
 
 	#region Utils
-	/// @ignore
-	/// @desc Metodo sin nada para no crear infinitos 
-	global.__mallDummyMethodReal   = function(_TEMP=0)  {return (_TEMP); }
+	global.__mallMessages = {};
 	
-	/// @ignore
-	/// @desc Metodo sin nada para no crear infinitos
-	global.__mallDummyMethodString = function(_TEMP="") {return (_TEMP); }
-		
+	#endregion
+	
 	mall_database	();
 	pocket_database	();
 	dark_database	();
 	
 	party_database	();
-	
-	#endregion
 }
 
 /// @param message Mensaje a mostrar
@@ -110,7 +104,7 @@ function __mall_trace(_MSG)
 /// @param message Mensaje a mostrar
 function __mall_error(_MSG)
 {
-	if (MALL_ERROR) show_error("Mall Error: " + string(_MSG) );	
+	if (MALL_ERROR) show_error("Mall Error: " + string(_MSG), true);
 }
 
 // Llamar al inicio.
