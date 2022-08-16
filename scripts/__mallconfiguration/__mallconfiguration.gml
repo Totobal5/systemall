@@ -39,52 +39,56 @@ global.__mallComponentsIsOff = [];
 
 #endregion
 
+#region Database
+global.__mallTypesMaster = {};
+global.__mallTypesKeys   = [];
+
+global.__mallStatsMaster = {};
+global.__mallStatsKeys   = [];
+
+global.__mallStatesMaster = {};
+global.__mallStatesKeys   = [];
+	
+// Un modifier puede ser un elemento o algun tipo de propiedad.
+global.__mallModifyMaster = {};
+global.__mallModifyKeys  = [];
+	
+global.__mallEquipmentMaster = {};
+global.__mallEquipmentKeys   = [];
+
+#endregion
+	
+#region Pocket
+global.__mallPocketBag   = {}; // Bolsillos
+global.__mallPocketData  = {}; // Guardar informacion
+global.__mallPocketTypes = {}; // Tipos de objetos
+#endregion
+	
+#region Dark
+global.__mallDarkData   = {};
+global.__mallDarkActive = [];
+	
+#endregion
+
+#region Party
+global.__mallPartyTemplate = {};
+global.__mallPartyGroups   = {};
+
+#endregion
+
+#region Wate
+global.__mallWateCombats  = {}	// Grupo de peleas
+
+#endregion
+
+#region Utils
+global.__mallRadio = ds_queue_create();
+
+#endregion
+
 /// @ignore
 function mall_data_init() 
-{
-	#region Database
-	
-	global.__mallTypesMaster = {};
-	global.__mallTypesKeys   = [];
-
-	global.__mallStatsMaster = {};
-	global.__mallStatsKeys   = [];
-
-	global.__mallStatesMaster = {};
-	global.__mallStatesKeys   = [];
-	
-	// Un modifier puede ser un elemento o algun tipo de propiedad.
-	global.__mallModifyMaster = {};
-	global.__mallModifyKeys  = [];
-	
-	global.__mallEquipmentMaster = {};
-	global.__mallEquipmentKeys   = [];
-
-	#endregion
-	
-	#region Pocket
-	global.__mallPocketBag   = {}; // Bolsillos
-	global.__mallPocketData  = {}; // Guardar informacion
-	global.__mallPocketTypes = {}; // Tipos de objetos
-	#endregion
-	
-	#region Dark
-	global.__mallDarkData   = {};
-	global.__mallDarkActive = [];
-	
-	#endregion
-
-	#region Party
-	global.__mallPartyTemplate = {};
-	global.__mallPartyGroups   = {};
-
-	#endregion
-
-	#region Utils
-	global.__mallMessages = {};
-	
-	#endregion
-	
+{	
 	mall_database	();
 	pocket_database	();
 	dark_database	();
@@ -105,6 +109,24 @@ function __mall_trace(_MSG)
 function __mall_error(_MSG)
 {
 	if (MALL_ERROR) show_error("Mall Error: " + string(_MSG), true);
+}
+
+/// @desc Devuelve el tiempo que se demora una función en ejecutar
+function show_debug_timer() 
+{
+	static get = false;
+	static timer1 = 0;
+	static timer2 = 0;
+	
+	if (!get) {
+		timer1 = get_timer(); 
+		get = true;
+	} else {
+		timer2 = get_timer();
+		
+		show_debug_message("Timer: " + string((timer2 - timer1) / 1000 ) + " [ms]");
+		get = false;
+	}
 }
 
 // Llamar al inicio.

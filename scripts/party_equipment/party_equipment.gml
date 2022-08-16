@@ -74,7 +74,6 @@ function PartyEquipment(_ENTITY) : __PartyComponent(_ENTITY) constructor
 				{
 					var _stat = _keys[i];
 					stats.updateEquipment(_stat);
-					stats.updateControl  (_stat);
 					i = i + 1;
 				}
 				
@@ -104,7 +103,6 @@ function PartyEquipment(_ENTITY) : __PartyComponent(_ENTITY) constructor
 			{
 				var _stat = _keys[i];
 				stats.updateEquipment(_stat);
-				stats.updateControl  (_stat);
 				i = i + 1;
 			}
 			

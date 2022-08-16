@@ -88,7 +88,6 @@ function MallComponent(_KEY="") constructor
 	 * @param {Real} [count_limit=-1]	Description
 	 * @param {Bool} [repeat=true]		Description
 	 * @param {Real} [repeat_limits=-1] Description
-	 * @returns {struct} Description
 	 */
 	static iterToMin = function(_COUNT_LIMITS=1, _REPEAT=true, _REPEAT_LIMITS=-1)
 	{
@@ -111,7 +110,6 @@ function MallComponent(_KEY="") constructor
 	 * @param {any*} [_COUNT_LIMITS]=1 Description
 	 * @param {any*} [_REPEAT]=true Description
 	 * @param {any*} [_REPEAT_LIMITS]=-1 Description
-	 * @returns {struct} Description
 	 */
 	static iterToMax = function(_COUNT_LIMITS=1, _REPEAT=true, _REPEAT_LIMITS=-1) 
 	{

@@ -1,11 +1,11 @@
 {
+  "resourceType": "GMScript",
+  "resourceVersion": "1.0",
+  "name": "dark_database",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Mall",
-    "path": "folders/Mall.yy",
+    "name": "Databases",
+    "path": "folders/Mall/Databases.yy",
   },
-  "resourceVersion": "1.0",
-  "name": "dark_database",
-  "resourceType": "GMScript",
 }

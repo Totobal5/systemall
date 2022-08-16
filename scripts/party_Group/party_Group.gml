@@ -1,4 +1,5 @@
-function PartyGroup() constructor
+function PartyGroup(_KEY) : MallComponent(_KEY) constructor
 {
-	order = [];
+	entitys = [];
+	limit = -1;
 }

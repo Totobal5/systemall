@@ -16,6 +16,9 @@ function __PartyStatsAtom(_KEY, _STAT) constructor
 	flag   = "";  // Algo que pasar en la formula para subir de nivel
 	single = _STAT.levelSingle; // Si sube de nivel individualmente
 	
+	eventEquipStart  = _STAT.eventObjectStart;	// Al equipar un objeto (inicio) ejecuta esta funcion
+	eventEquipFinish = _STAT.eventObjectFinish;	// Al equipar un objeto (final) ejecuta esta funcion
+	
 	/// @param {Struct.PartyStats}		 stat_entity
 	/// @param {Struct.__PartyStatsAtom} stat_atom
 	/// @param {Any} [flag]

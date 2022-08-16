@@ -1,37 +1,20 @@
 /**
- * Agrega un mensaje al sistema
- * @param {String} message_key Description
- * @param {String} message	Description
+ * Function Description
+ * @param {string} message 
  */
-function mall_message_add(_KEY, _MSG)
+function mall_message_send(_MSG)
 {
-	if (!variable_struct_exists(global.__mallMessages, _KEY) )
-	{
-		global.__mallMessages[$ _KEY] = _MSG;
-	}
+	// Enviar mensaje
+	ds_queue_enqueue(global.__mallRadio, _MSG);
 }
 
 /**
- * Obtiene un mensaje
- * @param {any*} _KEY Description
+ * Function Description
+ * @param {Function} [dispatch_method] Description
+ * @returns {string} Description
  */
-function mall_message_get(_KEY)
+function mall_message_dispatch(_FUN)
 {
-	return (global.__mallMessages[$ _KEY] );
-}
-
-/**
- * obtiene un mensaje para pasarlo a una funcion y obtener un resultado
- * @param {any*} _KEY Description
- * @param {any*} _FUN Description
- * @param {any*} _PASS Description
- */
-function mall_display_message(_KEY, _FUN, _PASS)
-{
-	static fun = function(_KEY, _MSG, _FLAGS) {
-		return (_MSG);	
-	}
-	
-	var _msg = mall_message_get(_KEY);
-	if (!is_undefined(_FUN) ) {return fun(_KEY, _msg, _PASS); } else {return _FUN(_KEY, _msg, _PASS); }
+	var _msg = ds_queue_dequeue(global.__mallRadio);
+	return (!is_method(_FUN) ) ? (_msg) : _FUN(_msg);
 }

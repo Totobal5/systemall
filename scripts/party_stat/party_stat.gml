@@ -54,12 +54,12 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
         return self;
     }
 	
+	/// @desc Las flags sirven para que en las funciones se pueda hacer un switch dependiendo del entity
 	/// @param {String}	stat_key	Llave de estadistica
 	/// @param {Any*}	flag		Flag para colocar en la estadistica
 	static setFlag = function(_KEY, _FLAG)
 	{
-		var _atom = get(_KEY);
-		_atom.flag = _FLAG;
+		flags[$ _KEY] = _FLAG
 		return self;
 	}
 	
@@ -67,7 +67,7 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
 	/// @return {Any}
 	static getFlag = function(_KEY)
 	{
-		return (get(_KEY).flag);
+		return (flags[$ _KEY] );
 	}
 	
 	/// @desc permite establecer la condicion para subir de nivel global o individual
@@ -237,6 +237,10 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
 		var _stat = get(_KEY);
 		var _keys = mall_get_equipment_keys();
 		var _sum = 0;
+		var _ent = getEntity();
+		// Ejecutar evento antes de equipar
+		_stat.eventEquipStart(_ent, _stat);
+		
 		var i=0; repeat(array_length(_keys) )
 		{
 			var _key = _keys[i];
@@ -282,7 +286,14 @@ function PartyStats(_ENTITY, _LEVEL=1) : __PartyComponent(_ENTITY) constructor
 		
 		// Actualizar valor
 		_stat.equipment = _stat.peak + _sum;
-		__mall_trace("Stat Equipment " + string(_stat.equipment) + " sum: " + string(_sum) );
+		
+		// Actualizar el control
+		updateControl(_KEY);
+		
+		// Evento que se ejecuta al final de equipar un objeto
+		_stat.eventEquipFinish(_ent, _stat);
+		
+		__mall_trace("Stat Equipment " + string(_KEY) + " " + string(_stat.equipment) + " sum: " + string(_sum) );
 		
 		return self;
 	}

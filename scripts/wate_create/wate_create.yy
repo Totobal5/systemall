@@ -1,11 +1,11 @@
 {
   "resourceType": "GMScript",
   "resourceVersion": "1.0",
-  "name": "party_get",
+  "name": "wate_create",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Party",
-    "path": "folders/Mall/Party.yy",
+    "name": "Wate",
+    "path": "folders/Mall/Wate.yy",
   },
 }

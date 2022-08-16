@@ -6,6 +6,12 @@ function MallStat(_KEY) : MallState(_KEY) constructor
 	__is = instanceof(self);
 	
 	#endregion
+	// True: enviar actual al maximo al equipar false: dejar como esta
+	
+	/// @desc Este evento se utiliza cuando se equipa un objeto
+	eventObjectStart  = function(entity, stat)	{}
+	eventObjectFinish = function(entity, stat)	{stat.actual = stat.control;}
+	
 	start  = 0; // Valor inicial
 	limitMin = 0; // Limites del valor 0 minimo 1 maximo
 	limitMax = 0; //
@@ -24,7 +30,7 @@ function MallStat(_KEY) : MallState(_KEY) constructor
 	/// @param	{Any*} [flag]
 	/// @return	{Bool}
     checkLevel = function(STAT_ENTITY, _FLAG)  {return true; }; // Indicar si puede o no subir de nivel si sube individual
-
+	
 	#endregion
 	
     #region METHODS
@@ -129,6 +135,8 @@ function MallStat(_KEY) : MallState(_KEY) constructor
 	{
 		return (checkLevel);
 	}
+
+	static 
 
 	/// @return {String}
 	static toString = function() 

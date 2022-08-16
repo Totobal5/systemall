@@ -1,11 +1,11 @@
 {
   "resourceType": "GMScript",
   "resourceVersion": "1.0",
-  "name": "party_group_add",
+  "name": "party_set",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Group",
-    "path": "folders/Mall/Party/Group.yy",
+    "name": "Party",
+    "path": "folders/Mall/Party.yy",
   },
 }

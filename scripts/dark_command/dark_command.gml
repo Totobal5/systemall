@@ -14,9 +14,9 @@ function DarkCommand(_CONSUME=0, _INCLUDE=true, _TARGETS=1) : MallComponent("") 
 	include = _INCLUDE;	// Si el caster es incluido
 	targets = _TARGETS;	// Cuantos targets puede incluir en el hechizo
 	
-	checkExecute = function(_CASTER, _TARGET, _FLAG) {}	// Para check
-	eventExecute = function(_CASTER, _TARGET, _FLAG) {}	// Evento que ejecuta al ser usado
-	eventFail = function(_CASTER, _TARGET, _FLAG)	{}	// Evento que ejecuta al 
+	checkExecute = function(caster, target, flag) {}	// Para check
+	eventExecute = function(caster, target, flag) {}	// Evento que ejecuta al ser usado
+	eventFail = function(caster, target, flag) {}		// Evento que ejecuta al 
 	
 	static setEventExecute = function(_METHOD)
 	{

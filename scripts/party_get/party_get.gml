@@ -1,7 +1,10 @@
 /// @return {Struct.PartyEntity}
-function party_get(_key, _index)
+function party_get(_KEY, _INDEX)
 {
-	if (_index < 0) return (undefined);
-	var _group = party_group_get(_key);
-	return (_group[_index] );
+	// Feather ignore all
+	if (_INDEX < 0) return (undefined);
+	var _group = party_group_get(_KEY);
+	return (array_length(_group.entitys) > _INDEX) ? 
+		(_group.entitys[_INDEX] ) : 
+		undefined;
 }

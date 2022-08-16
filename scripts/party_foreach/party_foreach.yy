@@ -1,7 +1,7 @@
 {
   "resourceType": "GMScript",
   "resourceVersion": "1.0",
-  "name": "party_get",
+  "name": "party_foreach",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {

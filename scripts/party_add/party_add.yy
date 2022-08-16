@@ -1,11 +1,11 @@
 {
   "resourceType": "GMScript",
   "resourceVersion": "1.0",
-  "name": "party_group_foreach",
+  "name": "party_add",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Group",
-    "path": "folders/Mall/Party/Group.yy",
+    "name": "Party",
+    "path": "folders/Mall/Party.yy",
   },
 }

@@ -5,7 +5,7 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Mall",
-    "path": "folders/Mall.yy",
+    "name": "Databases",
+    "path": "folders/Mall/Databases.yy",
   },
 }

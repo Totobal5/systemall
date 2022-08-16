@@ -1,9 +1,9 @@
 function party_database() 
 {
-	party_group_create("Heroes");
+	party_group_create("HEROES");
 	
 	
-	party_template_create("HERO", function(_GROUP, _LEVEL, _ARGS) {
+	party_template_create("HERO"  , function(_GROUP, _LEVEL, _ARGS) {
 		static display = function() {};
 		// Primero crear entity 
 		var _entity = new PartyEntity(_GROUP, "PARTY.HERO", display);
@@ -27,7 +27,7 @@ function party_database()
 			var _exp = get("EXP");
 			return (_exp.actual >= _exp.peak);
 		});
-		_stats.setFlag("EXP", "Medium Slow");
+		_stats.setFlag("EXP", "Medium");
 
 		// Subir de nivel
 		_stats.eventLevel(true, _LEVEL, true);
@@ -43,4 +43,45 @@ function party_database()
 		return (_entity );
 	});
 	
+	party_template_create("TRAUCO", function(group, level, flags) {
+		static display = function() {};
+		var _entity = new PartyEntity(group, "TRAUCO.GUI", display);
+		
+		var _control = new PartyControl(_entity);
+		var _stats	 = new PartyStats(_entity, level);
+		var _equip   = new PartyEquipment(_entity);
+		
+		_entity.updateComponents();
+		
+		_stats.setBase(
+			"PS" , 22, MALL_NUMTYPE.REAL,
+			"PM" , 15, MALL_NUMTYPE.REAL,
+			"EXP", 10, MALL_NUMTYPE.REAL,
+			
+			"FUERZA" ,	30, MALL_NUMTYPE.REAL,
+			"DEFENSA",	20, MALL_NUMTYPE.REAL,
+			"ESPECIAL",	25, MALL_NUMTYPE.REAL,
+			"VELOCIDAD",15, MALL_NUMTYPE.REAL
+		);
+
+		_stats.setCheckLevel(function(stat, flag) {
+			var _exp = get("EXP");
+			return (_exp.actual >= _exp.peak);
+		});
+		_stats.setFlag("EXP", "Slow");
+
+		// Subir de nivel
+		_stats.eventLevel(true, level, true);
+		
+		// Permite todos
+		_equip.setPermited("ARMA",			"ARMA");
+		_equip.setPermited("ARMADURA",		"ARMADURA");
+		_equip.setPermited("PANTALONES",	"PANTALONES");
+		
+		return (_entity );
+	});
+	
+	// Party del grupo
+	party_create("HERO", "HEROES", 1);
+	party_create("HERO", "HEROES", 1);
 }

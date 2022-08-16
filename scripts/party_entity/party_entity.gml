@@ -1,8 +1,11 @@
 function PartyEntity(_GROUP_KEY, _DISPLAY_KEY, _DISPLAY_METHOD) : MallComponent("") constructor 
 {
 	setDisplay(_DISPLAY_KEY, _DISPLAY_METHOD);
-	group = _GROUP_KEY;	// Key del party group
-	index = -1;			// Indice del party group
+	
+	group = "";		// Key del party group
+	index = -1;		// Indice del party group
+	customKey = "";	// Numerador propio (Heroe A, Heroe B)
+	if (party_group_exists(_GROUP_KEY) ) party_add(_GROUP_KEY, self);	// Añadir al grupo
 	
 	// Estructuras
 	stats   = undefined;	// Estadisticas
@@ -16,11 +19,30 @@ function PartyEntity(_GROUP_KEY, _DISPLAY_KEY, _DISPLAY_METHOD) : MallComponent(
 	passCount = 0;	// Cuantos turnos a saltado
 	passReset = 0;	// Reiniciar __pass a esta cantidad de turnos -1 es infinito
 	
-	commands = {};	// Que comandos puede realizar
+	commands = {def:{keys:[]}};	// Que comandos puede realizar
 	modifys  = {};
 	// {modificador: []}
 	
 	#region Metodos
+	
+	static setCategory = function(_KEY)
+	{
+		commands[$ _KEY] = {keys:[]};
+		return self;
+	}
+	
+	static setCommand = function(_CATEGORY="def", _KEY)
+	{
+		if (dark_exists(_KEY) )
+		{
+			var _category = commands[$ _CATEGORY];
+			_category[$ _KEY] = dark_get(_KEY);
+			array_push(_category.keys, _KEY);
+		}
+		return self;
+	}
+	
+	
 	/// @return {Struct.PartyStats}
 	static getStats		= function()
 	{
