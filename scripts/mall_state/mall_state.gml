@@ -11,12 +11,12 @@ function MallState(_KEY) : MallMod(_KEY) constructor
 	percent  =  0;  // Probabilidad default
 	
 	/// @desc Si puede actuar en PartyControl
-	/// @param {Any*} [flag]=""
-	checkStart  = function(_FLAG="") {return false};
+	/// @param {Any*} [vars]
+	checkStart = function(_vars) {return false};
 	
 	/// @desc Comprobar si puede usar su final event
-	/// @param {Any*} [flag]=""
-	checkFinish = function(_FLAG="") {return false;};
+	/// @param {Any*} [vars]
+	checkEnd   = function(_vars) {return false};
 	
 	#region METHODS
 	/**
@@ -38,18 +38,17 @@ function MallState(_KEY) : MallMod(_KEY) constructor
 	}
 	
 	
-	static setCheckAffect = function(_CHECK)
+	/// @desc Function Description
+	/// @param {function} checkStart  Description
+	/// @param {function} [checkEnd]  Description
+	/// @returns {struct} Description
+	static setCheckSE = function(_checkS, _checkE)
 	{
-		checkAffect = _CHECK;
+		checkStart = _checkS ?? checkStart;
+		checkEnd   = _checkE ??   checkEnd;
 		return self;
 	}
 	
-	
-	static setCheckLast = function(_CHECK)
-	{
-		__checkLast = _CHECK;
-		return self;
-	}
 
 	#endregion
 }

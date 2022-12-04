@@ -1,21 +1,45 @@
-/// @param	{Real}		consume				Cuanto gasta para usar este comando
-/// @param	{Bool}		[include_caster]	El caster tambien puede ser afectado
-/// @param	{Real}		[targets]			Cantidad de objetivos afectados
+/// @param  {string} darkKey
+/// @param	{Real}   consume               Cuanto gasta para usar este comando
+/// @param	{Bool}   [includeCaster]=true  El caster tambien puede ser afectado
+/// @param	{Real}   [targets]=1           Cantidad de objetivos afectados
 /// @return {Struct.DarkCommand}
-function DarkCommand(_CONSUME=0, _INCLUDE=true, _TARGETS=1) : MallComponent("") constructor 
+function DarkCommand(_darkKey, _consume=0, _include=true, _targets=1) : Mall(_darkKey) constructor 
 {
-	flag = "";
-	consume = _CONSUME;	// Cuanto de algo consume
-	include = _INCLUDE;	// Si el caster es incluido
-	targets = _TARGETS;	// Cuantos targets puede incluir en el hechizo
+	vars = {};
+	consume = _consume;  // Cuanto de algo consume
+	include = _include;  // Si el caster es incluido
+	targets = _targets;  // Cuantos targets puede incluir en el hechizo
 	
-	checkExecute = function(caster, target, flag) {}	// Para check
-	eventExecute = function(caster, target, flag) {}	// Evento que ejecuta al ser usado
-	eventFail = function(caster, target, flag) {}		// Evento que ejecuta al 
+	// function(_caster, _target, _vars) {}
 	
-	static setEventExecute = function(_METHOD)
+	/// @desc funcion para comprobar si acierta o falla
+	/// @returns {Bool}
+	check   = __dummy;
+	
+	/// @desc funcion que ejecuta al acertar
+	execute = __dummy;
+	
+	/// @desc funcion que ejecuta al fallar
+	fail    = __dummy;
+	
+	/// @param checkFun function(_caster, _target, _vars) {}
+	static setCheck   = function(_fun) 
 	{
-		eventExecute = _METHOD;
+		check = method(,_fun);
+		return self;
+	}
+
+	/// @param executeFun function(_caster, _target, _vars) {}
+	static setExecute = function(_fun)
+	{
+		execute = method(,_fun);
+		return self;
+	}
+	
+	/// @param failFun function(_caster, _target, _vars) {}
+	static setFail    = function(_fun) 
+	{
+		fail = method(,_fun);
 		return self;
 	}
 }

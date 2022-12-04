@@ -1,6 +1,6 @@
 /// @description Iniciar pelea
 
-var _wate = wate_create("test", true);
+var _wate = wate_create_template("test", true);
 
 wate_add(_wate, party_create("TRAUCO", "ENEMIGOS", irandom(10) ) );
 var _t = function(entity, i, flag) {

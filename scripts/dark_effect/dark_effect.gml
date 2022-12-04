@@ -1,71 +1,83 @@
-/// @param {String} effect_key
-/// @param {Real} start_value
-/// @param {Real, Array} turn_start		array para una cantidad aleatoria
-/// @param {Real, Array} turn_finish	array para una cantidad aleatoria
-/// @param {Function} [event_start]
-/// @param {Function} [event_finish]
-function DarkEffect(_KEY, _START, _TURNS_START, _TURNS_FINISH, _TURN_EVENT_START, _TURN_EVENT_FINISH) : MallStat(_KEY, false) constructor 
+/// @param {String}      effectKey
+/// @param {Real}        startValue
+/// @param {Real, Array} turnStart          array para una cantidad aleatoria
+/// @param {Real, Array} turnEnd            array para una cantidad aleatoria
+/// @param {Function}    [funTurnStart]
+/// @param {Function}    [funTurnEnd]
+function DarkEffect(_effectKey, _startVal, _turnStart, _turnEnd, _funTurnStart, _funTurnEnd) : Mall(_effectKey) constructor 
 {
-	static effectsCreated = 0;
-	id = _KEY + "DE"; // ID unica del efecto
-	effectsCreated++;
+	static effectNumber = 1;
+	id = string("{0}{1}:{2}", _effectKey, "DE", effectNumber++);
+	commandKey = "" // Que Comando lo crea
 	
-	value = _START;	 // Valor que cambia real/porcentual
-	ready = false;	 // Se marca que el efecto termino
-	commandKey = ""; // Que comando lo crea
-	turn = 0;		 // En que turno va
-	turnType = 0;	 // 0 en el inicio del turno 1 en el final del turno 2 en ambos
-	turnStart  = 0;  // En que turno empezo
-	turnFinish = 0;	 // En que turno termino
+	
+	value = _startVal; // Valor que cambia real/porcentual
+	ready = false;     // Se marca que el efecto termino
+	
+	turn = 0;        // En que turno va
+	turnMarkStart = 0;   // En que turno global empezo
+	turnMarkEnd   = 0;   // En que turno global termino
+	turnType = 0;
+	/*
+		0: Inicio del turno
+		1: Final  del turno
+		2: En el inicio y final del turno
+	*/
 	
 	// Crear iteradores
-	iteratorStart = new __MallIterator();	// Inicio turno
-	iteratorStart.countLimits = (is_array(_TURNS_START) ) ?
-		irandom_range(_TURNS_START[0], _TURNS_START[1] ) :
-		_TURNS_START;
+	iteratorStart = new iteratorCreate();    // Inicio turno
 	
-	iteratorFinish = new __MallIterator();  // Final de turno
-	iteratorFinish.countLimits = (is_array(_TURNS_FINISH) ) ?
-		irandom_range(_TURNS_FINISH[0], _TURNS_FINISH[1] ) :
-		_TURNS_FINISH;
-		
-	// Establecer eventos de inicio de turno y final de turno
-	setEventTurnStart (_TURN_EVENT_START);
-	setEventTurnFinish(_TURN_EVENT_FINISH);
+	iteratorStart.countLimits = (is_array(_turnStart) ) ?
+		irandom_range(_turnStart[0], _turnStart[1]) :
+		_turnStart;
+
+	iteratorEnd   =  new iteratorCreate();  // Final de turno
+	
+	iteratorFinish.countLimits = (is_array(_turnEnd) ) ?
+		irandom_range(_turnEnd[0], _turnEnd[1]) :
+		_turnEnd;
+
+	
+	#region METHODS
+
+	/// @desc Evento a ejecutar cuando inicio el turno
+	turnStart = __dummy;
 	
 	/// @desc Evento a ejecutar cuando termina el turno
-	eventRemove = function() {}
-
-	#region METHODS
+	turnEnd   = __dummy;
+	
+	/// @desc Evento a ejecutar cuando es eliminado
+	remove    = __dummy;
+	
 	/// @param {Real} value
 	/// @param {Enum.MALL_NUMTYPE} numtype
-	static set = function(_VALUE, _TYPE)
+	static set = function(_value, _type)
 	{
-		_TYPE ??= type;
-		value[_TYPE] = _VALUE;
+		_type ??= type;
+		value[_type] = _value;
 	}
 	
 	
 	/// @param {Real} value
 	/// @param {Enum.MALL_NUMTYPE} numtype
-	static add = function(_VALUE, _TYPE)
+	static add = function(_value, _type)
 	{
-		_TYPE ??= type;
-		value[_TYPE] += _VALUE;
+		_type ??= type;
+		value[_type] += _value;
 	}
 	
 	
-	/// @param {Real} turn_type
+	/// @param {Real} turnType
 	static getIterator = function(_type=0)
 	{
-		return (!_type) ? iteratorStart  : iteratorFinish;
+		return (!_type) ? iteratorStart  : iteratorEnd;
 	}
 	
 	
-	/// @param {Real} turn_type
-	static getEvent = function(_type)
+	/// @param {Real} turnType
+	static getEvent = function(_type=0)
 	{
-		return (!_type)	? eventTurnStart : eventTurnFinish;
+		return (!_type)	? turnStart : turnEnd;
 	}
 	
 	

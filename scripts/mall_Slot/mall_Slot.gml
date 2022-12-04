@@ -5,13 +5,15 @@
 function MallSlot(_KEY) : MallStat(_KEY) constructor 
 {
 	/// @desc Ejecuta un evento al pasar un tipo de objeto
-	eventItemtype = function(_ITEM_KEY, _FLAG) {return [0, 0];};
+	funItemtype = function(_ITEM_KEY, _FLAG) {return [0, 0];};
 	
 	/// @desc Comprueba su un tipo de objeto pasa la prueba
 	checkItemType = function(_ITEM_KEY, _FLAG) {return true};
 	
+	#region METHODS
 	/// @desc Para comparar 2 objetos y sus efectos en la entidad
-	eventCompare = function(_STAT, _EQUIPPED, _COMPARE) {
+	static compare = function(_stat, _equiped, _compare)
+	{
 		var _statKeys = mall_get_stat_keys();
 		var _eStat = _EQUIPPED.statsNormal;
 		var _cStat = _COMPARE .statsNormal;
@@ -53,8 +55,14 @@ function MallSlot(_KEY) : MallStat(_KEY) constructor
 		return _return;
 	}
 	
-	#region METHODS
-
+	static setFunItemtype = function(_fun, _check)
+	{
+		funItemtype   = _fun ?? funItemtype;
+		checkItemType = _fun ?? checkItemType;
+		return self;
+	}
+	
+	
 	#endregion
 }
 

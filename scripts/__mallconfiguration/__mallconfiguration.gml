@@ -18,7 +18,7 @@
 #endregion
 
 #region POCKET
-#macro POCKET_DATABASE_DUMMY	"POCKET.DUMMY"
+#macro MALL_POCKET_TRACE true
 #macro MALL_POCKET_BAG_MIN	 0
 #macro MALL_POCKET_BAG_MAX	99
 
@@ -31,15 +31,8 @@
 
 #endregion
 
-#region ENUMS
 enum MALL_NUMTYPE {REAL , PERCENT}
 enum MALL_NUMVAL  {VALUE, TYPE}
-// Para ciclar entre componentes (??)
-enum MALL_COMPONENTS {MODIFY, STATES, STAT, EQUIPMENT, TYPE, COMPONENT}
-global.__mallComponentsTypes = [0, 1, 2, 3, 4, 5];
-global.__mallComponentsIsOff = [];
-
-#endregion
 
 #region Database
 function MallDatabase()
@@ -60,7 +53,7 @@ function MallDatabase()
 		mods:     {},  // modifiers modifier
 		modsKeys: [],   //
 		
-		party: {
+		party:  {
 			templates: {},
 			groups:    {}
 		},
@@ -69,6 +62,14 @@ function MallDatabase()
 			items: {},
 			bags : {},
 			type : {}
+		},
+	
+		dark:   {
+			commands: {}
+		},
+		
+		wate:   {
+			templates: {}	
 		}
 	}
 	return data;

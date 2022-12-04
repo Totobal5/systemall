@@ -5,104 +5,110 @@
 function MallMod(_modKey) : MallComponent(_modKey, false) constructor 
 {
 	// -- Eventos --
+	/// @param {Any*} entity
+	/// @param {Any*} [vars]
+	static __dummy = function(_entity, _vars) {}
 	
+	/// @desc Funcion a usar cuando se inicia este componente
 	/// @param {Any*}	entity
-	/// @param {String}	[flag]
-	/// @return {String}
-	eventStart = function(_ENTITY, _FLAG="") {return ""};		// Funcion a usar cuando se inicia el estado
+	/// @param {String}	[vars]
+	funStart = __dummy;
 
+	/// @desc Funcion a usar cuando termina este componente
 	/// @param {Any*}	entity
-	/// @param {String}	[flag]
-	/// @return {String}
-	eventTurnStart  = function(_ENTITY, _FLAG="") {return ""}	// Al iniciar turno
+	/// @param {String}	[vars]
+	funEnd   = __dummy;
 	
+	/// @desc Funcion a ejecutar cuando inicia el turno
 	/// @param {Any*}	entity
 	/// @param {String}	[flag]
 	/// @return {String}
-	eventTurnFinish = function(_ENTITY, _FLAG="") {return ""}	// Al terminar turno
-	
-	/// @param {Any*}	entity
-	/// @param {String}	[flag]
-	/// @return {String}
-	eventCombatStart  = function(_ENTITY, _FLAG="") {return ""; }	// Al intentar actuar inicio (todo lo que se indique que es combate)
+	funTurnStart  = __dummy;
 
+	/// @desc Funcion a ejecutar cuando finaliza el turno
 	/// @param {Any*}	entity
 	/// @param {String}	[flag]
 	/// @return {String}
-	eventCombatFinish = function(_ENTITY, _FLAG="") {return ""}		// Al intentar actuar final(todo lo que se indique que es combate)
+	funTurnEnd    = __dummy;
 	
+	/// @desc Al intentar actuar inicio (todo lo que se indique que es combate)
 	/// @param {Any*}	entity
 	/// @param {String}	[flag]
 	/// @return {String}
-	eventObjectStart = function(_ENTITY, _FLAG="") {return ""}		// Al intentar actuar inicio (todo lo que se indique que no es combate)
-	
-	/// @param {Any*}	entity
-	/// @param {String}	[flag]
-	/// @return {String}
-	eventObjectFinish = function(_ENTITY, _FLAG="") {return ""}		// Al intentar actuar final  (todo lo que se indique que no es combate)	
+	funCombatStart = __dummy;
 
+	/// @desc Al intentar actuar final(todo lo que se indique que es combate)
 	/// @param {Any*}	entity
 	/// @param {String}	[flag]
-	/// @return {String}B
-	eventFinish = function(_ENTITY, _FLAG="") {return ""};			// Funcion a usar cuando se finaliza el estado
+	/// @return {String}
+	funCombatEnd   = __dummy;
+	
+	/// @desc Al intentar actuar inicio (todo lo que se indique que no es combate)
+	/// @param {Any*}	entity
+	/// @param {String}	[flag]
+	/// @return {String}
+	funNoCombatStart = __dummy;
+	
+	/// @desc Al intentar actuar final  (todo lo que se indique que no es combate)
+	/// @param {Any*}	entity
+	/// @param {String}	[flag]
+	/// @return {String}
+	funNoCombatEnd   = __dummy;
+	
+	
+	funEquipStart = __dummy;
+	funEquipEnd   = __dummy;
 	
 	#region METHODS	
 
-	/// @param	{Function}	start_event
-	static setEventStart  = function(_EVENT)
+	/// @param	{Function} funStart   
+	/// @param	{Function} [funStart] 
+	/// @return {Struct.MallMod}
+	static setSE = function(_funStart, _funEnd)
 	{
-		eventStart = _EVENT;
+		funStart = _funStart ?? funStart;
+		funEnd   =   _funEnd ??   funEnd;
 		return self;
 	}
 
-	/// @param	{Function}	finish_event
-	static setEventFinish = function(_EVENT)
+	/// @param	{Function} funTurnStart
+	/// @param	{Function} [funTurnEnd]
+	static setTurnSE = function(_funStart, _funEnd)
 	{
-		eventFinish = _EVENT;
+		funTurnStart = _funStart ?? funTurnStart;
+		funTurnEnd   =   _funEnd ?? funTurnEnd;
 		return self;
 	}
 
-	/// @param	{Function}	turn_start_event
-	static setEventTurnStart  = function(_EVENT)
+
+	/// @param	{Function} funCombatStart
+	/// @param	{Function} [funCombatEnd]
+	static setCombatSE = function(_funStart, _funEnd)
 	{
-		eventTurnStart  = _EVENT;	// Al iniciar turno
+		funCombatStart = _funStart ?? funCombatStart;
+		funCombatEnd   =   _funEnd ??   funCombatEnd;
+		return self;
+	}
+
+
+	/// @param	{Function} funNoCombatStart
+	/// @param	{Function} [funNoCombatEnd]
+	static setNoCombatSE = function(_funStart, _funEnd)
+	{
+		funNoCombatStart = _funStart ?? funNoCombatStart;
+		funNoCombatEnd   =   _funEnd ??   funNoCombatEnd;
 		return self;
 	}
 	
-	/// @param	{Function}	finish_turn_event
-	static setEventTurnFinish = function(_EVENT)
+	
+	/// @param	{Function} funEquipStart
+	/// @param	{Function} [funEquipEnd]
+	static setEquipSE = function(_funStart, _funEnd)
 	{
-		eventTurnFinish = _EVENT;	// Al terminar turno
+		funEquipStart = _funStart ?? funEquipStart;
+		funEquipEnd   =   _funEnd ??   funEquipEnd;
 		return self;
-	}
-
-	/// @param	{Function}	combat_start_event
-	static setEventCombatStart = function(_EVENT)
-	{
-		eventCombatStart = _EVENT;
-		return self;
-	}
-
-	/// @param	{Function}	combat_finish_event
-	static setEventCombatFinish = function(_EVENT)
-	{
-		eventCombatFinish = _EVENT;
-		return self;
-	}
-
-	/// @param	{Function}	object_start_event
-	static setEventObjectStart  = function(_EVENT)
-	{
-		eventObjectStart = _EVENT;
-		return self;
-	}
-
-	/// @param	{Function}	object_finish_event
-	static setEventObjectFinish = function(_EVENT)
-	{
-		eventObjectFinish = _EVENT;
-		return self;
-	}
+	}	
 
 	#endregion
 }
@@ -156,6 +162,7 @@ function mall_get_modify(_modKey)
 /// @return {Array<String>}
 function mall_get_modify_keys(_copy=false)
 {
+	// Feather disable GM1045
 	static keys = MallDatabase().modsKeys;
 	if (_copy) {
 		var _array = array_create(0);

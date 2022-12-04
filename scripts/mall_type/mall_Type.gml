@@ -4,17 +4,13 @@
 ///			Esto sirve para diferenciar clases, especies o razas en distintos rpg (Humanos distintos a Orcos por ejemplo)
 /// @param	{String} typeKey
 /// @return {Struct.MallType}
-function MallType(_key) : MallComponent(_key) constructor 
+function MallType(_key) : MallMod(_key) constructor 
 {
 	bonus = 0
 	type  = MALL_NUMTYPE.REAL;
 	
-	eventStart  = function(_key, _component, _flag) {return 0; };
-	eventFinish = function(_key, _component, _flag) {return 0; };
-	
-	checkUse = function(_key, _component, _flag) {return true };
-	
-	static set = function(_bonus, _numType)
+	/// @return {Struct.MallType}
+	static set = function(_bonus, _numtype)
 	{
 		bonus = _bonus;
 		type  = _numType;

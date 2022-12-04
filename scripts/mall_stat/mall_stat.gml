@@ -6,8 +6,7 @@ function MallStat(_statKey) : MallState(_statKey) constructor
 	// True: enviar actual al maximo al equipar false: dejar como esta
 	
 	/// @desc Este evento se utiliza cuando se equipa un objeto
-	//eventObjectStart  = function(entity, stat)	{}
-	eventObjectFinish(function(_entity, _stat) {_stat.actual = _stat.control; });
+	setEquipSE(,function(_entity, _stat) {_stat.actual = _stat.control; });
 	
 	start = 0;     // Valor inicial
 	limitMin = 0;  // Limites del valor 0 minimo 1 maximo
@@ -17,16 +16,18 @@ function MallStat(_statKey) : MallState(_statKey) constructor
 	levelLimitMax = MALL_STAT_DEFAULT_LEVEL_MAX;
 	levelSingle = false; // Si sube de nivel aparte de otras estadisticas con su propia experencia etc
 	
-	/// @param	{Struct.PartyStats} stat_entity
-	/// @param	{Struct.__PartyStatsAtom} stat_atom
-	/// @param	{Any*} [flag]
-	/// @return	{Real}
-	eventLevel = function(_stat, _atom, _flag) {return 0; }; // Forma de subir de nivel
+	/// @desc   Forma de subir de nivel
+	/// @param  {Struct.PartyStats} statEntity
+	/// @param  {Struct.PartyStats$$createAtom} statAtom
+	/// @param  {Any*} [vars]
+	/// @return {Real}
+	funLevel = function(_stat, _atom, _vars) {return 0; };
 	
-	/// @param	{Struct.PartyStats} [stat_entity]
-	/// @param	{Any*} [flag]
-	/// @return	{Bool}
-    checkLevel = function(_stat, _flag)  {return true; }; // Indicar si puede o no subir de nivel si sube individual
+	/// @desc   Indicar si puede o no subir de nivel si sube individual
+	/// @param  {Struct.PartyStats} [statEntity]
+	/// @param  {Any*} [vars]
+	/// @return {Bool}
+    checkLevel = function(_stat, _flag)  {return true; };
 
 	iterator = new iteratorCreate();
 	
@@ -85,21 +86,22 @@ function MallStat(_statKey) : MallState(_statKey) constructor
 	}
 
 
-	/// @param {Real}		min_level		Nivel minimo
-	/// @param {Real}		max_level		Nivel maximo
-	/// @param {Function}	level_method	Forma de subir de nivel
-	/// @param {Bool}		[solo_level]	Aumenta de nivel ignorando el sistema para subir establecido.
-	/// @param {Function}	[check_level]	Comprobacion para subir de nivel inidividualmente
+	/// @param {Real}		minLevel        Nivel minimo
+	/// @param {Real}		maxLevel        Nivel maximo
+	/// @param {Function}	levelFun        Forma de subir de nivel
+	/// @param {Bool}		[soloLevel]     Aumenta de nivel ignorando el sistema para subir establecido.
+	/// @param {Function}	[checkLevel]    Comprobacion para subir de nivel inidividualmente
 	/// @return {Struct.MallStat}	
-	static setEventLevel = function(_MIN, _MAX, _METHOD, _SINGLE=false, _CHECK=undefined) 
+	static setLevel = function(_min, _max, _fun, _single=false, _check=undefined) 
 	{
-		eventLevel = _METHOD; // No usar method (se utiliza luego en los componentes individuales)
-		checkLevel = _CHECK ?? checkLevel;
+		// No usar method (se utiliza luego en los componentes individuales)
+		eventLevel = _fun;
+		checkLevel = _check ?? checkLevel;
 
 		// Niveles de nivel minimo y maximo
-		levelLimitMin = _MIN ?? MALL_STAT_DEFAULT_LEVEL_MIN;
-		levelLimitMax = _MAX ?? MALL_STAT_DEFAULT_LEVEL_MAX;
-		levelSingle = _SINGLE;
+		levelLimitMin = _min ?? MALL_STAT_DEFAULT_LEVEL_MIN;
+		levelLimitMax = _max ?? MALL_STAT_DEFAULT_LEVEL_MAX;
+		levelSingle = _single;
 		
 		return self;
     }
@@ -115,12 +117,14 @@ function MallStat(_statKey) : MallState(_statKey) constructor
     }
 
 
-	static getEventLevel = function() 
+	/// @desc Regresa la funcion de como debe subir de nivel
+	static getFunLevel = function() 
 	{
-		return (eventLevel);
+		return (funLevel);
 	}
-	
-	
+
+
+	/// @desc Regresa la funcion de como comprobar si debe o no subir de nivel
 	static getCheckLevel = function()
 	{
 		return (checkLevel);
@@ -176,11 +180,11 @@ function mall_exists_stat(_statKey)
 /// @desc	Permite configurar una estadistica
 ///			Para el dispay method tener en cuenta que lo esta ejecutando un "__PartyStatsAtom"
 ///			variables comunes: "control", "equipment", "peak", "peakLast", "actual", "actualLast", "valueMin"
-/// @param	{String}		stat_key         llave de la estadistica
-/// @param	{Real,String}	initial_value    Valor inicial de la estadistica
-/// @param	{Real}			[number_type]    Tipo de numero 0: Real 1: Percent
-/// @param  {Array<Real>}   [limitValue]     LimiteMinimo, LimiteMaximo
-/// @param	{String}		[display_key]    Llave para traducciones en lexicon
+/// @param	{String}        statKey         Llave de la estadistica
+/// @param	{Real}          initialValue    Valor inicial de la estadistica
+/// @param	{Real}          [numtype]       Tipo de numero 0: Real 1: Percent
+/// @param  {Array<Real>}   [limitValue]    LimiteMinimo, LimiteMaximo
+/// @param	{String}        [displayKey]    Llave para traducciones en lexicon
 /// @returns {Struct.MallStat}
 function mall_customize_stat(_statKey, _initial=0, _numType=0, _limit, _displayKey=_statKey) 
 {
@@ -198,7 +202,7 @@ function mall_customize_stat(_statKey, _initial=0, _numType=0, _limit, _displayK
 /// @param	{String}		statParentKey      Llave de la estadistica a heredar
 /// @param  {Array<Real>}   [inheritLimits]    Heredar limites de valores
 /// @param  {Array<Real>}   [inheritLevel]     Heredar configuracion de nivel
-/// @param	{String}		[display_key]      Llave para traducciones en lexicon
+/// @param	{String}		[displayKey]      Llave para traducciones en lexicon
 function mall_inherit_stat(_childKey, _parentKey, _inhLimits, _inhLevel, _displayKey=_childKey)
 {
 	var _stat = mall_get_stat(_childKey);

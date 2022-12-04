@@ -104,13 +104,10 @@ function PocketBag(_init) constructor
 	/// @param {Any*}     [vars]
 	static foreach = function(_function, _vars) 
 	{
-		var i=0; repeat(array_length(order) )
-		{
-			var key  = order[i];
-			var item = items[$ key];
-		
-			_function(pocket_data_get(key), item.count, i);
-		
+		var i=0; repeat(array_length(order) ) {
+			var _key  = order[i];
+			var _item = items[$ _key];
+			_function(pocket_data_get(_key), item.count, i);
 			i = i+1;
 		}
 	}
