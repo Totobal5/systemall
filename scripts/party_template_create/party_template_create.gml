@@ -1,6 +1,7 @@
 /// @param {String}		template_key
-/// @param {Function}	create_method	function(GROUP, LEVEL, ARGS) {}
-function party_template_create(_KEY, _METHOD)
+/// @param {Function}	create_method	function(groupKey, level, [args]) {}
+function party_template_create(_key, _method)
 {
-	if (!variable_struct_exists(global.__mallPartyTemplate, _KEY) ) global.__mallPartyTemplate[$ _KEY] = _METHOD;
+	static templates = MallDatabase().party.templates;
+	templates[$ _key] ??= _method;
 }

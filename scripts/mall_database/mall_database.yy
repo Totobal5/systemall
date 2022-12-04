@@ -6,6 +6,6 @@
   "isCompatibility": false,
   "parent": {
     "name": "Databases",
-    "path": "folders/Mall/Databases.yy",
+    "path": "folders/Systemall/Databases.yy",
   },
 }

@@ -1,16 +1,10 @@
 /// @desc Busca una entidad de party en un grupo utilizando un filtro (lento) y devuelve el indice
-/// @param	{String}	party_group_key
+/// @param	{String}	partyGroupKey
 /// @param	{Function}	filter
-function party_filter_index(_KEY, _METHOD)
+function party_filter_index(_groupKey, _function)
 {
-	var _group = party_group_get(_KEY);
-	var _ents  = _group.entitys;
-	var i=0; repeat(array_length(_ents) )
-	{
-		var _t = _ents[i];
-		if (_METHOD(_t, i) ) return (i);
-		i = i + 1;
-	}
+	var _group   = party_group_get(_groupKey);
+	var _entitys = _group.entitys;
 	
-	return -1;
+	var _index = array_find_index(_entitys, _function);
 }

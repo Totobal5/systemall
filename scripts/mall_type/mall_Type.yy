@@ -5,7 +5,7 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Type",
-    "path": "folders/Mall/Components/Type.yy",
+    "name": "DataComponents",
+    "path": "folders/Systemall/DataComponents.yy",
   },
 }

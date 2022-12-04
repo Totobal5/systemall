@@ -6,6 +6,6 @@
   "isCompatibility": false,
   "parent": {
     "name": "Constructor",
-    "path": "folders/Mall/Party/Group/Constructor.yy",
+    "path": "folders/Systemall/Party/Group/Constructor.yy",
   },
 }

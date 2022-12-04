@@ -1,73 +1,72 @@
-/// @desc	Un grupo es como debe funcionar los componentes guardados (MallStorage) entre sí.
+// Feather ignore all
+
+/// @desc	Un tipo es como debe funcionar los componentes guardados (MallStorage) entre sí.
 ///			Esto sirve para diferenciar clases, especies o razas en distintos rpg (Humanos distintos a Orcos por ejemplo)
-/// @param	{String} type_key
+/// @param	{String} typeKey
 /// @return {Struct.MallType}
-function MallType(_KEY) : MallComponent(_KEY) constructor 
-{
-	__is = instanceof(self);
-	props = {}
-	delete iterator;
-	
-    #region METHODS
-	/// @ignore
-	static initialize = function() 
-	{
-		var fun = method(,function(stat, key) {
-			if (!variable_struct_exists(props, key) )
-			{
-				props[$ key] = new __MallTypeBonus();
-			}
-			else
-			{
-				__mall_trace("Repetido en MallType");	
-			}
-		});
-		mall_stat_foreach  (fun);
-		mall_state_foreach (fun);
-		mall_modify_foreach(fun);
-		
-		mall_equipment_foreach(fun);
-	}
-	
-	/// @return {Struct.__MallTypeBonus}
-	static get = function(_KEY) 
-	{
-		return (props[$ _KEY] );
-	}
-	
-	static set = function(_KEY, _VALUE, _TYPE)
-	{
-		var _prop = props[$ _KEY];
-		_prop.bonus = _VALUE;
-		_prop.type  =  _TYPE;
-		return _prop;
-	}
-	
-	static setEventStart  = function(_KEY, _EVENT)
-	{
-		get(_KEY).eventStart = _EVENT;
-		return self;
-	}
-	
-	static setEventFinish = function(_KEY, _EVENT)
-	{
-		get(_KEY).eventFinish = _EVENT;
-		return self;
-	}
-
-    #endregion
-	
-	initialize();
-}
-
-/// @ignore
-function __MallTypeBonus() constructor
+function MallType(_key) : MallComponent(_key) constructor 
 {
 	bonus = 0
 	type  = MALL_NUMTYPE.REAL;
 	
-	eventStart  = function(_KEY, _COMPONENT, _FLAG) {return 0; };
-	eventFinish = function(_KEY, _COMPONENT, _FLAG) {return 0; };
+	eventStart  = function(_key, _component, _flag) {return 0; };
+	eventFinish = function(_key, _component, _flag) {return 0; };
 	
-	checkUse = function(_KEY, _COMPONENT, _FLAG) {return true};
+	checkUse = function(_key, _component, _flag) {return true };
+	
+	static set = function(_bonus, _numType)
+	{
+		bonus = _bonus;
+		type  = _numType;
+		return self;
+	}
+}
+
+/// @param {String} typeKey	Llave del tipo
+/// @desc	Crea uno o varios type mall
+function mall_add_type(_KEY) 
+{
+	static types = MallDatabase().types;
+	static keys  = MallDatabase().typesKeys;
+	
+	var i=0; repeat(argument_count) 
+	{
+		var _key = argument[i];
+		if (!variable_struct_exists(types, _key) ) {
+			types[$ _key] = new MallType(_key);
+			array_push(keys, _key);
+			if (MALL_TRACE) {show_debug_message("MallRPG (addType): {0} added", _key); }
+		}
+		
+		i = i + 1;
+	}
+}
+
+/// @param {String} typeKey
+function mall_exists_type(_KEY)
+{
+	static types = MallDatabase().types;
+	return (variable_struct_exists(types, _KEY) );
+}
+
+/// @param {String} typeKey
+/// @returns {Struct.MallType}
+function mall_get_type(_KEY) 
+{
+	static types = MallDatabase().types;
+    return (types[$ _KEY] ); 
+}
+
+/// @desc Devuelve un array con las llaves de todos los tipos creados
+/// @return {Array<String>}
+function mall_get_type_keys(_copy=false) 
+{
+	static keys = MallDatabase().typesKeys;
+	if (_copy) {
+		var _array = array_create(0);
+		array_copy(_array, 0, keys, 0, array_length(keys) );
+		return _array;
+	} else {
+		return (keys);
+	}
 }

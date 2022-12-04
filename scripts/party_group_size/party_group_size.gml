@@ -1,4 +1,4 @@
-/// @param {String}	party_group_key
+/// @param {String}	party_group
 /// @return {Real}
 function party_group_size(_KEY)
 {

@@ -4,11 +4,6 @@
 /// @return {Struct.DarkCommand}
 function DarkCommand(_CONSUME=0, _INCLUDE=true, _TARGETS=1) : MallComponent("") constructor 
 {
-	#region PRIVATE
-	__is = instanceof(self);
-	
-	#endregion
-	
 	flag = "";
 	consume = _CONSUME;	// Cuanto de algo consume
 	include = _INCLUDE;	// Si el caster es incluido

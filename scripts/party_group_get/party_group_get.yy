@@ -6,6 +6,6 @@
   "isCompatibility": false,
   "parent": {
     "name": "Group",
-    "path": "folders/Mall/Party/Group.yy",
+    "path": "folders/Systemall/Party/Group.yy",
   },
 }

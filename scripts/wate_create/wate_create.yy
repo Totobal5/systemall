@@ -6,6 +6,6 @@
   "isCompatibility": false,
   "parent": {
     "name": "Wate",
-    "path": "folders/Mall/Wate.yy",
+    "path": "folders/Systemall/Wate.yy",
   },
 }

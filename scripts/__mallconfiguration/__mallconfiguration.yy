@@ -5,7 +5,7 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Mall",
-    "path": "folders/Mall.yy",
+    "name": "Systemall",
+    "path": "folders/Systemall.yy",
   },
 }

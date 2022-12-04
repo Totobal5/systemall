@@ -1,4 +1,6 @@
-function party_group_exists(_KEY)
+/// @param {String} partyGroupKey
+function party_group_exists(_key)
 {
-	return (variable_struct_exists(global.__mallPartyGroups, _KEY) );
+	static group = MallDatabase().party.groups;
+	return (variable_struct_exists(group, _key) );
 }

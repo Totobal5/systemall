@@ -5,7 +5,7 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Items",
-    "path": "folders/Mall/Pocket/Items.yy",
+    "name": "Manipular Bags",
+    "path": "folders/Systemall/Pocket/Manipular Bags.yy",
   },
 }

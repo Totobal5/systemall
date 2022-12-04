@@ -1,11 +1,11 @@
 {
+  "resourceType": "GMScript",
+  "resourceVersion": "1.0",
+  "name": "pocket_get",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Items",
-    "path": "folders/Mall/Pocket/Items.yy",
+    "name": "Manipular Bags",
+    "path": "folders/Systemall/Pocket/Manipular Bags.yy",
   },
-  "resourceVersion": "1.0",
-  "name": "pocket_get",
-  "resourceType": "GMScript",
 }
