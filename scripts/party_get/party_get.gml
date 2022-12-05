@@ -1,5 +1,5 @@
-/// @param {String} party_group
-/// @param {Real} [party_index]=0
+/// @param {String} partyGroupKey
+/// @param {Real}   [index]=0
 /// @return {Struct.PartyEntity}
 function party_get(_key, _index=0)
 {

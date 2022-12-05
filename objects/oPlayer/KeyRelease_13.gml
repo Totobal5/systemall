@@ -2,9 +2,9 @@
 
 var _wate = wate_create_template("test", true);
 
-wate_add(_wate, party_create("TRAUCO", "ENEMIGOS", irandom(10) ) );
+wate_add_entity(_wate, party_create("TRAUCO", "ENEMIGOS", irandom(10) ) );
 var _t = function(entity, i, flag) {
-	wate_add(flag, entity); 
+	wate_add_entity(flag, entity); 
 }
 party_foreach("HEROES", _t, _wate)
 

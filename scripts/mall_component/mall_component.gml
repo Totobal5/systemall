@@ -132,12 +132,58 @@ function Mall(_key="") constructor
 		{
 			return (active);
 		}
+		
+		
+		/// @desc Guardar iterador
+		static save = function() 
+		{
+			var _this = self;
+			return ({
+				version: MALL_VERSION,
+				is: _this.is,
+				active:     _this.active,
+				type  :     _this.type  ,
+				count :     _this.count ,
+				countLimit: _this.countLimit,
+				
+				reset: _this.reset,
+				resetCount : _this.resetCount ,
+				resetLimits: _this.resetLimits,
+	
+				resetNumber: _this.resetNumber,
+				resetMax   : _this.resetMax   ,
+			});
+		}
+		
+		/// @desc Cargar iterador
+		/// @param {Struct} loadStruct
+		static load = function(_l)
+		{
+			// Asegurarse de que sean el mismo
+			if (_l.is != is) exit;
+			var _names = variable_struct_get_names(_l);
+			var i=0; repeat(array_length(_names) )
+			{
+				var _key =  _names[i];
+				if (_key != "version") {
+					var _val = _l[$ _key];
+					// Copiar valores
+					if (!is_method(_val) ) self[$ _key] = _val;
+				}
+				
+				i = i + 1;
+			}
+		}
 	}
 
 	// -- Utils
-	static toStringNumtype = function()
+	/// @param {Enum.MALL_NUMTYPE} numtype
+	static toStringNumtype = function(_num)
 	{
-		
+		switch (_num) {
+			case MALL_NUMTYPE.REAL:     return "+-";      break;
+			case MALL_NUMTYPE.PERCENT:  return "%";   break;
+		}
 	}
 	
 	static __dummy = function() {}

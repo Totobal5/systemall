@@ -1,7 +1,7 @@
 {
   "resourceType": "GMScript",
   "resourceVersion": "1.0",
-  "name": "wate_add",
+  "name": "wate_add_entity",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {

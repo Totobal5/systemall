@@ -9,7 +9,7 @@ function PartyControl(_entity=other) : Mall() constructor
 		variable_struct_set(self, _key, new __PartyControlAtom(_component) );
 		array_push(keys, _key);
 		
-		if (MALL_TRACE_PARTY) {show_debug_message("MallRPG Party (prControl): {0} creado", _key); }
+		if (MALL_PARTY_TRACE) {show_debug_message("MallRPG Party (prControl): {0} creado", _key); }
 	}
 	array_foreach(mall_get_state_keys(), _t);
 	array_foreach(mall_get_stat_keys (), _t);
@@ -23,7 +23,7 @@ function PartyControl(_entity=other) : Mall() constructor
 		init = _control.init;   // Valor al que reinicia la estadistica/estado
 		type = _control.type;   // Tipo de numero que utiliza normalmente
 
-		same = _control.same;        // Si acepta el mismo control varias veces
+		same    = _control.same;        // Si acepta el mismo control varias veces
 		control = _control.controls; // -1 se pueden agregar elementos infinitos
 		
 		// Valores que varian en el tiempo [real, percentual] son actualizados por los effectos.
@@ -64,22 +64,22 @@ function PartyControl(_entity=other) : Mall() constructor
 		static save = function()
 		{
 			var _this = self;
-			var _tosave = {};
-		
-			with (_tosave) {
-				values = _this.values;
-				content = [];
-				var i=0; repeat(array_length(_this.content) ) {
-					var _effect = _this.content[i];
-					// Guardar efectos
-					array_push(content, _effect.save() );
-					i = i + 1;
-				}
+			with ({}) {
+				values  = _this.value;
+				content = array_map(_this.content, function(v) {
+					return (v.save() );
+				});
+				
+				return self;
 			}
-		
-			return _tosave;
 		}
-	
+		
+		
+		static load = function(_l)
+		{
+				
+		}
+		
 		#endregion
 	}
 	

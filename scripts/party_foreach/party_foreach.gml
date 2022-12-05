@@ -1,7 +1,7 @@
 /// @desc Ejecuta una funcion por cada entidad en el grupo, si la funcion pasada entrega true entonces devuelve
 /// un struct {entity, index}
-/// @param	{String}	partyGroup
-/// @param	{Function}	method function(v,i) {}
+/// @param	{String}    partyGroupKey
+/// @param	{Function}  foreach         function(value, i) {}
 function party_foreach(_key, _method)
 {
 	var _group = party_group_get(_key);

@@ -1,7 +1,7 @@
 /// Añade una entidad al grupo indicando el indice en donde colocarlo
-/// @param {String}				party_group		llave del grupo
-/// @param {Struct.PartyEntity}	party_entity	entidad a agregar
-/// @param {Real}				[index=0]		indice para insertar
+/// @param {String}              partyGroupKey   Llave del grupo
+/// @param {Struct.PartyEntity}  partyEntity     Entidad a agregar
+/// @param {Real}                [index=0]       Indice para insertar
 /// @returns {Struct.PartyGroup}
 function party_set(_key, _entity, _index=0)
 {

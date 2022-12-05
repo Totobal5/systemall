@@ -8,14 +8,15 @@ function PartySlot(_entity=other) : Mall() constructor
 		var _component = mall_get_slot(_key);
 		variable_struct_set(self, _key, new createAtom(_component) );
 		array_push(keys, _key);
-		if (MALL_TRACE_PARTY) {show_debug_message("MallRPG Party (prSlot): {0} creado", _key); }
+		if (MALL_PARTY_TRACE) {show_debug_message("MallRPG Party (prSlot): {0} creado", _key); }
 	});
 	
 	#region METHODS
 	
-	static createAtom = function(_slot) constructor {
+	static createAtom = function(_slot) constructor 
+	{
 		/// @ignore
-		is = instanceof(self);
+		is = "PartySlot$$createAtom";
 
 		key = _slot.key;
 		displayKey = _slot.displayKey;
@@ -40,29 +41,31 @@ function PartySlot(_entity=other) : Mall() constructor
 				previous: other.equipped,
 			};
 		}
-	
-	
+		
+		/// @desc Guarda este componente
 		static save = function() 
 		{
 			var _this = self;
-			var _tosave = {};
-			with (_tosave) {
-				equipped = (!is_undefined(_this.equipped) ) ? _this.equipped.key : undefined;
-				previous = (!is_undefined(_this.previous) ) ? _this.previous.key : undefined;
-			}
+			return ({
+				version: MALL_VERSION,
+				is     : _this.is    ,
+				
+				equipped: (_this.equipped == undefined) ? undefined : _this.equipped.key,
+				previous: (_this.previous == undefined) ? undefined : _this.previous.key,
+				
+			});
+		}
 		
-			return (_tosave);
-		}
-	
-	
-	
-		static load = function(_toload)
+		/// @param {Struct} loadStruct
+		static load = function(_l)
 		{
-			equipped = (!is_ptr(_toload.equipped) ) ? pocket_data_get(_toload.equipped) : undefined;
-			previous = (!is_ptr(_toload.previous) ) ? pocket_data_get(_toload.previous) : undefined;
+			if (_l.is != is) exit;
+			equipped = (is_ptr(_l.equipped) ) ? undefined : pocket_data_get(_l.equipped);
+			previous = (is_ptr(_l.previous) ) ? undefined : pocket_data_get(_l.previous);
+			return self;
 		}
 	
-		#endregion		
+		#endregion
 	}
 	
 	
@@ -250,35 +253,45 @@ function PartySlot(_entity=other) : Mall() constructor
 		return (_equipment.eventCompare(_stats, noitem, noitem) );
 	}
 	
-	
+	/// @desc Guardar datos del slot
 	static save = function() 
 	{
 		var _this = self;
-		var _tosave = {flags: _this.flags};
-		var i=0; repeat(array_length(keys) ) {
-			var _key = keys[i];	
-			_tosave[$ _key] = get(_key).save();
-			i = i + 1;
+		var _save = {}
+		with (_save) {
+			version = MALL_VERSION;
+			is      = _this.is    ;
+			
+			flags = _this.flags;
 		}
 		
-		return (_tosave);
-	}
-	
-	
-	
-	static load = function(_toload)
-	{
-		flags = _toload.flags;
 		var i=0; repeat(array_length(keys) ) {
 			var _key = keys[i];
-			var _loadEquip = _toload[$ _key];
-			var _equip = get(_key);
-			
-			_equip.load(_loadEquip);
+			_save[$ _key] = get(_key).save();
 			i = i + 1;
 		}
 		
-		update(); // Actualizar
+		return (_save);
+	}
+	
+	/// @desc Carga datos
+	/// @param {Struct} loadStruct
+	static load = function(_l)
+	{
+		if (_l.is != is) exit;
+		flags = _l.flags;
+		
+		var i=0; repeat(array_length(keys) ) {
+			var _key = keys[i];
+			var _equip = get(_key);
+			var _equipLoad = _l[$ _key];
+			
+			_equip.load(_l);
+			i = i + 1;
+		}
+		
+		// Actualizar
+		update();
 	}
 	
 	

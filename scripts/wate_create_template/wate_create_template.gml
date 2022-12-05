@@ -1,12 +1,12 @@
 /// @desc Function Description
-/// @param {any*} _KEY Description
-/// @param {any*} _SET Description
-/// @returns {struct} Description
-function wate_create(_KEY, _SET)
+/// @param {string}   wateTemplateKey  Description
+/// @param {function} template         Description
+/// @returns {struct} 
+function wate_create_template(_wateKey, _function)
 {
 	static database = MallDatabase().wate.templates;
-	var _pack = new WateBattle(_KEY);
-	// Establecer pack
-	if (_SET) global.__mallWateCombats = _pack;
-	return (_pack);
+	if (!variable_struct_exists(database, _wateKey) ) {
+		database[$ _wateKey] = _function;
+		if (MALL_WATE_TRACE) show_debug_message("MallRPG Wate: template {0} creada", _wateKey);
+	}
 }

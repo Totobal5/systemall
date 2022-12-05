@@ -9,7 +9,7 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 		var _component = mall_get_stat(_key);
 		variable_struct_set(self, _key, new createAtom(_component) );
 		array_push(keys, _key);
-		if (MALL_TRACE_PARTY) {show_debug_message("MallRPG Party (prStat): {0} creado", _key); }
+		if (MALL_PARTY_TRACE) show_debug_message("MallRPG Party (prStat): {0} creado", _key);
 	});
 	
 	// Nivel global
@@ -29,7 +29,7 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 	static createAtom = function(_stat) constructor 
 	{
 		/// @ignore
-		is = instanceof(self);
+		is = "createAtom";
 	
 		key = _stat.key;
 		displayKey = _stat.displayKey;
@@ -96,36 +96,39 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 		static save = function() 
 		{
 			var _this = self;
-			var _tosave = {};
-			with (_tosave) {
-				/// @var {Struct.__MallIterator}
-				iterator = _this.iterator.save();
-				level = _this.level;
-			}
-		
-			return _tosave;
+			return ({
+				version: MALL_VERSION,
+				is:         _this.is,
+				level:      _this.level,
+				iterator:   _this.iterator.save()
+			});
 		}
 	
 	
-		static load = function(_toload) 
+		static load = function(_l) 
 		{
-			iterator.load(_toload.iterator);
-			level = _toload.level;
+			if (_l.is != is) exit;
+			switch (_l.version) {
+				default:
+					iterator.load(_l.iterator);
+					level = _l.level;
+				break;
+			}
+
 			return self;
 		}
 	
-		#endregion		
+		#endregion
 	}
 	
 	#region Basic
-	/// @param {String}				stat_key	Llave de estadistica
-	/// @param {Real}				base_value	valor de base
-	/// @param {ENUM.MALL_NUMTYPE}	base_type	tipo de numero
+	/// @param {String}             statKey     Llave de estadistica
+	/// @param {Real}               baseValue   Valor de base
+	/// @param {ENUM.MALL_NUMTYPE}  baseType    Tipo de numero
 	/// @return {Struct.PartyStats}
 	static setBase = function() 
 	{
-		var i=0; repeat(argument_count div 3)
-		{
+		var i=0; repeat(argument_count div 3) {
 			var _key = argument[i];
 			var _val = argument[i + 1];
 			var _typ = argument[i + 2];
@@ -135,25 +138,16 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 			_atom.base = _val;
 			_atom.type = _typ;
 			
-			if (MALL_TRACE) 
-			{
-				static getype = function() {
-					switch (argument[0] )
-					{
-						case MALL_NUMTYPE.REAL:		return "Real";			break;
-						case MALL_NUMTYPE.PERCENT:	return "Porcentaje";	break;
-					}
-				}
-				
-				var _t = getype(_typ);
-				__mall_trace("Stat Base " + string(_key) + ": [" + string(_val) + " ," + _t + "] " );
+			if (MALL_PARTY_TRACE) {
+				var _typStr = toStringNumtype(_typ);
+				show_debug_message("MallRPG Party: {0} base set to {1}{2}", _key, _val, _typStr);
 			}
 			
-			i = i+3;
+			i = i + 3;
 		}
 
-        return self;
-    }
+		return self;
+	}
 
 
 	/// @desc Las flags sirven para que en las funciones se pueda hacer un switch dependiendo del entity

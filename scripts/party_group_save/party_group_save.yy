@@ -1,11 +1,11 @@
 {
   "resourceType": "GMScript",
   "resourceVersion": "1.0",
-  "name": "wate_sort",
+  "name": "party_group_save",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Wate",
-    "path": "folders/Systemall/Wate.yy",
+    "name": "Group",
+    "path": "folders/Systemall/Party/Group.yy",
   },
 }

@@ -4,17 +4,18 @@
 #macro MALL_ERROR       true
 
 // -- STATS
-#macro MALL_STAT_ROUND	1               // 0: value, 1: round(x), 2: floor(x)
-#macro MALL_STAT_DEFAULT_MAX 9999       
+#macro MALL_STAT_ROUND       1               // 0: value, 1: round(x), 2: floor(x)
+#macro MALL_STAT_DEFAULT_MAX 9999
 #macro MALL_STAT_DEFAULT_MIN 0
 
 #macro MALL_STAT_DEFAULT_LEVEL_MIN 0
 #macro MALL_STAT_DEFAULT_LEVEL_MAX 100
 
 #region PARTY
-#macro MALL_TRACE_PARTY true
+#macro MALL_PARTY_TRACE true
 #macro MALL_PARTY_MIN_LEVEL 1
 #macro MALL_PARTY_MAX_LEVEL 100
+
 #endregion
 
 #region POCKET
@@ -25,9 +26,12 @@
 #endregion
 
 #region DARK
-#macro MALL_DARK function(caster, target, extra)
-#macro MALL_DARK_TYPE_MAGIC	"MAGIA"
-#macro MALL_DARK_TYPE_TICK	"TICK"
+#macro MALL_DARK_TRACE true
+
+#endregion
+
+#region WATE
+#macro MALL_WATE_TRACE true
 
 #endregion
 
@@ -69,7 +73,7 @@ function MallDatabase()
 		},
 		
 		wate:   {
-			templates: {}	
+			templates: {}
 		}
 	}
 	return data;

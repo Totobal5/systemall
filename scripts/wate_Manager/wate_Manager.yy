@@ -1,7 +1,7 @@
 {
   "resourceType": "GMScript",
   "resourceVersion": "1.0",
-  "name": "wate_Battle",
+  "name": "wate_Manager",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {

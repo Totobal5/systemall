@@ -39,7 +39,7 @@ function PartyGroup(_key) constructor
 	}
 	
 	/// @desc Agrega una entidad al grupo indicando el indice en donde insertarlo
-	/// @param {Struct.PartyEntity} party_entity
+	/// @param {Struct.PartyEntity} partyEntity
 	/// @param {Real} [index]=0
 	/// @return {Bool}
 	static set = function(entity, index=0)
@@ -66,7 +66,7 @@ function PartyGroup(_key) constructor
 
 
 	/// @desc Agrega entidades a este grupo
-	/// @param {Struct.PartyEntity} party_entity
+	/// @param {Struct.PartyEntity} partyEntity
 	/// @return {Bool}
 	static add = function(_entity)
 	{
@@ -85,8 +85,8 @@ function PartyGroup(_key) constructor
 	
 	
 	/// @desc Elimina y devuelve una entidad del grupo
-	/// @param {Real} index
-	static remove  = function(_index)
+	/// @param {Real} [index]=0
+	static remove  = function(_index=0)
 	{
 		var _entity = entitys[_index]; // guardar
 		array_delete(entitys, _index, 1);
@@ -99,7 +99,7 @@ function PartyGroup(_key) constructor
 	
 
 	/// @desc Busca una entidad y devuelve su indice. -1 si no existe
-	/// @param {Struct.PartyEntity} party_entity
+	/// @param {Struct.PartyEntity} partyEntity
 	static find = function(_entity)
 	{
 		var _num = array_find_index(entitys, method({s: _entity}, function(v, i) {
