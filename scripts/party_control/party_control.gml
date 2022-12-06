@@ -4,33 +4,43 @@ function PartyControl(_entity=other) : Mall() constructor
 	// Crear referencia a la entidad
 	from = weak_ref_create(_entity);
 	keys = [];
-	var _t=function(_key) {
-		var _component = mall_get_stat(_key);
-		variable_struct_set(self, _key, new __PartyControlAtom(_component) );
-		array_push(keys, _key);
+
+	// Crear atomos
+	array_foreach(mall_get_state_keys(), function(v) {
+		var _component = mall_get_state(v);
+		variable_struct_set(self, v, new createAtom(_component) );
+		array_push(keys, v);
 		
-		if (MALL_PARTY_TRACE) {show_debug_message("MallRPG Party (prControl): {0} creado", _key); }
-	}
-	array_foreach(mall_get_state_keys(), _t);
-	array_foreach(mall_get_stat_keys (), _t);
+		if (MALL_PARTY_TRACE) {show_debug_message("MallRPG Party (prControl): {0} creado", v); }	
+	});
+	array_foreach(mall_get_stat_keys (), function(v) {
+		var _component = mall_get_stat(v);
+		variable_struct_set(self, v, new createAtom(_component) );
+		array_push(keys, v);
+		
+		if (MALL_PARTY_TRACE) {show_debug_message("MallRPG Party (prControl): {0} creado", v); }
+	});
 	
     #region METHODS
 	
 	static createAtom = function(_control) constructor 
 	{
+		/// @ignore
+		is = "PartyControl$$createAtom";
+		
 		// Configuracion
-		key = _control.key
+		key  = _control.key
 		init = _control.init;   // Valor al que reinicia la estadistica/estado
 		type = _control.type;   // Tipo de numero que utiliza normalmente
 
-		same    = _control.same;        // Si acepta el mismo control varias veces
-		control = _control.controls; // -1 se pueden agregar elementos infinitos
+		same     = _control.same;        // Si acepta el mismo control varias veces
+		controls = _control.controls;    // -1 se pueden agregar elementos infinitos
 		
 		// Valores que varian en el tiempo [real, percentual] son actualizados por los effectos.
-		values = array_create(2, 0);
+		values  = array_create(2, 0);
 	
 		// Contenidos
-		content = [];
+		content = array_create(0);
 	
 		// Si algo evita que esta en el valor de bool
 		isAffected = false;
@@ -42,12 +52,24 @@ function PartyControl(_entity=other) : Mall() constructor
 			return content;
 		}
 	
-	
+		static find = function(_id)
+		{
+			var i=0; repeat(array_length(content) )
+			{
+				var _effect = content[i];
+				// Si es el mismo tipo entonces salir
+				if (_effect.id == _id) return true;
+				i = i+1;
+			}
+			
+			return false;
+		}
+		
 		/// @param {Real} value
 		/// @param {Enum.MALL_NUMTYPE} number_type
 		static set = function(_VALUE, _TYPE)
 		{
-			_TYPE ??= type;
+			if (_TYPE == undefined) _TYPE = type;
 			values[_TYPE] = _VALUE;
 		}
 	
@@ -56,105 +78,126 @@ function PartyControl(_entity=other) : Mall() constructor
 		/// @param {Enum.MALL_NUMTYPE} number_type
 		static add = function(_VALUE, _TYPE)
 		{
-			_TYPE ??= type;
+			if (_TYPE == undefined) _TYPE = type;
 			values[_TYPE] += _VALUE;
 		}
 	
 	
+		/// @desc Como guarda este componente
 		static save = function()
 		{
 			var _this = self;
-			with ({}) {
+			var _save  = {};
+			var _array = array_create(0);
+			with (_save) {
+				version = MALL_VERSION;
+				is      = _this.is    ;
+				
 				values  = _this.value;
-				content = array_map(_this.content, function(v) {
-					return (v.save() );
-				});
+				content = _array     ;
 				
 				return self;
 			}
+			
+			var i=0; repeat(array_length(content) ) {
+				var _effect = content[i];
+				array_push(_array, _effect.save() );
+				i = i + 1;
+			}
+			
+			return (_save);
 		}
 		
-		
+		/// @desc Como carga este componente
+		/// @param {struct} loadStruct
 		static load = function(_l)
 		{
+			if (_l.is != is) exit;
+			values = _l.values;
+			var i=0; repeat(array_length(_l.content) ) {
+				var _e = _l.content[i];
+				var _n = new DarkEffect(_l.key, 0, 0, 0, 0, 0);
+				_n.commandKey = _e.commandKey;
+				_n.value = _e.value;
+				_n.turnStart = _e.turnStart;
+				_n.turnEnd   = _e.turnEnd  ;
+				_n.remove    = _e.remove   ;
+				// Cargar iteradores
+				_n.iteratorStart.load(_e.iteratorStart);
+				_n.iteratorEnd.load(_e.iteratorEnd)    ;
 				
+				// Agregar efecto recreado
+				array_push(content, _n);
+				
+				i = i + 1;
+			}
 		}
 		
 		#endregion
 	}
 	
 		#region BASIC
-	/// @param {String} control_key
+	/// @param {String} controlKey
 	/// @return {Bool}
-    static exists = function(_key) 
+	static exists = function(_key) 
 	{
         return (variable_struct_exists(self, _key) );
     }
 
-	
-    /// @param	{String} control_key
-	/// @return {Struct.__PartyControlAtom}
-    static get = function(_KEY) 
+	/// @desc	Establece un nuevo valor en "values" con el tipo de numero default o diferente
+	/// @param	{String}           controlKey
+	/// @param	{Array<Real>,Real} value
+	static set = function(_key, _value, _type) 
+	{
+		var _atom = get(_key);
+		if (is_array(_value) ) {
+			_atom.values[0] = _value[0];
+			_atom.values[1] = _value[1];
+		} else {
+			_atom.values[_type] = _value;
+		}
+		return self;
+    }
+
+	/// @param	{String} controlKey
+	/// @return {Struct.PartyControl$$createAtom}
+	static get = function(_KEY) 
 	{
         return (self[$ _KEY] );
     }
 
-
-    /// @desc	Establece un nuevo valor en "values" con el tipo de numero default o diferente
-    /// @param	{String} control_key
-    /// @param	{Array<Real>} value
-    static set = function(_KEY, _VALUE) 
+	/// @desc Añade un valor al control (suma/resta)
+	/// @param	{String}           controlKey
+	/// @param	{Array<Real>,Real} value
+	static add = function(_key, _value, _type) 
 	{
-        var _atom = get(_KEY);
-		_atom.values[0] = _VALUE[0];
-		_atom.values[1] = _VALUE[1];
+		var _atom = get(_key);
+		if (is_array(_value) ) {
+			_atom.values[0] += _value[0];
+			_atom.values[1] += _value[1];
+		} else {
+			_atom.values[_type] += _value;
+		}
 		return self;
     }
 
-
-	/// @desc Añade un valor al control (suma/resta)
-	/// @param	{String} control_key
-	/// @param	{Array<Real>} value
-	static add = function(_KEY, _VALUE) 
-	{
-        var _atom = get(_KEY);
-		_atom.values[0] += _VALUE[0];
-		_atom.values[1] += _VALUE[1];
-        return self;
-    }
-
-
-	/// @desc Añade un valor al control (suma/resta)
-	/// @param	{String} control_key
-	/// @param	{Array<Real>} value
-	static sub = function(_KEY, _VALUE)
-	{
-		var _atom = get(_KEY);
-		_atom.values[0] -= _VALUE[0];
-		_atom.values[1] -= _VALUE[1];
-        return self;
-	}
-
-
 	/// @desc Establebe el control a su valor inicial
-    /// @param {String} control_key (all para reiniciar todos)
-    static reset = function(_KEY) 
+	/// @param {String} controlKey (all para reiniciar todos)
+	static reset = function(_key) 
 	{
 		#region Reiniciar todos
-		if (_KEY == all) 
-		{
+		if (_key == all) {
 			var i=0; repeat(array_length(keys) ) {
-				var _key = keys[i];
-				reset(_key);
+				var _k = keys[i];
+				reset(_k);
 				i = i + 1;
 			}
 		}
 		#endregion
 		
 		#region Solo 1
-		else 
-		{
-			var _atom = get(_KEY);
+		else  {
+			var _atom = get(_key);
 			_atom.values = array_create(2, 0);
 		}
 		#endregion
@@ -167,7 +210,7 @@ function PartyControl(_entity=other) : Mall() constructor
 		
 		#region CONTROL
 	/// @desc Indica si el estado/estadistica esta siendo afectado por algo
-	/// @param	{String} control_key
+	/// @param	{String} controlKey
 	/// @return {Bool}
 	static isAffected = function(_KEY)
 	{
@@ -175,87 +218,88 @@ function PartyControl(_entity=other) : Mall() constructor
 		return (array_length(_atom.content) > 0);
 	}
 
-	
 	/// @desc Agrega un efecto al control que afecta (stat/state/action). Si lo agrega "true" si no "false"
-    /// @param {Struct.DarkEffect}	dark_effect
+    /// @param {Struct.DarkEffect}	darkEffect
 	/// @return {Bool}
-    static addEffect = function(_DARK_EFFECT)
+    static addEffect = function(_darkEffect)
 	{	
 		// No es un efecto de dark
 		if	(!weak_ref_alive(from) ) ||
-			(!is_dark_effect(_DARK_EFFECT) ) return false;
+			(!is_dark_effect(_darkEffect) ) return false;
 		
-		var _key = _DARK_EFFECT.getKey();	// Obtener a quien afecta
+		var _key     = _darkEffect.getKey(); // Obtener a quien afecta
 		var _control = get(_key);
-		// Evitar errores
-		if (is_undefined(_control) ) __mall_error("Party Control: Este control no existe");
-		var _content = _control.getContent();
+		if (MALL_PARTY_TRACE) {
+			if (_control == undefined) show_debug_message(MALL_MSJ_DV+" PartyControl (addEffect): {0} no existe", _key);
+		}
+		
+		var _content     = _control.getContent();
+		var _contentSize = array_length(_content);
 		
 		#region Comprobar limite
 		// no infinitos
-		if (_control.control > 0)
-		{
+		if (_control.controls > 0) {
 			// Si supero el limites entonces salir
-			if (array_length(_content) > _control.control) {return false; }
-		}			
+			if (_contentSize > _control.control) {
+				return false; 
+			}
+		}
 		#endregion
 			
 		#region Comprobar si permite el mismo
-		if (!_control.same)
-		{
-			var i=0; repeat(array_length(_content) )
-			{
-				var _effect = _content[i];
-				// Si es el mismo tipo entonces salir
-				if (_effect.id == _DARK_EFFECT.id) return false;
-				i = i+1;
+		if (!_control.same) {
+			// Si existe el mismo salir
+			if (_control.find(_darkEffect.id) ) {
+				return false;
 			}
 		}
 			
 		#endregion
 		
 		// Al pasar todo agregar al contenido
-		array_push(_content, _DARK_EFFECT);
-		_control.isAffected = true; // Indicar que esta siendo afectado por algo
+		array_push(_content, _darkEffect);
+		// Indicar que esta siendo afectado por algo
+		_control.isAffected = true;
+		// Aplicar valor inicial dependiendo del tipo
+		add(_key, _darkEffect.value, _darkEffect.type);
 		
-		// Aplicar valor inicial
-		add(_key, _DARK_EFFECT.value);
-		_DARK_EFFECT.eventStart(getFrom() );	// Ejecutar evento de inicio
+		var _entity = getEntity();
+		// Ejecutar evento de inicio
+		_darkEffect.exAdded(_entity);
 
 		// Intentar actualizar equipamiento y control
-		var _stats = from.ref.getStats();
-		_stats.updateEquipment(_key);
-		_stats.updateControl  (_key);
+		var _stat = _entity.getStat();
+		_stat.updateBySlot   (_key);
+		_stat.updateByControl(_key);
 
         return true;
     }
 
 
 	/// @desc Elimina un efecto pasando un filtro. Devuelve "true" si borra; "false" si no borra o no hay elementos.
-    /// @param	{String}	control_key		stat/state mall key
-    /// @param	{Function}	filter			function(DARK_EFFECT, I, ARGUMENTS) {return Bool}
-	/// @param	{Any}		[flags]			valores para pasar al filtro
+    /// @param	{String}    controlKey  stat/state mall key
+    /// @param	{Function}  filter      function(darkEffect, i, vars) {return Bool}
+	/// @param	{Any}       [vars]      valores para pasar al filtro
 	/// @return {Bool}
-    static removeEffect = function(_KEY, _FILTER, _FLAGS) 
+    static removeEffect = function(_key, _filter, _vars) 
 	{
 		// Filtro default borra el primero de la lista
-		static dfil = function(effect, i, more) {
+		static defaultFilter = function(effect, i, more) {
 			if (i==0) return true;
 		}
-		_FILTER ??= dfil;
-		
-        var _control = get(_KEY);
-		if (is_undefined(_control) ) return false;
-		
+		_filter ??= defaultFilter;
+		var _control = get(_key);
+		if (_control == _control) return false;
+		// Obtener contenido
 		var _content = _control.getContent();
-		// Si no hay contenido salir
-		if (array_length(_content) <= 0) return false;
 		
 		#region Filtrar
-		var i=0, _pass=false; repeat(array_length(_content) )
-		{
-			var _t=_content[i];
-			if (_FILTER(_t, i, _FLAGS) ) {_pass = true; break;}
+		var _pass = false;
+		var i=0; repeat(array_length(_content) ) {
+			var _effect =_content[i];
+			if (_filter(_effect, i, _vars) ) {
+				_pass = true; break;
+			}
 			
 			i = i + 1;
 		}
@@ -266,86 +310,101 @@ function PartyControl(_entity=other) : Mall() constructor
 		
 		// Eliminar efecto
 		array_delete(_content, i, 1);
-		sub(_t.key, _t.value);
-		_t.eventRemove();	// Ejecutar evento al remover el efecto
+		// Si no hay más efectos
+		if (array_length(_content) <= 0) _control.isAffected = false;
 		
-		// Actualizar estadisticas de equipamiento y control
+		var _effectKey = _effect.key;
+		// Eliminar valor del efecto
+		add(_effectKey, -_effect.value, _effect.type);
+		
 		if (weak_ref_alive(from) ) {
-			var _stats = from.ref.getStats();
-			_stats.updateEquipment(_KEY);
-			_stats.updateControl  (_KEY);
-		}
+			var _entity = getEntity();
+			// Ejecutar evento al remover el efecto
+			_effect.exRemove(_entity);
 		
+			// Actualizar estadisticas de equipamiento y control
+			if (mall_exists_stat(_effectKey) ) {
+				var _stat = _entity.getStat();
+				_stat.updateBySlot   (_effectKey);
+				_stat.updateByControl(_effectKey);
+			}
+		}
+
 		return true;
     }
 
 
 	/// @desc	Actualiza un control
-    /// @param	{String} control_key (all para todos)
-	/// @param	{Real} turn_type 0: Inicio del turno, 1: Final del turno, 2: Ambos
-    static update = function(_KEY, _TYPE=0) 
+    /// @param	{String} controlKey all para actualizar a todos
+	/// @param	{Real}   turnType   0: Inicio del turno, 1: Final del turno, 2: Ambos
+    static update = function(_key, _type=0) 
 	{
-		#region Actualizar solo 1
-		if (_KEY != all) 
-		{
-			var _struct  = {value: [0, 0], work: false};
-	        var _return  = [0, 0];
-			var _control = get(_KEY);
-			// No existe salir
-			if (is_undefined(_control) ) {return _struct; }
+		var _struct  = {value: [0, 0], result: false};
 		
+		#region Actualizar solo 1
+		if (_key != all) {
+			var _control = get(_key);
+			// Si no existe
+			if (_control == undefined) return _struct;
+			var _return  = [0, 0];
+
 			// Obtener
-			var _content = _control.getContent();
-			var n  = array_length(_content);
+			var _content     = _control.getContent();
+			var _contentSize = array_length(_content);
 		
 			// Si no hay contenidos salir
-			if (n <= 0) return _struct;
-		
-			var _entity = entity.ref;
-			for (var i=0; i < n; i = i+1)
-			{
-				var dark = _content[i];
-				var dval =  dark.value;
-				// Tipo de turno 2 no se considera, 
-				// salta si no es el mismo tipo que se esta actualizando
-				if ((dark.turnType != 2) && (dark.turnType != _TYPE) ) continue;
+			if (_contentSize <= 0) {
+				_control.isAffected = false; // Marcar que no es afectado por nada
+				return _struct
+			}
+			if (!weak_ref_alive(from) ) return _struct;
 			
-				var _iter  = getIterator(_TYPE); // Obtener iterador
-				var _event = getEvent(_TYPE);  // Obtener evento a usar 
-				var _update = _iter.iterate(); // Iterar y guardar resultado
-			
-				#region Actualizar
-				if (_update == 0)
-				{
-					_event(_entity); // evento para actualizar
-					add(_KEY, dval);
+			// Obtener entity
+			var _entity = getEntity();
+			for (var i=0; i < _contentSize; i = i + 1) {
+				var _effect   = _content[i];
+				var _turnType = _effect.turnType;
 				
-					// Actualizar devuelta
-					_return[0] += dval[0];
-					_return[1] += dval[1];
+				if (_turnType == _type) {
+					// Obtener iterador
+					var _iterator = _effect.getIterator(_type);
+					var _iterate  = _iterator.iterate();  // Iterar y guardar resultado
+					var _value   = _effect.value;
+					var _numtype = _effect.type ;
+					
+					// Actualizar
+					if (_iterate == 0) {
+						// Ejecutar funcion
+						_effect.exTurn(_turnType, _entity);
+						add(_key, _value, _numtype);
+						
+						_struct.value[_type] += _value;
+					}
+					// Termino
+					else if (_iterate == -1) {
+						// Ejecutar funcion de completado
+						_effect.exReady(_entity);
+						
+						// Restar
+						add(_key, -_value, _numtype);
+						struct.value[_type] -= _value;
+						
+						array_delete(_content, i, 1); // Eliminar del array
+						_contentSize--;
+					}
 				}
-				#endregion
-			
-				#region Terminar iteraciones
-				else if (_update == -1)
-				{
-					dark.eventFinish(_entity);	// Evento al terminar
-					sub(_KEY, dval);
-					array_delete(_content, i, 1); // eliminar de los contenidos
-					n = n - 1;
-				}
-			
-				#endregion
 			}
 		
 			// Actualizar estadisticas de equipamiento y control
-			if (weak_ref_alive(from) ) {
-				var _stats = from.ref.getStats();
-				_stats.updateEquipment(_KEY);
-				_stats.updateControl  (_KEY);
+			if (mall_exists_stat(_key) ) {
+				var _stats = _entity.getStat();
+				_stats.updateBySlot   (_key);
+				_stats.updateByControl(_key);
 			}
-		
-			return {value: _return, work: true};
+			
+			// Indicar que se completo correctamente
+			_struct.result = true;
+			return _struct;
 		}
 		
 		#endregion
@@ -353,14 +412,14 @@ function PartyControl(_entity=other) : Mall() constructor
 		#region Actualizar todos
 		else 
 		{
-			var i=0, val={}; repeat(array_length(keys) ) 
-			{
+			_struct = {};
+			var i=0; repeat(array_length(keys) ) {
 				var key = keys[i];
-				val[$ key] = update(key, _TYPE);
+				_struct[$ key] = update(key, _type);
 				i = i + 1;
 			}
 		
-			return (val);
+			return (_struct);
 		}
 		
 		#endregion
@@ -370,25 +429,57 @@ function PartyControl(_entity=other) : Mall() constructor
 
 
 		#region Misq
-	/// @desc Guarda los datos del control en json
+	/// @return {Struct.PartyEntity}
+	static getEntity = function() 
+	{
+		return (from.ref);
+	}
+	
+	/// @return {Struct.PartyStat}
+	static getEntityStat = function()
+	{
+		return (from.ref).getStat();
+	}
+	
+	/// @return {Struct.PartySlot}
+	static getEntitySlot = function() 
+	{
+		return (from.ref).getSlot();
+	}		
+		
+		
+	/// @desc Guarda los datos del control
 	static save = function() 
 	{
 		var _this = self;
-		var _tosave = {flags: _this.flags};
+		var _save = {}
+		with (_save) {
+			version = MALL_VERSION;
+			is      = _this.is    ;
+			
+			vars = _this.vars;
+		}
 		var i=0; repeat(array_length(keys) ) {
 			var _key = keys[i];
-			_tosave[$ _key] = get(_key).save();
-			i = i + 1;
+			_save[$ _key] = get(_key).save();
 		}
 		
-		return (_tosave );
+		return (_save);
 	}
 
-
-	static load = function() 
+	/// @desc Carga datos de control
+	/// @param {struct} loadStruct
+	static load = function(_l) 
 	{
-		
-		
+		if (_l.is != is) exit;
+		vars = _l.vars;
+		var i=0; repeat(array_length(keys) ) {
+			var _key = keys[i];
+			var _con = _l[$ _key];
+			
+			// Cargar del struct
+			get(_key).load(_con);
+		}
 	}
 
 	#endregion

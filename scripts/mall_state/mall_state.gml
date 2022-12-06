@@ -12,11 +12,11 @@ function MallState(_KEY) : MallMod(_KEY) constructor
 	
 	/// @desc Si puede actuar en PartyControl
 	/// @param {Any*} [vars]
-	checkStart = function(_vars) {return false};
+	checkStart = "";
 	
 	/// @desc Comprobar si puede usar su final event
 	/// @param {Any*} [vars]
-	checkEnd   = function(_vars) {return false};
+	checkEnd   = "";
 	
 	#region METHODS
 	/**
@@ -39,8 +39,8 @@ function MallState(_KEY) : MallMod(_KEY) constructor
 	
 	
 	/// @desc Function Description
-	/// @param {function} checkStart  Description
-	/// @param {function} [checkEnd]  Description
+	/// @param {String} checkStart  Description
+	/// @param {String} [checkEnd]  Description
 	/// @returns {struct} Description
 	static setCheckSE = function(_checkS, _checkE)
 	{

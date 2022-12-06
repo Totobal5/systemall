@@ -2,6 +2,7 @@
 #macro MALL_VERSION     "v2.5"+MALL_MY_VERSION
 #macro MALL_TRACE       true
 #macro MALL_ERROR       true
+#macro MALL_MSJ_DV		"MallRPG "
 
 // -- STATS
 #macro MALL_STAT_ROUND       1               // 0: value, 1: round(x), 2: floor(x)
@@ -42,6 +43,14 @@ enum MALL_NUMVAL  {VALUE, TYPE}
 function MallDatabase()
 {
 	static data = {
+		dark:   {
+			commands : {},
+			functions: {
+				// Definir defaults
+				fMallStatEquip: function(_entity, _stat) {_stat.actual = _stat.control; },
+			}
+		},
+		
 		types:     {},
 		typesKeys: [],
 		
@@ -67,35 +76,13 @@ function MallDatabase()
 			bags : {},
 			type : {}
 		},
-	
-		dark:   {
-			commands: {}
-		},
-		
+			
 		wate:   {
 			templates: {}
 		}
 	}
 	return data;
 }
-
-#endregion
-
-	
-#region Dark
-global.__mallDarkData   = {};
-global.__mallDarkActive = [];
-	
-#endregion
-
-#region Party
-global.__mallPartyTemplate = {};
-global.__mallPartyGroups   = {};
-
-#endregion
-
-#region Wate
-global.__mallWateCombats  = {}	// Grupo de peleas
 
 #endregion
 
@@ -107,10 +94,11 @@ global.__mallRadio = ds_queue_create();
 /// @ignore
 function mall_data_init() 
 {	
-	mall_database	();
+	dark_database	(); // Iniciar comandos y funciones
+	mall_database	(); // Iniciar states, stats, slots, types
 	pocket_database	();
-	dark_database	();
 	
+	// Ultimo en iniciarse
 	party_database	();
 }
 

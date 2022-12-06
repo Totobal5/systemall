@@ -6,11 +6,13 @@ function MallStat(_statKey) : MallState(_statKey) constructor
 	// True: enviar actual al maximo al equipar false: dejar como esta
 	
 	/// @desc Este evento se utiliza cuando se equipa un objeto
-	setEquipSE(,function(_entity, _stat) {_stat.actual = _stat.control; });
+	setFunEquip   ("fMallStatEquip"); // Default
 	
-	start = 0;     // Valor inicial
-	limitMin = 0;  // Limites del valor 0 minimo 1 maximo
-	limitMax = 0;  //
+	start      = 0; // Valor inicial
+	startLevel = 1; // Nivel inicial
+	limitMin = 0;   // Limites del valor 0 minimo 1 maximo
+	limitMax = 0;   //
+	
 	// Nivel minimo y maximo
 	levelLimitMin = MALL_STAT_DEFAULT_LEVEL_MIN;
 	levelLimitMax = MALL_STAT_DEFAULT_LEVEL_MAX;
@@ -21,13 +23,13 @@ function MallStat(_statKey) : MallState(_statKey) constructor
 	/// @param  {Struct.PartyStats$$createAtom} statAtom
 	/// @param  {Any*} [vars]
 	/// @return {Real}
-	funLevel = function(_stat, _atom, _vars) {return 0; };
+	funLevel   = "";
 	
 	/// @desc   Indicar si puede o no subir de nivel si sube individual
 	/// @param  {Struct.PartyStats} [statEntity]
 	/// @param  {Any*} [vars]
 	/// @return {Bool}
-    checkLevel = function(_stat, _flag)  {return true; };
+    checkLevel = "";
 
 	iterator = new iteratorCreate();
 	
@@ -86,12 +88,12 @@ function MallStat(_statKey) : MallState(_statKey) constructor
 	}
 
 
-	/// @param {Real}		minLevel        Nivel minimo
-	/// @param {Real}		maxLevel        Nivel maximo
-	/// @param {Function}	levelFun        Forma de subir de nivel
-	/// @param {Bool}		[soloLevel]     Aumenta de nivel ignorando el sistema para subir establecido.
-	/// @param {Function}	[checkLevel]    Comprobacion para subir de nivel inidividualmente
-	/// @return {Struct.MallStat}	
+	/// @param {Real}   minLevel        Nivel minimo
+	/// @param {Real}   maxLevel        Nivel maximo
+	/// @param {String} levelFun        Forma de subir de nivel
+	/// @param {Bool}   [soloLevel]     Aumenta de nivel ignorando el sistema para subir establecido.
+	/// @param {String} [checkLevel]    Comprobacion para subir de nivel inidividualmente
+	/// @return {Struct.MallStat}
 	static setLevel = function(_min, _max, _fun, _single=false, _check=undefined) 
 	{
 		// No usar method (se utiliza luego en los componentes individuales)
@@ -194,6 +196,7 @@ function mall_customize_stat(_statKey, _initial=0, _numType=0, _limit, _displayK
 	}
 	
 	_limit ??= [MALL_STAT_DEFAULT_MIN, MALL_STAT_DEFAULT_MAX];
+	// Feather disable once GM1020
 	_stat.setValue(_initial, _numType, _limit);
 	return (_stat.setDisplayKey(_displayKey) );
 }

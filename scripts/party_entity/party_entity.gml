@@ -5,8 +5,8 @@ function PartyEntity(_key) : Mall(_key) constructor
 	group = "";
 	
 	// Estructuras
-	stat = new PartyStat();        // Estadisticas
-	slot = new PartySlot();        // Equipo y partes
+	stat    = new PartyStat();     // Estadisticas
+	slot    = new PartySlot();     // Equipo y partes
 	control = new PartyControl();  // Control de estados / buffos
 	
 	turnCombat  = 0; // En que turno se mueve
@@ -25,10 +25,9 @@ function PartyEntity(_key) : Mall(_key) constructor
 	/// @param {String} category_key
 	static setCommandCategory = function(_key)
 	{
-		commands[$ _key] ??= {keys:[] };	// Agregar categoria de comandos si no existe
+		commands[$ _key] ??= {keys:[] };  // Agregar categoria de comandos si no existe
 		return self;
 	}
-	
 	
 	/// @param {String} dark_command_key
 	/// @param {String} category_key
@@ -37,55 +36,65 @@ function PartyEntity(_key) : Mall(_key) constructor
 		if (dark_exists(_key) ) {
 			var _set = commands[$ _category];
 			if (!variable_struct_exists(_set, _key) ) {
-				_set[$ _key] = dark_get(_key);
+				_set[$ _key] = dark_get_command(_key);
 				array_push(_set.keys, _key);
 			}
 		}
 		return self;
 	}
 	
-		
-	/// @return {Struct.PartyStats}
-	static getStats = function()
+	/// @param {struct.PartyStat} partyStat
+	static setStat = function(_partyStat) 
 	{
-		// feather ignore GM1045
-		return (stats);
+		stat = _partyStat;
+		return self;
 	}
 	
-	
-	/// @param {struct.PartyControl} partyControl
-	static setControl = function(_entity)
+	/// @return {Struct.PartyStat}
+	static getStat = function()
 	{
-		control = _entity;
+		return (stat);
+	}
+
+	/// @param {struct.PartySlot} partySlot
+	static setSlot = function(_partySlot)
+	{
+		slot = _partySlot;
+		return self;
+	}
+	
+	/// @return {struct.PartySlot}
+	static getSlot = function()
+	{
+		return (slot);
+	}
+
+	/// @param {struct.PartyControl} partyControl
+	static setControl = function(_partyControl)
+	{
+		control = _partyControl;
 		return self;
 	}
 	
 	/// @return {Struct.PartyControl}
 	static getControl = function()
 	{
-		// feather ignore GM1045
 		return (control);
 	}
-	
-	
-	/// @return {Struct.PartyEquipment}
-	static getEquipment = function()
-	{
-		// feather ignore GM1045
-		return (equipment);
-	}
-	
 	
 	/// @desc Actualizar los componentes de esta entidad (stat, control, equipment)
 	static updateComponents = function()
 	{
-		with (stats)	 from = weak_ref_create(other);
-		with (control)	 from = weak_ref_create(other);
-		with (equipment) from = weak_ref_create(other);
+		var _this = self;
+		with (stat)    from = weak_ref_create(_this);
+		with (slot)    from = weak_ref_create(_this);
+		with (control) from = weak_ref_create(_this);
+		
 		return self;
 	}
 	
 	
+	#region Utils
 	/// @desc Guarda los datos de esta entidad en json
 	static save = function() 
 	{
@@ -97,18 +106,19 @@ function PartyEntity(_key) : Mall(_key) constructor
 			displayKey = _this.displayKey;
 			
 			// Guardar Stats
-			stats   = _this.getStats().save();
-			control = _this.getControl().save();
+			stats     = _this.getStats().save()    ;
+			control   = _this.getControl().save()  ;
 			equipment = _this.getEquipment().save();
 		}
 		
 		return (_save);
 	}
 	
-	
 	/// @desc Carga desde un struct datos
 	static load = function(_load)
 	{
+		if (_load.is != is) exit;
+		
 		key = _load.key;
 		displayKey = _load.displayKey;
 		
@@ -116,9 +126,14 @@ function PartyEntity(_key) : Mall(_key) constructor
 		stats    .load(_load.    stats);
 		control  .load(_load.  control);
 		equipment.load(_load.equipment);
-
+	
+		// Actualizar componentes
+		updateComponents();
+	
 		return self;
 	}
+	
+	#endregion
 	
 	#endregion
 }

@@ -3,7 +3,8 @@
 /// @return {Struct.PartyStat}
 function PartyStat(_entity=other, _level=1) : Mall() constructor 
 {
-	from = weak_ref_create(_entity);	// Crear referencia a la entidad
+	// Crear referencia a la entidad
+	from = (_entity.is == "PartyEntity") ? weak_ref_create(_entity) : undefined;
 	keys = [];
 	array_foreach(mall_get_stat_keys(), function(_key) {
 		var _component = mall_get_stat(_key);
@@ -14,19 +15,20 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 	
 	// Nivel global
 	level = _level;
+	vars  = {}    ;
 	
+	/// @desc Condicion global para subir de nivel
 	/// @param {Struct.PartyStats}	[stat_entity]
 	/// @return {Bool}
-	checkLevel = function(STAT_ENTITY) {return false;} // Condicion global para subir de nivel
+	checkLevel = "";
 	
-    eventLevelStart  = function() {};	// Al iniciar  de subir de nivel
-    eventLevelFinish = function() {};	// Al terminar de subir de nivel
+	/// @desc Al subir de nivel
+	funLevel   = "";
 
-	flags = {};
+	#region METHODS
 	
-    #region METHODS
-	
-	static createAtom = function(_stat) constructor 
+	/// @param {struct.MallStat} mallStat
+	static createAtom = function(_stat) constructor
 	{
 		/// @ignore
 		is = "createAtom";
@@ -35,32 +37,24 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 		displayKey = _stat.displayKey;
 	
 		// -- Configuracion
-		flag   = _stat.flags;		// Que pasar en la formula para subir de nivel
-		single = _stat.levelSingle; // Si sube de nivel individualmente
-	
-		eventEquipStart  = _stat.eventObjectStart;	// Al equipar un objeto (inicio) ejecuta esta funcion
-		eventEquipFinish = _stat.eventObjectFinish;	// Al equipar un objeto (final)  ejecuta esta funcion
-	
-		/// @param {Struct.PartyStats}		 stat_entity
-		/// @param {Struct.__PartyStatsAtom} stat_atom
-		/// @param {Any} [flag]
-		/// @return {Real}
-		event = function(_stat, _atom, _flag) {};
-		event = method(self, _stat.eventLevel); // Forma en que sube de nivel
-	
-		/// @param {Struct.PartyStats}	[stat_entity]
-		/// @param {Any} [flag]
-		/// @return {Bool}
-		check = function(_stat, _flag) {};
-		check = method(self, _stat.checkLevel); // Condicion que debe cumplir para subir de nivel
-	
+		flag   = _stat.vars;         // Que pasar en la formula para subir de nivel
+		single = _stat.levelSingle;  // Si sube de nivel individualmente
+
+		funStart    = _stat.funStart;     // 
+		funEquip    = _stat.funEquip;     // Al equipar un objeto (inicio) ejecuta esta funcion
+		funDesequip = _stat.funDesequip;  // 
+		
+		funLevel   = _stat.funLevel  ;
+		checkLevel = _stat.checkLevel;
+		
+		// Copiar iterador
 		iterator = _stat.iterator.copy();
 	
-		// Se pone el valor inicial
-		base = _stat.start;
-		type = _stat.type;
-	
-		level = 1; // Nivel de la estadistica si se usa individualmente
+		// -- Se ponen los valores inciales
+		level = _stat.startLevel; // Nivel de la estadistica si se usa individualmente
+		base  = _stat.start;
+		type  = _stat.type;
+		
 		// Valores que posee
 		limitMin = _stat.limitMin;	// Valor maximo en que la estadistica puede estar
 		limitMax = _stat.limitMax;	// Valor minimo en que la estadistica puede estar
@@ -71,28 +65,27 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 		peak   = control; // Valor de la estadistica actual maximo respecto al nivel
 		actual = control; // El valor actual de la estadistica
 	
-		lastPeak   = control;// El ultimo valor maximo
-		lastActual = control;// El anterior valor actual
-	
-		#endregion
-	
-		#region METHODS
+		lastPeak   = control;    // El ultimo valor maximo
+		lastActual = control;    // El anterior valor actual
+		
+		#region Methods
 		/// @desc Devuelve un struct con los valores actuales
 		static send = function()
 		{
-			var _me = self;
-			return 
-			{
-				key: _me.key,
-				control:	_me.control,
-				equipment:	_me.equipment,
-				peak:		_me.peak,
-				actual:		_me.actual,
-				lastPeak:	_me.lastPeak,
-				lastActual:	_me.lastActual
-			}
+			var _this = self;
+			return ({
+				key: _this.key,
+				control  : _this.control  ,
+				equipment: _this.equipment,
+				peak     : _this.peak  ,
+				actual   : _this.actual,
+				
+				lastPeak  : _this.lastPeak  ,
+				lastActual: _this.lastActual
+			});
 		}
 	
+		/// @desc Como guarda este componente
 		static save = function() 
 		{
 			var _this = self;
@@ -104,7 +97,8 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 			});
 		}
 	
-	
+		/// @desc Como carga este componente
+		/// @param {struct} loadStruct
 		static load = function(_l) 
 		{
 			if (_l.is != is) exit;
@@ -117,7 +111,44 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 
 			return self;
 		}
-	
+		
+		/// @desc Ejecuta la funcion para cuando se equipa algo
+		/// @param {struct.PartyEntity} partyEntity
+		exEquip    = function(_entity)
+		{
+			static fun = dark_get_function(funEquip);
+			return (fun(_entity) );
+		}
+		
+		/// @desc Ejecuta la funcion para cuando se desequipa algo
+		/// @param {struct.PartyEntity} partyEntity
+		exDesequip = function(_entity)
+		{
+			static fun = dark_get_function(funDesequip);
+			return (fun(_entity) );
+		}
+		
+		/// @desc Ejecuta funcion de inicio
+		/// @param {struct.PartyEntity} partyEntity
+		exStart = function(_entity)
+		{
+			static fun = dark_get_function(funStart);
+			return (fun(_entity) );	
+		}
+		
+		// -- Para el nivel
+		exLevel = function(_partyStat, _level)
+		{
+			static fun = dark_get_function(funLevel);
+			return (fun(_partyStat, _level) ?? 0);
+		}
+
+		exCheckLevel = function()
+		{
+			static fun = dark_get_function(checkLevel);
+			return (fun() ?? true);
+		}
+		
 		#endregion
 	}
 	
@@ -148,44 +179,50 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 
 		return self;
 	}
-
-
-	/// @desc Las flags sirven para que en las funciones se pueda hacer un switch dependiendo del entity
-	/// @param {String}	stat_key	Llave de estadistica
-	/// @param {Any*}	flag		Flag para colocar en la estadistica
-	static setFlag = function(_KEY, _FLAG)
+	
+	/// @desc
+	/// @param {String}	statKey Llave de estadistica
+	/// @param {String}	varKey  Llave de estadistica
+	/// @param {Any*}	value   Flag para colocar en la estadistica
+	static setVarAtom = function(_statKey, _varKey, _value)
 	{
-		flags[$ _KEY] = _FLAG
+		var _stat = get(_statKey);
+		if (_stat != undefined) {
+			_stat.vars[$ _varKey] = _value;
+		}
 		return self;
 	}
 
-
-	/// @param {String}	stat_key	Llave de estadistica
-	/// @return {Any}
-	static getFlag = function(_KEY)
+	/// @desc
+	/// @param {String}	statKey Llave de estadistica
+	/// @param {String}	varKey  Llave de estadistica
+	static getVarAtom = function(_statKey, _varKey)
 	{
-		return (flags[$ _KEY] );
+		var _stat = get(_statKey);
+		if (_stat != undefined) {
+			return (_stat.vars[$ _varKey] );
+		}
+		return (undefined);
 	}
 	
 	
-	/// @desc permite establecer la condicion para subir de nivel global o individual
-    /// @param {Function}	level_check
-	/// @param {String}		[stat_key]
+	/// @desc Permite establecer la condicion para subir de nivel global o individual
+    /// @param {string} darkFunction
+	/// @param {String} [statKey]
 	/// @return {Struct.PartyStats}
-    static setCheckLevel = function(_CHECK, _KEY) 
+    static setCheckLevel = function(_darkFun, _statKey) 
 	{
 		#region Global
-		if (is_undefined(_KEY) )
-		{
-			checkLevel = method(self, _CHECK);
+		if (_statKey == undefined) {
+			checkLevel = _darkFun;
 		}
 		#endregion
 		
 		#region Individual
-		else if (is_string(_KEY) )
+		else if (is_string(_statKey) )
 		{
-			var _stat = get(_KEY);
-			if (_stat.single) _stat.check = method(_stat, _CHECK);
+			var _stat = get(_statKey);
+			if (_stat.single) _stat.check = _darkFun;
 		}
 	
 		#endregion
@@ -193,83 +230,59 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
         return self;
     }
     
-	
-    /// @param {Function}	level_start_event	
-    /// @param {Function}	level_finish_event	
-	/// @return {Struct.PartyStats}
-    static setEventLevel = function(_START, _FINISH) 
+    /// @param {string} levelStart
+    /// @param {string} levelEnd
+	/// @return {Struct.PartyStat}
+    static setFunLevel = function(_fun) 
 	{
-        eventLevelStart  = method(undefined,  _START);
-        eventLevelFinish = method(undefined, _FINISH);
-        
+        funLevel = _fun;
         return self;
     }
-
-
-    /// @param {Function}	level_start_event	
-	static setEventLevelStart  = function(_START)
-	{
-		eventLevelStart = method(undefined, _START);
-		return self;
-	}
-
-
-    /// @param {Function}	level_finish_event	
-	static setEventLevelFinish = function(_FINISH)
-	{
-		eventLevelFinish = method(undefined, _FINISH);
-		return self;
-	}
-
+	
 	#endregion
 	
 	#region Controls
 	/// @desc Obtiene un PartyStatAtom a partir de la llave
-	/// @param {String} stat_key
-	/// @returns {Struct.__PartyStatsAtom}
-	static get = function(_KEY) 
+	/// @param {String} statKey
+	/// @returns {Struct.PartyStat$$createAtom}
+	static get = function(_key) 
 	{
-		var _atom = variable_struct_get(self, _KEY);
+		var _atom = variable_struct_get(self, _key);
 		return (_atom);
 	}
 
-
 	/// @desc	Establece el valor actual de una estadistica teniendo como limites "limMin" y "control"
-	/// @param	{String}			stat_key
-	/// @param	{Real}				value
-    /// @param  {ENUM.MALL_NUMTYPE}	numtype	
+	/// @param	{String}            statKey  si es "all" permite cambiar el valor de todos los atomos
+	/// @param	{Real}              value    Valor para establecer
+    /// @param  {ENUM.MALL_NUMTYPE} numtype  Tipo de numero
 	/// @return {Real}
-	static set = function(_KEY, _VALUE, _TYPE=MALL_NUMTYPE.REAL) 
+	static set = function(_key, _value, _numtype=MALL_NUMTYPE.REAL) 
 	{
 		#region Cambiar a todas las estadisticas a este valor
-		if (_KEY == all) 
-		{
+		if (_key == all)  {
 			var i=0; repeat(array_length(keys) ) {
-				set(keys[i], _VALUE, _TYPE);
+				set(keys[i], _value, _numtype);
 				i = i + 1;
 			}
 		} 
 		#endregion
 		
 		#region Cambiar solo 1
-		else 
-		{
-			var _stat = get(_KEY);
+		else  {
+			var _stat = get(_key);
 			if (is_undefined(_stat) ) return 0;
 		
-			with (_stat)
-			{
-				switch (_TYPE)
-				{
+			with (_stat) {
+				switch (_numtype) {
 					case MALL_NUMTYPE.REAL:
-					lastActual = actual;
-					actual = clamp(_VALUE, limitMin, control);
+						lastActual = actual;
+						actual     = clamp(_value, limitMin, control);
 					break;
 				
 					case MALL_NUMTYPE.PERCENT:
-					var _percent = (control * _VALUE) / 100;
-					lastActual = actual;
-					actual = clamp(_percent, limitMin, control);
+						var _percent = (control * _value) / 100;
+						lastActual = actual;
+						actual     = clamp(_percent, limitMin, control);
 					break;
 				}
 			
@@ -279,112 +292,121 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 		#endregion
     }
 
-
 	/// @desc	Suma/Resta "valueActual" de una estadistica teniendo como limite "valueControl" y "valueMin". Devuelve el valor que se añadio
-	/// @param {String}				stat_key	Llave de estadistica
-	/// @param {Real}				value		Valor para sumar/restar
-	/// @param {ENUM.MALL_NUMTYPE}	numtype		Tipo de numero
-	/// @param {Real}				[use_value]	Que "value" usar 0: actual, 1:lastActual, 2: Peak, 3: lastPeak, 4: equipment, 5: control, Solo porcentajes!
-	/// @return {Real}
-    static add = function(_KEY, _VALUE, _TYPE=MALL_NUMTYPE.REAL, _USE=0) 
+	/// @param {String}             statKey     Llave de estadistica
+	/// @param {Real}               value       Valor para sumar/restar
+	/// @param {ENUM.MALL_NUMTYPE}  numtype     Tipo de numero
+	/// @param {Real}               [useValue]  Que "value" usar 0: actual, 1:lastActual, 2: Peak, 3: lastPeak, 4: equipment, 5: control, Solo porcentajes!
+	/// @return {Real} Devuelve el valor que se añadio
+    static add = function(_key, _value, _numtype=MALL_NUMTYPE.REAL, _useValue=0) 
 	{
-        var _stat = get(_KEY);
+        var _stat = get(_key);
 		if (is_undefined(_stat) ) return 0;
+		
 		var _add = 0;
 		// Depende del number type
-        switch (_TYPE) 
-		{
+        switch (_numtype)  {
 			#region Real
-			case 0: _add += _VALUE; break;
+			case 0: 
+				_add += _value; 
+			break;
 				
 			#endregion
 				
             #region Porcentaje
 			case 1:	
 				var _use=0;
-				switch (_USE)
-				{
-					case 0: _use = _stat.actual;		break;
-					case 1: _use = _stat.lastActual;	break;
+				switch (_useValue) {
+					case 0: _use = _stat.actual;       break;
+					case 1: _use = _stat.lastActual;   break;
 					
-					case 2: _use = _stat.peak;			break;
-					case 3: _use = _stat.lastPeak;		break;
+					case 2: _use = _stat.peak;          break;
+					case 3: _use = _stat.lastPeak;      break;
 					
-					case 4: _use = _stat.equipment;		break;
-					case 5: _use = _stat.control;		break;
+					case 4: _use = _stat.equipment;     break;
+					case 5: _use = _stat.control;       break;
 				}
 					
-				_add += (_use * _VALUE);
+				_add += (_use * _value);
 			break;
 			#endregion
         }
-		set(_KEY, (_stat.actual + _add) );
+		
+		// Sumar
+		set(_key, (_stat.actual + _add) );
 		
 		// Obtener cuanto se modifico el valor
-		var _rest = _stat.control - _stat.actual;
-        return (_rest);
+		//var _rest = _stat.control - _stat.actual;
+        return (_add);
     }
 
 
 	/// @desc actualiza el valor del control
-	static updateControl   = function(_KEY)
+	/// @param {string} statKey
+	static updateByControl  = function(_key)
 	{
+		// Si no existe la entidad salir
 		if (!weak_ref_alive(from) ) exit;
-		var _stat	 = get(_KEY);
-		var _control = from.ref.getControl().get(_KEY);
-		var _real = _control.values[0], _percent = _control.values[1];
+		// Asegurar que exista la estadistica
+		if (MALL_ERROR) {
+			if (!mall_exists_stat(_key) ) show_error(string("MallRPG PartyStat (updateControl): No existe {0}", _key), true); 
+		}
 		
-		if (!is_undefined(_stat) )
-		{
-			with (_stat)
-			{
-				var _sumR = _real;
-				var _sumP = (equipment * _percent) / 100;
+		var _stat	 = get(_key);
+		var _control = getEntityControl().get(_key); // Obtener PartyControl desde la entidad
+		
+		var _real    = _control.values[0];
+		var _percent = _control.values[1];
+		
+		with (_stat) {
+			var _sumR = _real;                        // Suma real
+			var _sumP = (equipment * _percent) / 100; // Suma porcentual
 				
-				// Actualizar el valor del control
-				control = equipment + _sumR + _sumP;
+			// Actualizar el valor del control
+			control = equipment + _sumR + _sumP;
 
-				// Mensajes
-				__mall_trace("Stat Control Sum: " + string(_KEY) + " [" + string(_sumR) + "] - [" + string(_sumP)+"%]" );
-				__mall_trace("Stat Control Fin: " + string(_KEY) + " " + string(control) );
+			// Mensajes
+			if (MALL_PARTY_TRACE) {
+				show_debug_message("MallRPG PartyStat (updateControl): sumar a {0} los [{1}, {2}%]", _sumR, _sumP);
+				show_debug_message("MallRPG PartyStat (updateControl): {0} valor final {1}", control);
 			}
 		}
+		
 		return self;
 	}
 
-
 	/// @desc actualiza el valor del equipment
-	static updateEquipment = function(_KEY)
+	/// @param {string} statKey
+	static updateBySlot     = function(_statKey, _desequip=false)
 	{
 		// Feather ignore all
-		var _stat = get(_KEY);
-		var _keys = mall_get_equipment_keys();
-		var _sum = 0;
 		if (!weak_ref_alive(from) ) exit;
-		var _entity = from.ref;
-		// Ejecutar evento antes de equipar
-		_stat.eventEquipStart(_entity, _stat);
+		var _stat = get(_statKey);
+		var _keys = mall_get_slot_keys();
+		var _sum  = 0;
+		var _entity = getEntity();
 		
-		var _equipment = _entity.getEquipment();
+		// Obtener slots
+		var _slot = _entity.getSlot();
 		for (var i=0, n=array_length(_keys); i < n; i = i + 1) {
 			var _key = _keys[i];
+			
 			// Obtener equipos
-			var _equip = _equipment.get(_key);
+			var _equip = _slot.get(_key);
+			
 			// Si desequipa usar el anterior
 			if (_equip.desequip) continue;
 			
 			var _item = _equip.equipped;
-			var _value, _type;
-			
+			// Si no hay nada equipado
 			if (is_undefined(_item) ) continue;
 			
 			// Obtener valor de la estadisticas
-			var _t = _item.stats[$ _KEY];
-						
+			var _t = _item.stats[$ _statKey];
 			if (!is_undefined(_t) ) {
 				// Obtener valores
-				_value = _t[0];
-				_type  = _t[1];
+			   var _value = _t[0];
+			   var _type  = _t[1];
 			
 				switch (_type) {
 					case MALL_NUMTYPE.REAL:		_sum += _value; break;
@@ -393,278 +415,278 @@ function PartyStat(_entity=other, _level=1) : Mall() constructor
 			}
 		}
 		
-		// Mensajes
-		__mall_trace("Stat Equipment Sum: " + string(_KEY) + " " + string(_sum) );
-		__mall_trace("Stat Equipment Fin: " + string(_KEY) + " " + string(_stat.equipment) );
-		
+		if (MALL_PARTY_TRACE) {
+			show_debug_message("MallRPG Stat (updateBySlot): sumar a {0} los {1}", _sum);
+			show_debug_message("MallRPG Stat (updateBySlot): valor final de {0}: {1}", _stat.equipment);
+		}
 		// Actualizar valor
-		_stat.equipment = _stat.peak + _sum;
-		if (_stat.equipment < _stat.limitMin) {_stat.equipment = _stat.limitMin; }
-
-		// Actualizar el control
-		updateControl(_KEY);
+		_stat.equipment = max(_stat.peak + _sum, _stat.limitMin);
 		
-		// Evento que se ejecuta al final de equipar un objeto
-		_stat.eventEquipFinish(_entity, _stat);
+		// Actualizar el control
+		updateByControl(_statKey);
+		
+		// Evento que se ejecuta al final de
+		if (!_desequip) {
+			_stat.exEquip   (_entity); // equipar un objeto
+		} else {
+			_stat.exDesequip(_entity); // desequipar un objeto
+		}
 		
 		return self;
 	}
 
 
-    /// @param {Real}	new_level	Nuevo nivel
-    /// @param {String} [stat_key]	Solo si es individual
+    /// @param {Real}	newLevel    Nuevo nivel
+    /// @param {String} [statKey]   Solo si es individual
 	/// @return {Struct.PartyStats}
-    static setLevel = function(_LEVEL, _KEY) 
+    static setLevel = function(_level, _key) 
 	{
 		#region Global
-		if (is_undefined(_KEY) )
-		{
-			level = _LEVEL;		
+		if (_key == undefined) {
+			level = _level
 		}
 		#endregion
 		
 		#region Individual
-		else if (is_string(_KEY) )
+		else if (is_string(_key) )
 		{
-			var _stat = get(_KEY);
-			_stat.level = _LEVEL;
+			var _stat = get(_key);
+			_stat.level = _level;
 		}
 		#endregion
 			
-		// Subir de nivel
-		eventLevel(,true);
+		// Forzar subida de nivel
+		LevelUp(false, 0, true);
 		
         return self;
     }
 
-
-	/// @param {Bool}	[set_or_add=false]	Sumar o establecer el nivel  (false add)
-    /// @param {Real}	[add_level=0]		Sumar/restar el nivel actual (0)
-    /// @param {Bool}	[force_level=false]	Fuerza a subir de nivel		 (false)
-    static eventLevel = function(_SET=false, _LEVEL=0, _FORCE=false) 
+	/// @param {Bool} [setOrAdd]=false  Sumar o establecer el nivel. false: Add
+	/// @param {Real} [addLevel]=0      Sumar/restar el nivel actual
+	/// @param {Bool} [force]=false     Fuerza a subir de nivel
+    static LevelUp  = function(_set=false, _setLevel=0, _force=false) 
 	{
 		var _size = array_length(keys);
 		// Para feather
-		var _return = {statKey: {
-			key: "",
-			control:	0,
-			equipment:	0,
-			peak:		0,
-			actual:		0,
-			lastPeak:	0,
-			lastActual:	0
-		}};
+		var _return = {
+			statKey: {
+				key: "",
+				
+				control   :  0,
+				equipment :  0,
+				peak      :  0,
+				actual    :  0,
+				lastPeak  :  0,
+				lastActual:  0
+			},
+		};
+		// Eliminar
 		variable_struct_remove(_return, "statKey");
-		
-		var _globalCheck = undefined;
+		var _globalCheck = exCheckLevel();
 		
 		// operar level
-		level = (!_SET) ? level + _LEVEL : _LEVEL;
-		
-		// Ejecutar funcion al ejecutar
-		eventLevelStart();
-		
+		level = (!_set) ? level + _setLevel : _force;
+
 		#region Ciclar por cada stat
-		var i=0; repeat(array_length(keys) )
-		{
+		var i=0; repeat(array_length(keys) ) {
 			// Feather ignore all
 			var _key = keys[i];
 			var stat = get(_key);
 			
-			var _localCheck = undefined;
-			var _localLevel = 1;
-			if (stat.single)
-			{
-				stat.level  = (!_SET) ? stat.level + _LEVEL : _LEVEL;
-				_localLevel = stat.level;
-				_localCheck = stat.check(self);
+			var _check = undefined;  // Solo si es independiente
+			var _level = 1;          // Nivel a usar
+			if (stat.single) {
+				stat.level  = (!_set) ? stat.level + _setLevel : _setLevel;
+				_level = stat.level;
+				_check = stat.exCheckLevel();
 			}
-			else
-			{
-				_localLevel    = level;
-				_globalCheck ??= checkLevel(stat);
+			else {
+				_level = level; // Remplazar por nivel global
 			}
 			
-			var _control   = (stat.control   - stat.equipment);
-			var _equipment = (stat.equipment - stat.peak);
-			if (_FORCE || (_localCheck || (_globalCheck && _localCheck!=undefined) ) )
-			{
-				var _sum = stat.event(self, stat, _localLevel);
+			var _enterGlobal = (_globalCheck && _check != undefined);
+			if (_force || (_check || _enterGlobal) ) {
+				var _controlRest = (stat.control   - stat.equipment);
+				var _slotRest    = (stat.equipment - stat.peak);
+				
+				/// partyStat, nivel
+				var _sum = stat.exLevel(self, _level);
+				
 				// Actualizar valores
 				stat.peak = clamp(_sum, stat.limitMin, stat.limitMax);
 				
 				// equipment = peak + items
-				stat.equipment = stat.peak + _equipment;
+				stat.equipment = stat.peak + _slotRest;
 				
 				// control = peak + equipment
-				stat.control   = stat.peak + _equipment + _control;
+				stat.control   = stat.peak + _slotRest + _controlRest;
 				
 				// el primero deja peak, equipment y control igual
-				var _iter = stat .iterator;
+				var _iter =  stat.iterator ;
 				var _work = _iter.iterate();
-				if (_work == 2)
-				{
+				
+				// Al reiniciar el iterador llevar actual al minimo o maximo dependiendo del tipo
+				if (_work == 2) {
 					stat.actual = (_iter.type) ? 
 						stat.control :
 						stat.limitMin;
 				}
 				
-				if (!initialize) 
-				{
-					stat.lastPeak = stat.event(self, stat, max(1, _localLevel - 1) );
-					
-					if (_iter.active)
-					{
-						stat.actual = (_iter.type) ?
-							stat.control  :
-							stat.limitMin ;
+				#region Primera llamada
+				if (!_iter.firsCall) {
+					stat.lastPeak = stat.exLevel(self, max(1, _level - 1) );
+					if (_iter.active) {
+						// Al reiniciar el iterador llevar actual al minimo o maximo dependiendo del tipo
+						stat.actual = (_iter.type) ? 
+							stat.control :
+							stat.limitMin;
 					}
-					else
-					{
-						// Dejar en el maximo solo en el inicio
-						stat.actual		= stat.control;
-						stat.lastActual = stat.control;
+					else {
+						stat.actual     = stat.control;
+						stat.lastActual = stat.control; 
 					}
+					_iter.firsCall = true;
 				}
+				#endregion
 				
 				// Mostrar los valores en el debugger
-				__mall_trace("Event Level Set " + _key + ": [" + string(stat.control ) + "] ");
+				if (MALL_PARTY_TRACE) {
+					show_debug_message("MallRPG PartyStat (LevelUp): {0} set a {1}", _key, stat.control);
+				}
 				
 				// Poner valores para regresar
-				_return[$ _key] = stat.send(); 
+				_return[$ _key] = stat.send();
 			}
 			
-			i = i+1;
+			i = i + 1;
         }
-        
 		#endregion
 		
-        // Ejecutar funcion al terminar de subir de nivel
-        eventLevelFinish();
-        initialize = true; // Se cumplio la primera subida de nivel
-        
-        return (_return );
+		// Ejecutar funcion al terminar de subir de nivel
+		exLevel();
+		
+		return (_return );
     }
     
 	#endregion
 	
 	#region Utils
+	
+	// -- Funciones
+	exLevel      = function()
+	{
+		static fun = dark_get_function(funLevel);
+		return (fun() ?? 0);
+	}
+	
+	exCheckLevel = function()
+	{
+		static fun = dark_get_function(checkLevel);
+		return (fun() ?? false);
+	}
+	
 
 	/// @desc Si el valor introducido es mayor que el actual de la estadistica devuelve true
-	/// @param {String} stat_key
-	/// @param {Real}	compare
+	/// @param  {String} statKey
+	/// @param  {Real}   compare
 	/// @return {Bool}
-	static isAbove = function(_KEY, _VALUE) 
+	static isAbove = function(_key, _value) 
 	{
-		var _atom = get(_KEY)
-        return (_atom.actual > _VALUE);
+		var _atom = get(_key)
+        return (_atom.actual > _value);
     }
 	
 	/// @desc Si el valor introducido es menor que el actual de la estadistica devuelve true
-	/// @param {String} stat_key
-	/// @param {Real}	compare
+	/// @param  {String} statKey
+	/// @param  {Real}   compare
 	/// @return {Bool}
-	static isBelow = function(_KEY, _VALUE) 
+	static isBelow = function(_key, _value) 
 	{
-		var _atom = get(_KEY)
-        return (_atom.actual < _VALUE);
+		var _atom = get(_key)
+        return (_atom.actual < _value);
     }
-	
-	
-	/// @param {Real}	compare
+
+
+	/// @param {Real} compare
+	/// @return {Bool}
 	static isAboveLevel = function(_value)
 	{
 		return (level > _value);
 	}
 
-
-	/// @param {Real}	compare
+	/// @param {Real} compare
+	/// @return {Bool}
 	static isBelowLevel = function(_value)
 	{
 		return (level < _value);
 	}
 
-	#endregion
 
-	#region Misc
-	/// @desc Para debug
-	/// @returns {string}
-	static toString = function() 
+	/// @return {Struct.PartyEntity}
+	static getEntity = function() 
 	{
-        /// @return {String}
-		static p = function(_VALUE, _TYPE) {
-            var _in = ( (_TYPE == 1) ? 
-				string(_VALUE) + "%" : 
-				string(_VALUE)
-            );
-			
-            return (_in + "\n");
-        }
-
-        var _keys  = mall_get_stat_keys();  
-		var _print = "";
-        var i=0; repeat(array_length(_keys) ) 
-		{
-            var _key  = _keys[i++];
-            var _stat = get(_key); 
-			var _type = _stat.type;
-            
-            // Nombre
-            _print += _key + "\n";
-            
-			#region Obtener numtype
-            if (_type == 0) 
-			{
-				_print += "type: Real \n";
-			} 
-			else 
-			{
-				_print += "type: Percent \n"; 
-			}
-            
-			#endregion
-			
-			_print += "actual "		+ p(_stat.actual	, _type);
-            _print += "peak "		+ p(_stat.peak		, _type);
-            _print += "equipment "	+ p(_stat.equipment	, _type);
-			_print += "control "	+ p(_stat.control	, _type);
-        }
-        
-        show_debug_message(_print);
-    }
-
-
+		return (from.ref);
+	}
+	
+	/// @return {Struct.PartyControl}
+	static getEntityControl = function()
+	{
+		return (from.ref).getControl();
+	}
+	
+	/// @return {Struct.PartySlot}
+	static getEntitySlot    = function() 
+	{
+		return (from.ref).getSlot();
+	}
+	
 	/// @desc Guarda los datos de estadistica en json
 	static save = function() 
 	{
 		var _this = self;
-		var _tosave = {level: _this.level, flags: _this.flags};
+		var _save = {};
+		with(_save) {
+			version = MALL_VERSION;
+			is      = _this.is    ;
+			
+			level = _this.level;
+			flags = _this.flags;
+		}
+		
 		var i=0; repeat(array_length(keys) ) {
 			var _key  = keys[i];
 			var _stat = get(_key);
 			// Guardar
-			_tosave[$ _key] = _stat.save();
+			_save[$ _key] = _stat.save();
 			
 			i = i + 1;
 		}
 		
-		return (_tosave );
+		return (_save);
 	}
 	
-	
 	/// @desc Carga desde un struct datos
-	static load = function(_toload) 
+	static load = function(_l) 
 	{
-		level = _toload.level;
-		flags = _toload.flags;
+		if (_l.is != is) exit;
+		level = _l.level;
+		flags = _l.flags;
+		
 		var i=0; repeat(array_length(keys) ) {
 			var _key  = keys[i];
-			var _stat = _toload[$ _key];
+			var _stat = _l[$ _key];
 			get(_key).load(_stat);
+			i = i + 1;
 		}
 	}
 	
 	#endregion
 	
-    #endregion
+	#endregion
+	
+	// Ejecutar funciones de inicio
+	var p=0; repeat(array_length(keys) ) {
+		var _stat = get(keys[p++] );
+		_stat.exStart(_entity);
+	}
 }

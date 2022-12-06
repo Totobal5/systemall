@@ -1,23 +1,25 @@
-/// @param {String}      effectKey
-/// @param {Real}        startValue
-/// @param {Real, Array} turnStart          array para una cantidad aleatoria
-/// @param {Real, Array} turnEnd            array para una cantidad aleatoria
-/// @param {Function}    [funTurnStart]
-/// @param {Function}    [funTurnEnd]
-function DarkEffect(_effectKey, _startVal, _turnStart, _turnEnd, _funTurnStart, _funTurnEnd) : Mall(_effectKey) constructor 
+/// @param {String}                effectKey
+/// @param {Real}                  startValue
+/// @param {Enum.MALL_NUMTYPE}     startType
+/// @param {Real, Array}           turnStart          array para una cantidad aleatoria
+/// @param {Real, Array}           turnEnd            array para una cantidad aleatoria
+/// @param {string}                [funTurnStart]
+/// @param {string}                [funTurnEnd]
+function DarkEffect(_effectKey, _startVal, _startType, _turnStart, _turnEnd, _funTurnStart, _funTurnEnd) : Mall(_effectKey) constructor 
 {
 	static effectNumber = 1;
-	id = string("{0}{1}:{2}", _effectKey, "DE", effectNumber++);
+	id = string("{0}{1}:{2}", _effectKey, "DE", effectNumber);
 	commandKey = "" // Que Comando lo crea
+
+	value =  _startVal; // Valor que cambia real/porcentual
+	type  = _startType; 
 	
-	
-	value = _startVal; // Valor que cambia real/porcentual
 	ready = false;     // Se marca que el efecto termino
 	
 	turn = 0;        // En que turno va
 	turnMarkStart = 0;   // En que turno global empezo
 	turnMarkEnd   = 0;   // En que turno global termino
-	turnType = 0;
+	turnType      = 0;
 	/*
 		0: Inicio del turno
 		1: Final  del turno
@@ -26,28 +28,61 @@ function DarkEffect(_effectKey, _startVal, _turnStart, _turnEnd, _funTurnStart, 
 	
 	// Crear iteradores
 	iteratorStart = new iteratorCreate();    // Inicio turno
-	
 	iteratorStart.countLimits = (is_array(_turnStart) ) ?
 		irandom_range(_turnStart[0], _turnStart[1]) :
 		_turnStart;
 
 	iteratorEnd   =  new iteratorCreate();  // Final de turno
-	
-	iteratorFinish.countLimits = (is_array(_turnEnd) ) ?
+	iteratorEnd.countLimits = (is_array(_turnEnd) ) ?
 		irandom_range(_turnEnd[0], _turnEnd[1]) :
 		_turnEnd;
 
 	
 	#region METHODS
-
+	funAdded = "" // Evento a ejecutar cuando se agrega en un partyControl
+	
 	/// @desc Evento a ejecutar cuando inicio el turno
-	turnStart = __dummy;
+	funTurnStart = "";
 	
 	/// @desc Evento a ejecutar cuando termina el turno
-	turnEnd   = __dummy;
+	funTurnEnd   = "";
+	
+	/// @desc Evento a ejecutar cuando es completado
+	funReady  = "";
 	
 	/// @desc Evento a ejecutar cuando es eliminado
-	remove    = __dummy;
+	funRemove = "";
+
+	/// @param {struct.PartyEntity} partyEntity
+	exAdded = function(_entity)
+	{
+		static fun = dark_get_function(funAdded);
+		return (fun(_entity) );
+	}
+
+	/// @param {struct.PartyEntity} partyEntity
+	exReady = function(_entity)
+	{
+		static fun = dark_get_function(funReady);
+		return (fun(_entity) );
+	}
+	
+	/// @param {struct.PartyEntity} partyEntity
+	exRemove =  function(_entity)
+	{
+		static fun = dark_get_function(funRemove);
+		return (fun(_entity) );
+	}
+
+	/// @param {Real} turnType
+	/// @param {struct.PartyEntity} partyEntity
+	exTurn = function(_type=0, _entity)
+	{
+		static tstart = dark_get_function(funTurnStart);
+		static tend   = dark_get_function(funTurnEnd);
+		return (!_type)	? tstart(_entity) : tend(_entity)
+	}
+	
 	
 	/// @param {Real} value
 	/// @param {Enum.MALL_NUMTYPE} numtype
@@ -73,28 +108,41 @@ function DarkEffect(_effectKey, _startVal, _turnStart, _turnEnd, _funTurnStart, 
 		return (!_type) ? iteratorStart  : iteratorEnd;
 	}
 	
-	
-	/// @param {Real} turnType
-	static getEvent = function(_type=0)
-	{
-		return (!_type)	? turnStart : turnEnd;
-	}
-	
-	
+	/// @desc Guarda este componente
 	static save = function() 
 	{
 		var _this = self;
-		var _tosave = {};
-		with (_tosave) {
-			key = _this.key;
+		var _save = {};
+		with (_save) {
+			version = MALL_VERSION;
+			is      =     _this.is;
+			
+			key        = _this.key       ;
+			commandKey = _this.commandKey; // Guardar llave del comando
+			
 			value = _this.value;
+			
+			// Funciones
+			turnStart = _this.turnStart;
+			turnEnd   = _this.turnEnd  ;
+			remove    = _this.remove   ;
+			
 			// Guardar iteradores
 			iteratorStart  = _this.iteratorStart.save();
-			iteratorFinish = _this.iteratorFinish.save();
+			iteratorEnd    = _this.iteratorEnd.save()  ;
+			
+			return self;
 		}
-		
-		return (_tosave );
 	}
+	
+	/// @desc Cargar este componente
+	/// @param {Struct} loadStruct
+	static load = function(_load)
+	{
+		if (_load.is != is) exit;
+		//var _newEffect = new DarkEffect();
+	}
+	
 	
 	#endregion
 }

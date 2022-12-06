@@ -1,7 +1,7 @@
 {
   "resourceType": "GMScript",
   "resourceVersion": "1.0",
-  "name": "dark_get",
+  "name": "dark_get_command",
   "isDnD": false,
   "isCompatibility": false,
   "parent": {

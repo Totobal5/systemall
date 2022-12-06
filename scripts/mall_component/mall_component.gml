@@ -9,6 +9,23 @@ function Mall(_key="") constructor
 	
 	key   = _key;   // Llave con el cual se guardo en la base de datos
 	index =   -1;   // Indice en donde esta (si esta en algun array)
+	vars  =   {};
+
+	/// @param {String}	varKey  Llave de la variable a crear
+	/// @param {Any*}	value   Valor
+	/// @return {Struct.MallComponent}	
+	static setVar = function(_key, _value)
+	{
+		vars[$ _key] = _value;
+		return self;
+	}
+	
+	
+	/// @param {String}	varkey  Llave de la variable
+	static getVar = function(_key)
+	{
+		return (flags[$ _key] );
+	}
 
 	/// @desc Devuelve la llave del componente
 	/// @return {String}
@@ -16,7 +33,8 @@ function Mall(_key="") constructor
 	{
 		return (key);
 	}
-
+	
+	/// @desc Como guardar este componente
 	static save = function()
 	{
 		var _this = self;
@@ -28,6 +46,7 @@ function Mall(_key="") constructor
 		});
 	}
 
+	/// @desc Como cargar este componente
 	static load = function(_l)
 	{
 		if (_l.is != is) exit;
@@ -40,6 +59,7 @@ function Mall(_key="") constructor
 		}
 	}
 	
+	/// @desc Crea un iterador
 	static iteratorCreate  = function() constructor 
 	{
 		is = "MallIterator";
@@ -57,22 +77,25 @@ function Mall(_key="") constructor
 	
 		resetNumber =  0;
 		resetMax	= -1;
-	
+		firtCall = false; // Se ha llamado 1 vez
+		
 		/// @desc -1 se ha desactivado, 0 aun no llega al limite de cuenta, 1 esta iterando para reiniciar, 2 se ha reiniciado
 		/// @returns {real} Description
 		static iterate = function()
 		{
 			// Si ya se cumplio el ciclo
-			if (!active) return -1;
-		
-			count = count + 1;
-			if (count > countLimits)
-			{
-				return 0;
-			}
-			else
-			{
-				return (restart() );
+			if (!active) {
+				count = count + 1;
+				if (count > countLimits)
+				{
+					return 0;
+				}
+				else
+				{
+					return (restart() );
+				}
+			} else {
+				return -1;
 			}
 		}	
 	
@@ -177,6 +200,8 @@ function Mall(_key="") constructor
 	}
 
 	// -- Utils
+	
+	/// @desc Pasar numtype a string
 	/// @param {Enum.MALL_NUMTYPE} numtype
 	static toStringNumtype = function(_num)
 	{
@@ -186,12 +211,14 @@ function Mall(_key="") constructor
 		}
 	}
 	
+	/// @desc Para no crear demasiadas funciones
+	/// @ignore
 	static __dummy = function() {}
 }
 
 
 /// @desc Crea componente de Mall (sistema RPG)
-/// @param {String} component_key
+/// @param {String} componentKey
 /// @param {Bool} [use_iterator]
 /// @return {Struct.MallComponent}
 function MallComponent(_key="", _iterator=false) : Mall(_key) constructor 
@@ -201,8 +228,6 @@ function MallComponent(_key="", _iterator=false) : Mall(_key) constructor
 
 	from = weak_ref_create(self);   // Referencia a otra estructura
 	from = undefined;               // Eliminar referencia (feather)
-	flags = {};                     // Propiedades unicas del componente
-	
 	iterator = (_iterator) ? new iteratorCreate() : undefined;
 
 	#region METHODS
@@ -258,23 +283,6 @@ function MallComponent(_key="", _iterator=false) : Mall(_key) constructor
 	static getDisplayKey = function()
 	{
 		return (displayKey);
-	}
-	
-	
-	/// @param {String}	flag_key
-	/// @param {Any}	flag_value
-	/// @return {Struct.MallComponent}	
-	static setFlag = function(_KEY, _VALUE)
-	{
-		flags[$ _KEY] = _VALUE;
-		return self;
-	}
-	
-	
-	/// @param {String}	flag_key
-	static getFlag = function(_KEY)
-	{
-		return (flags[$ _KEY] );
 	}
 	
 	// -- ITERATOR

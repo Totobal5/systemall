@@ -5,111 +5,57 @@
 function MallMod(_modKey) : MallComponent(_modKey, false) constructor 
 {
 	// -- Eventos --
-	/// @param {Any*} entity
-	/// @param {Any*} [vars]
-	static __dummy = function(_entity, _vars) {}
+	funStart = "";
+	funEnd   = "";
 	
-	/// @desc Funcion a usar cuando se inicia este componente
-	/// @param {Any*}	entity
-	/// @param {String}	[vars]
-	funStart = __dummy;
-
-	/// @desc Funcion a usar cuando termina este componente
-	/// @param {Any*}	entity
-	/// @param {String}	[vars]
-	funEnd   = __dummy;
-	
-	/// @desc Funcion a ejecutar cuando inicia el turno
-	/// @param {Any*}	entity
-	/// @param {String}	[flag]
-	/// @return {String}
-	funTurnStart  = __dummy;
-
-	/// @desc Funcion a ejecutar cuando finaliza el turno
-	/// @param {Any*}	entity
-	/// @param {String}	[flag]
-	/// @return {String}
-	funTurnEnd    = __dummy;
-	
-	/// @desc Al intentar actuar inicio (todo lo que se indique que es combate)
-	/// @param {Any*}	entity
-	/// @param {String}	[flag]
-	/// @return {String}
-	funCombatStart = __dummy;
-
-	/// @desc Al intentar actuar final(todo lo que se indique que es combate)
-	/// @param {Any*}	entity
-	/// @param {String}	[flag]
-	/// @return {String}
-	funCombatEnd   = __dummy;
-	
-	/// @desc Al intentar actuar inicio (todo lo que se indique que no es combate)
-	/// @param {Any*}	entity
-	/// @param {String}	[flag]
-	/// @return {String}
-	funNoCombatStart = __dummy;
-	
-	/// @desc Al intentar actuar final  (todo lo que se indique que no es combate)
-	/// @param {Any*}	entity
-	/// @param {String}	[flag]
-	/// @return {String}
-	funNoCombatEnd   = __dummy;
-	
-	
-	funEquipStart = __dummy;
-	funEquipEnd   = __dummy;
+	funEquip    = "";
+	funDesequip = "";
 	
 	#region METHODS	
 
-	/// @param	{Function} funStart   
-	/// @param	{Function} [funStart] 
+	/// @param	{String} funStart   
+	/// @param	{String} funEnd     
 	/// @return {Struct.MallMod}
-	static setSE = function(_funStart, _funEnd)
+	static setFunSE = function(_funS, _funE)
 	{
-		funStart = _funStart ?? funStart;
-		funEnd   =   _funEnd ??   funEnd;
+		funStart = _funS;
+		funEnd   = _funE;
 		return self;
 	}
 
-	/// @param	{Function} funTurnStart
-	/// @param	{Function} [funTurnEnd]
-	static setTurnSE = function(_funStart, _funEnd)
+	/// @param	{String} funEquip
+	static setFunEquip    = function(_fun)
 	{
-		funTurnStart = _funStart ?? funTurnStart;
-		funTurnEnd   =   _funEnd ?? funTurnEnd;
-		return self;
-	}
-
-
-	/// @param	{Function} funCombatStart
-	/// @param	{Function} [funCombatEnd]
-	static setCombatSE = function(_funStart, _funEnd)
-	{
-		funCombatStart = _funStart ?? funCombatStart;
-		funCombatEnd   =   _funEnd ??   funCombatEnd;
-		return self;
-	}
-
-
-	/// @param	{Function} funNoCombatStart
-	/// @param	{Function} [funNoCombatEnd]
-	static setNoCombatSE = function(_funStart, _funEnd)
-	{
-		funNoCombatStart = _funStart ?? funNoCombatStart;
-		funNoCombatEnd   =   _funEnd ??   funNoCombatEnd;
+		funEquip = _fun;
 		return self;
 	}
 	
-	
-	/// @param	{Function} funEquipStart
-	/// @param	{Function} [funEquipEnd]
-	static setEquipSE = function(_funStart, _funEnd)
+	/// @param	{String} funDesequip
+	static setFunDesequip = function(_fun) 
 	{
-		funEquipStart = _funStart ?? funEquipStart;
-		funEquipEnd   =   _funEnd ??   funEquipEnd;
+		funDesequip = _fun;
 		return self;
-	}	
+	}
+	
+	#region Funciones
+	/// @param {struct.PartyEntity} partyEntity
+	exEquip    = function(_entity)
+	{
+		static fun = dark_get_function(funEquip);
+		return (fun(_entity) );
+	}
 
+	/// @param {struct.PartyEntity} partyEntity
+	exDesequip = function(_entity)
+	{
+		static fun = dark_get_function(funDesequip);
+		return (fun(_entity) );
+	}
+	
+	
+	#endregion
+	
+	
 	#endregion
 }
 

@@ -8,7 +8,7 @@ function PocketItem(_itemKey, _typeKey, _buy=0, _sell=0) : MallMod(_itemKey) con
 	type = _typeKey; // Tipo de objeto
 	
 	// Añadir type a la database
-	var _t = pocket_data_get_types();
+	var _t = pocket_data_get_types(); // Obtener todos los itemtypes
 	if (!variable_struct_exists(_t, type) ) {
 		var _str = {};
 		_str[$ _itemKey] = type;
@@ -29,23 +29,29 @@ function PocketItem(_itemKey, _typeKey, _buy=0, _sell=0) : MallMod(_itemKey) con
 	
 	targets = 1; // A cuantos objetivos afecta
 	
-	// -- Eventos
+	// -- Funciones
+	
+	/// @desc Funciones a ejecutar cuando se usa este objeto
+	funStart = ""; // inicio
+	funEnd   = ""; // Final
+	
 	/// @desc Establece un evento a ejecutar cuando se compra
-	funBuy  = __dummy;
+	funBuy  = "";
 	
 	/// @desc Establece un evento a ejecutar cuando se vende
-	funSell = __dummy;
+	funSell = "";
 	
 	/// @desc Establece un evento a ejecutar cuando se encuentra en el mundo
-	funWorldStep  = __dummy;
-	funWorldEnter = __dummy;
-	funWorldExit  = __dummy;
+	funWorldStep  = "";
+	funWorldEnter = "";
+	funWorldExit  = "";
 	
 	/// @desc Establece un evento a ejecutar cuando se equipa
-	funEquip    = __dummy;
+	funEquipStart = "";
+	funEquipEnd   = "";
 	
 	/// @desc Establece un evento a ejecutar cuando se desequipa
-	funDesequip = __dummy;
+	funDesequip = "";
 
     #region METHODS
     
@@ -64,7 +70,7 @@ function PocketItem(_itemKey, _typeKey, _buy=0, _sell=0) : MallMod(_itemKey) con
 				var _t = argument[i + 2]; // Tipo
 				stats[$ _key] = [_v, _t];
 			} else {
-				if (MALL_ERROR) {
+				if (MALL_POCKET_TRACE) {
 					show_debug_message("MallRPG Pocket (pkItemSetStat): {0} no existe", _key);
 				}
 			}
@@ -76,7 +82,7 @@ function PocketItem(_itemKey, _typeKey, _buy=0, _sell=0) : MallMod(_itemKey) con
     }
 
 	/// @param {String}	statKey
-	static getStat = function(_statKey)
+	static getStat  = function(_statKey)
 	{
 		return (stats[$ _statKey] );
 	}
@@ -92,7 +98,7 @@ function PocketItem(_itemKey, _typeKey, _buy=0, _sell=0) : MallMod(_itemKey) con
 	/// @param	{Bool}	[canBuy]=true
 	/// @param	{Bool}	[canSell]=true
 	/// @return {Struct.PocketItem}
-	static setTrade  = function(_buy=0, _sell=0, _canBuy=true, _canSell=true) 
+	static setTrade    = function(_buy=0, _sell=0, _canBuy=true, _canSell=true) 
 	{
 		buy  =  _buy;
 		sell = _sell;
@@ -103,31 +109,25 @@ function PocketItem(_itemKey, _typeKey, _buy=0, _sell=0) : MallMod(_itemKey) con
         return self;
     }
 
-
 	/// @desc Function Description
-	/// @param {function} functionEquip      funcion a ejecutar cuando se equipa este objeto
-	/// @param {function} [functionDesequip] funcion a ejecutar cuando se desequipa este objeto
-	static setFunEquip = function(_funEquip, _funDesequip)
+	/// @param {string} funEquip funcion a ejecutar cuando se equipa este objeto
+	static setFunDesequip = function(_fun)
 	{
-		funEquip    =    _funEquip ??    funEquip;
-		funDesequip = _funDesequip ?? funDesequip;
+		funDesequip = _fun;
 		return self;
 	}
 
-	/// @desc Establece un evento a ejecutar cuando se usa
-	/// @param {Function}	use_event function(caster, target, flags) {}
-	static setEventUse = function(_EVENT)
-	{
-		eventObjectStart = _EVENT;
-		return self;
-	}
+	#region Utils
 	
-	/// @desc function(caster, target, flags) {}
-	/// @return {Function}
-	static getEventUse = function() 
+	/// @param {struct.PartyEntity} partyEntity
+	exDesequip = function(_entity)
 	{
-		return (eventObjectStart);
+		static fun = dark_get_function(funDesequip);
+		return (fun(_entity) );
 	}
+
+	
+	#endregion
 
     #endregion
 }
