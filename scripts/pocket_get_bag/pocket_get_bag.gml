@@ -3,6 +3,6 @@
 /// @return {Struct.PocketBag}
 function pocket_get_bag(_bagKey)
 {
-	static database = MallDatabase().pocket.bags;
+	static database = MallDatabase.pocket.bags;
 	return (database[$ _bagKey] );
 }

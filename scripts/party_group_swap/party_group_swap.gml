@@ -1,4 +1,4 @@
-/// @desc Intercambia las entidades de un grupo al otrog
+/// @desc Intercambia las entidades de un grupo a otro
 /// @param {String} groupKeyA Description
 /// @param {String} groupKeyB Description
 function party_group_swap(_groupKey1, _groupKey2)
@@ -8,14 +8,14 @@ function party_group_swap(_groupKey1, _groupKey2)
 	var _gB = party_group_get(_groupKey2);
 	
 	// Obtener lista de entidades de cada grupo
-	var _entitysA = _gA.getEntitys();
-	var _entitysB = _gB.getEntitys();
+	var _entitiesA = _gA.getEntities();
+	var _entitiesB = _gB.getEntities();
 	
 	// Intercambiar
-	_gA.entitys = _entitysB;
-	_gB.entitys = _entitysA;
+	_gA.entities = _entitiesB;
+	_gB.entities = _entitiesA;
 	
 	// Actualizar llave
-	with (_gA) array_foreach(entitys, function(v) {v.key = key});
-	with (_gB) array_foreach(entitys, function(v) {v.key = key});
+	with (_gA) array_foreach(entities, function(v) /*=>*/ {v.group = key; });
+	with (_gB) array_foreach(entities, function(v) /*=>*/ {v.group = key; });
 }

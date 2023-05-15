@@ -2,7 +2,7 @@
 #macro MALL_VERSION     "v2.5"+MALL_MY_VERSION
 #macro MALL_TRACE       true
 #macro MALL_ERROR       true
-#macro MALL_MSJ_DV		"MallRPG "
+#macro MALL_MSJ_DV      "MallRPG "
 
 // -- STATS
 #macro MALL_STAT_ROUND       1               // 0: value, 1: round(x), 2: floor(x)
@@ -39,68 +39,84 @@
 enum MALL_NUMTYPE {REAL , PERCENT}
 enum MALL_NUMVAL  {VALUE, TYPE}
 
-#region Database
 function MallDatabase()
 {
-	static data = {
-		dark:   {
-			commands : {},
-			functions: {
-				// Definir defaults
-				fMallStatEquip: function(_entity, _stat) {_stat.actual = _stat.control; },
-			}
-		},
-		
-		types:     {},
-		typesKeys: [],
-		
-		stats:     {},
-		statsKeys: [],
-		
-		states:     {},
-		statesKeys: [],
-		
-		slots:     {},
-		slotsKeys: [],
-		
-		mods:     {},  // modifiers modifier
-		modsKeys: [],   //
-		
-		party:  {
-			templates: {},
-			groups:    {}
-		},
-		
-		pocket: {
-			items: {},
-			bags : {},
-			type : {}
-		},
-			
-		wate:   {
-			templates: {}
-		}
+	// -- Componentes
+	static types     = {};
+	static typesKeys = [];
+	static typesDebugMessage  = function(_str) {
+		show_debug_message("MallRPG Types: \n{0}", _str); 
 	}
-	return data;
-}
 
-#endregion
+	static stats     = {};
+	static statsKeys = [];
+	static statsDebugMessage  = function(_str) {
+		show_debug_message("MallRPG Stats: \n{0}", _str); 
+	}
 
-#region Utils
-global.__mallRadio = ds_queue_create();
+	static slots     = {};
+	static slotsKeys = [];
+	static slotsDebugMessage  = function(_str) {
+		show_debug_message("MallRPG Slots: \n{0}", _str); 
+	}
 
-#endregion
+	static states     = {};
+	static statesKeys = [];
+	static statesDebugMessage = function(_str) {
+		show_debug_message("MallRPG States: \n{0}", _str); 
+	}
 
-/// @ignore
-function mall_data_init() 
-{	
-	dark_database	(); // Iniciar comandos y funciones
-	mall_database	(); // Iniciar states, stats, slots, types
-	pocket_database	();
+	static mods     = {};
+	static modsKeys = [];
+	static modsDebugMessage   = function(_str) {
+		show_debug_message("MallRPG Mods: \n{0}", _str); 
+	}
 	
-	// Ultimo en iniciarse
-	party_database	();
+	// -- Core
+	static dark   = {
+		commands : {},
+		functions: {
+			// Definir defaults
+			fStatEquip00: function(_entity, _stat) {actual = control; },
+		}
+	};
+	static darkDebugMessage = function(_str) {
+		show_debug_message("MallRPG Dark: \n{0}", _str); 
+	}
+	
+	static party  = {
+		templates: {},
+		groups:    {}
+	}
+	
+	static pocket = {
+		items: {},
+		bags : {},
+		type : {}
+	}
+	
+	static wate   = {
+		manager  : {}, // Manager actual singleton
+		templates: {}
+	}
+	
+	static messages = ds_queue_create();
 }
 
-// Llamar al inicio.
-mall_data_init();
+// Generar la base de datos (estaticos)
+MallDatabase(); 
+
+// Iniciar comandos y funciones
+dark_database();
+
+// Iniciar states, stats, slots, types
+mall_database();
+
+// Iniciar objetos
+pocket_database();
+
+// Iniciar entidades
+party_database();
+
+// Iniciar templates de combates
+wate_database()

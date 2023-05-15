@@ -3,7 +3,10 @@
 /// @return {function}
 function dark_get_function(_key)
 {
-	static ret = function() {};
-	static database = MallDatabase().dark.functions;
-	return (database[$ _key] ?? ret);
+	static database = MallDatabase.dark.functions;
+	if (variable_struct_exists(database, _key) ) {
+		return (database[$ _key]);
+	}
+	
+	return undefined;
 }

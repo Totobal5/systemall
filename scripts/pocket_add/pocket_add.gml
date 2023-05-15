@@ -3,9 +3,16 @@
 /// @param	{String}	itemKey
 /// @param	{Real}		[count]=1
 /// @param	{Any*}		[vars]
-function pocket_add(_bagkey, _itemKey, _count=1, _vars)
+/// @param	{function}	[addFunction]
+function pocket_add(_bagkey, _itemKey, _count=1, _vars, _fn)
 {
-	static database = MallDatabase().pocket.bags;
+	static fun = function() {};
+	static database = MallDatabase.pocket.bags;
 	var _bag = database[$ _bagkey];
-	return (_bag.add(_itemKey, _count, _vars) );
+	var _ret = _bag.add(_itemKey, _count, _vars);
+	// Si es undefined
+	_fn ??= fun;
+	_fn();
+	
+	return _ret;
 }

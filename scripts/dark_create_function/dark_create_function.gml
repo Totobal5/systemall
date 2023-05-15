@@ -4,9 +4,11 @@
 /// @param {function} function funcion a ejecutar
 function dark_create_function(_key, _function)
 {
-	static database = MallDatabase().dark.functions;
+	static database     = MallDatabase.dark.functions;
+	static DebugMessage = MallDatabase.darkDebugMessage;
+	
 	if (!variable_struct_exists(database, _key) ) {
 		database[$ _key] = _function;
-		if (MALL_DARK_TRACE) show_debug_message("MallRPG Dark: {0} creado", _key);
+		if (MALL_DARK_TRACE) DebugMessage("(CreateFunction): " + _key + " creado");
 	}
 }

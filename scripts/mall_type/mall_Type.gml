@@ -1,7 +1,8 @@
 // Feather ignore all
 
-/// @desc	Un tipo es como debe funcionar los componentes guardados (MallStorage) entre sí.
-///			Esto sirve para diferenciar clases, especies o razas en distintos rpg (Humanos distintos a Orcos por ejemplo)
+/** @desc Un tipo es como debe funcionar los componentes guardados (MallStorage) entre sí.
+          Esto sirve para diferenciar clases, especies o razas en distintos rpg (Humanos distintos a Orcos por ejemplo)
+*/
 /// @param	{String} typeKey
 /// @return {Struct.MallType}
 function MallType(_key) : MallMod(_key) constructor 
@@ -18,12 +19,13 @@ function MallType(_key) : MallMod(_key) constructor
 	}
 }
 
-/// @param {String} typeKey	Llave del tipo
-/// @desc	Crea uno o varios type mall
+/// @desc Crea uno o varios type mall
+/// @param {String} typeKey  Llave del tipo
 function mall_add_type(_KEY) 
 {
-	static types = MallDatabase().types;
-	static keys  = MallDatabase().typesKeys;
+	static types = MallDatabase.types;
+	static keys  = MallDatabase.typesKeys;
+	static DebugMessage = MallDatabase.typesDebugMessage;
 	
 	var i=0; repeat(argument_count) 
 	{
@@ -31,7 +33,7 @@ function mall_add_type(_KEY)
 		if (!variable_struct_exists(types, _key) ) {
 			types[$ _key] = new MallType(_key);
 			array_push(keys, _key);
-			if (MALL_TRACE) {show_debug_message("MallRPG (addType): {0} added", _key); }
+			if (MALL_TRACE) DebugMessage("(AddType): " + _key + " added");
 		}
 		
 		i = i + 1;
@@ -41,7 +43,7 @@ function mall_add_type(_KEY)
 /// @param {String} typeKey
 function mall_exists_type(_KEY)
 {
-	static types = MallDatabase().types;
+	static types = MallDatabase.types;
 	return (variable_struct_exists(types, _KEY) );
 }
 
@@ -49,7 +51,7 @@ function mall_exists_type(_KEY)
 /// @returns {Struct.MallType}
 function mall_get_type(_KEY) 
 {
-	static types = MallDatabase().types;
+	static types = MallDatabase.types;
     return (types[$ _KEY] ); 
 }
 
@@ -57,7 +59,7 @@ function mall_get_type(_KEY)
 /// @return {Array<String>}
 function mall_get_type_keys(_copy=false) 
 {
-	static keys = MallDatabase().typesKeys;
+	static keys = MallDatabase.typesKeys;
 	if (_copy) {
 		var _array = array_create(0);
 		array_copy(_array, 0, keys, 0, array_length(keys) );

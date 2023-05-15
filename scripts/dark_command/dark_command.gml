@@ -3,43 +3,64 @@
 /// @param	{Bool}   [includeCaster]=true  El caster tambien puede ser afectado
 /// @param	{Real}   [targets]=1           Cantidad de objetivos afectados
 /// @return {Struct.DarkCommand}
-function DarkCommand(_darkKey, _consume=0, _include=true, _targets=1) : Mall(_darkKey) constructor 
+function DarkCommand(_darkKey, _consume=0, _include=true, _targets=1) : MallComponent(_darkKey, false) constructor 
 {
-	vars = {};
+	type = "";
 	consume = _consume;  // Cuanto de algo consume
-	include = _include;  // Si el caster es incluido
 	targets = _targets;  // Cuantos targets puede incluir en el hechizo
 	
+	onSelf    = _include // Si se puede usar en si mismo
+	onAllies  = true;    // Si se puede usar en aliados
+	onEnemies = true;    // Si se puede usar en enemigos
+
 	// function(_caster, _target, _vars) {}
 	
 	/// @desc funcion para comprobar si acierta o falla
 	/// @returns {Bool}
-	check   = __dummy;
+	funCheck   = function(_caster, _target) {};
 	
 	/// @desc funcion que ejecuta al acertar
-	execute = __dummy;
+	funAction = function(_caster, _target) {};
 	
 	/// @desc funcion que ejecuta al fallar
-	fail    = __dummy;
+	funFail   = function(_caster, _target) {};
 	
 	/// @param checkFun function(_caster, _target, _vars) {}
 	static setCheck   = function(_fun) 
 	{
-		check = method(,_fun);
+		funCheck = method(,_fun);
 		return self;
 	}
 
 	/// @param executeFun function(_caster, _target, _vars) {}
 	static setExecute = function(_fun)
 	{
-		execute = method(,_fun);
+		funAction = method(,_fun);
 		return self;
 	}
 	
 	/// @param failFun function(_caster, _target, _vars) {}
 	static setFail    = function(_fun) 
 	{
-		fail = method(,_fun);
+		funFail = method(,_fun);
 		return self;
 	}
+	
+	static setType = function(_type)
+	{
+		type = _type;
+		return self;
+	}
+	
+	
+	static exAction = function(_caster, _target)
+	{
+		return (funAction(_caster, _target) );
+	}
+	
+	static exCheck  = function(_caster, _target)
+	{
+		return (funCheck(_caster, _target) );
+	}
+	
 }

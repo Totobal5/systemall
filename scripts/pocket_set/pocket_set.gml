@@ -4,7 +4,7 @@
 /// @param	{Real}		[count]		default=1
 function pocket_set(_bagKey, _itemKey, _count=1, _index=0, _vars={})
 {
-	static database = MallDatabase().pocket.bags;
+	static database = MallDatabase.pocket.bags;
 	var _bag = database[$ _bagKey];
 	// No salir de los limites
 	_count = clamp(_count, MALL_POCKET_BAG_MIN, MALL_POCKET_BAG_MAX);

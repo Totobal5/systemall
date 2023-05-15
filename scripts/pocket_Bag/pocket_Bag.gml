@@ -23,14 +23,21 @@ function PocketBag(_init) constructor
 		}
 		// No existe y crear
 		if (!variable_struct_exists(items, _itemKey) ) {
-			array_set(order, _index, _itemKey);
 			items[$ _itemKey] = new itemComponent(_itemKey, _count, _index);
 		} 
 		// Insertar
 		else {
-			array_set(order, _index, _itemKey);
+			// Obtener indice
+			var _rem = array_find_index(order, method({key: _itemKey}, function(v,i) {
+				return (v == key);
+			}) );
+			array_delete(order, _rem, 1); // Eliminar
+			
+			// Insertar en nueva posicion
 			items[$ _itemKey].count = _count;
 		}
+		
+		array_set(order, _index, _itemKey);
 		
 		// Actualizar items
 		updateItems();
@@ -112,6 +119,7 @@ function PocketBag(_init) constructor
 		}
 	}
 	
+	#region Misq
 	static updateItems = function()
 	{
 		array_foreach(order, function(v, i) {
@@ -120,7 +128,31 @@ function PocketBag(_init) constructor
 		});
 	}
 	
-	#region METHODS
+	static save = function()
+	{
+		var _s={order: [], items: {} }
+		array_foreach(order, method(_s, function(v, i) {
+			array_push(order, v.key);
+			variable_struct_set(items, v.key, {
+				key  : v.key,
+				count: v.count,
+				index: v.i
+			});
+		}) );
+		return _s;
+	}
+	
+	static load = function(_l)
+	{
+		// Cargar objetos
+		order = _l.order;
+		items = _l.items;
+		
+		updateItems(); // Actualizar
+	}
+	
+	#endregion
+	
 	/// @param {Function} event_add
 	static setAdd = function(_METHOD) 
 	{
@@ -152,8 +184,6 @@ function PocketBag(_init) constructor
 		return self;
 	}
 
-	#endregion
-	
 	// Ejecutar funcion de inicio
 	if (is_method(_init) ) method(self, _init)();
 }

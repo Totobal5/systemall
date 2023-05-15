@@ -9,6 +9,8 @@ function Mall(_key="") constructor
 	
 	key   = _key;   // Llave con el cual se guardo en la base de datos
 	index =   -1;   // Indice en donde esta (si esta en algun array)
+	
+	/// @ignore
 	vars  =   {};
 
 	/// @param {String}	varKey  Llave de la variable a crear
@@ -20,13 +22,26 @@ function Mall(_key="") constructor
 		return self;
 	}
 	
-	
 	/// @param {String}	varkey  Llave de la variable
 	static getVar = function(_key)
 	{
-		return (flags[$ _key] );
+		return (vars[$ _key] );
 	}
 
+	/// @param {String}	varkey  Llave de la variable
+	static existsVar = function(_key)
+	{
+		return (variable_struct_exists(vars, _key) );
+	}
+	
+	/// @param {String}	varkey  Llave de la variable
+	static removeVar = function(_key)
+	{
+		var _v=variable_struct_get(vars, _key);
+		variable_struct_remove(vars, _key);
+		return _v;
+	}
+	
 	/// @desc Devuelve la llave del componente
 	/// @return {String}
 	static getKey = function()
@@ -76,15 +91,15 @@ function Mall(_key="") constructor
 		resetLimits = 1; // Limite de resets
 	
 		resetNumber =  0;
-		resetMax	= -1;
-		firtCall = false; // Se ha llamado 1 vez
+		resetMax    = -1;
+		firstCall   = false; // Se ha llamado 1 vez
 		
 		/// @desc -1 se ha desactivado, 0 aun no llega al limite de cuenta, 1 esta iterando para reiniciar, 2 se ha reiniciado
 		/// @returns {real} Description
 		static iterate = function()
 		{
 			// Si ya se cumplio el ciclo
-			if (!active) {
+			if (active) {
 				count = count + 1;
 				if (count > countLimits)
 				{
@@ -175,6 +190,8 @@ function Mall(_key="") constructor
 	
 				resetNumber: _this.resetNumber,
 				resetMax   : _this.resetMax   ,
+				
+				firstCall  : _this.firstCall
 			});
 		}
 		
@@ -195,6 +212,27 @@ function Mall(_key="") constructor
 				}
 				
 				i = i + 1;
+			}
+		}
+		
+		static copy = function() 
+		{
+			// Feather ignore GM1049
+			static Iterator = new Mall("").iteratorCreate;
+			var _new  = new Iterator(); // Crear un nuevo iterador
+			var _this = self;
+			with (_new) {
+				active = _this.active;
+				type   = _this.type;    // true: toMin, false: toMax
+		
+				// Cuenta
+				countLimits = _this.countLimits;
+	
+				// Resets
+				reset = _this.reset;             // Si tiene un reset o no
+				resetLimits = _this.resetLimits; // Limite de resets
+				resetMax	= _this.resetMax;
+				return self;
 			}
 		}
 	}
@@ -225,21 +263,20 @@ function MallComponent(_key="", _iterator=false) : Mall(_key) constructor
 {
 	// Llave para usar en display
 	displayKey = "";
-
-	from = weak_ref_create(self);   // Referencia a otra estructura
-	from = undefined;               // Eliminar referencia (feather)
+	/// @ignore Referencia a otra estructura
+	from     = weak_ref_create(self);
+	/// @ignore Iterador
 	iterator = (_iterator) ? new iteratorCreate() : undefined;
 
 	#region METHODS
 	
 	/// @desc Hereda ciertas propiedades de otro MallComponent
-	/// @param {String} component_key Description
+	/// @param {String} mallKey Description
 	/// @return {Struct.MallComponent}
 	static inherit = function(_MALL)
 	{
 		return (self);
 	}
-	
 	
 	/// @param {Struct.MallComponent} reference
 	/// @return {Struct.MallComponent}
@@ -249,7 +286,6 @@ function MallComponent(_key="", _iterator=false) : Mall(_key) constructor
 		return self;
 	}
 	
-	
 	/// @desc Devuelve la referencia
 	static getFrom = function()
 	{
@@ -258,9 +294,9 @@ function MallComponent(_key="", _iterator=false) : Mall(_key) constructor
 	
 	
 	/// @desc Establece la llave propia
-	/// @param {String} self_key
-	/// @param {String} [display_key]
-	/// @return {Struct.MallComponent}	
+	/// @param {String} key
+	/// @param {String} [displayKey]
+	/// @return {Struct.MallComponent}
 	static setKey = function(_key, _display)
 	{
 		key = _key ?? key;
@@ -268,26 +304,25 @@ function MallComponent(_key="", _iterator=false) : Mall(_key) constructor
 		return self;
 	}
 
-
-	/// @param {String} display_key
-	/// @return {Struct.MallComponent}	
+	/// @param {String} displayKey
+	/// @return {Struct.MallComponent}
 	static setDisplayKey = function(_key)
 	{
 		displayKey = _key;
 		return self;
 	}
 	
-	
 	/// @desc Regresa el texto de display
 	/// @return {String}
 	static getDisplayKey = function()
 	{
-		return (displayKey);
+		return (displayKey=="") ? key : displayKey;
 	}
+	
 	
 	// -- ITERATOR
 	
-	/// @param {Bool} iterator_type
+	/// @param {Bool} iteratorType
 	static iterActivate = function(_type)
 	{
 		iterator.active =  true;
@@ -295,31 +330,44 @@ function MallComponent(_key="", _iterator=false) : Mall(_key) constructor
 		return (self);
 	}
 	
-	
+	/// @desc Establece los valores del iterador
+	/// @param {real} countMax          Cuanta veces iterar
+	/// @param {bool} [repeat]=true     Si repite luego de completarse
+	/// @param {real} [repeatMax]=-1    Cuentas veces se repetira
 	static iterSet = function(_countMax=1, _repeat=true, _repeatsMax=-1)
 	{
-		iterator.iterator = true;
-		iterator.count = 0;
+		iterator.active = true;
+		iterator.count  = 0;
 		iterator.countLimits = _countMax;
 		
 		iterator.reset = _repeat;
 		iterator.resetCount  = 0;
 		iterator.resetLimits = _repeatsMax;
+		return (self);
 	}
-	
-	
+
+	/// @desc Establece los valores del iterador. Al completar llevara algun valor a su minimo
+	/// @param {real} countMax          Cuanta veces iterar
+	/// @param {bool} [repeat]=true     Si repite luego de completarse
+	/// @param {real} [repeatMax]=-1    Cuentas veces se repetira
 	static iterSetMin = function(_countMax=1, _repeat=true, _repeatsMax=-1)
 	{
 		iterSet(_countMax, _repeat, _repeatsMax);
 		iterator.type = false;
+		return (self);
 	}
 
-
+	/// @desc Establece los valores del iterador. Al completar llevara algun valor a su maximo
+	/// @param {real} countMax          Cuanta veces iterar
+	/// @param {bool} [repeat]=true     Si repite luego de completarse
+	/// @param {real} [repeatMax]=-1    Cuentas veces se repetira
 	static iterSetMax = function(_countMax=1, _repeat=true, _repeatsMax=-1)
 	{
 		iterSet(_countMax, _repeat, _repeatsMax);
 		iterator.type = true;
+		return (self);
 	}
+	
 	
 	#endregion
 }

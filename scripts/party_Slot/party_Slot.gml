@@ -1,7 +1,9 @@
 /// @param {Struct.PartyEntity}	party_entity
 function PartySlot(_entity=other) : Mall() constructor 
 {	
-	from = weak_ref_create(_entity);		// Crear referencia a la entidad
+	/// @ignore Crear referencia a la entidad
+	from = is_instanceof(_entity, PartyEntity) ? weak_ref_create(_entity) : undefined;
+	/// @ignore Llaves
 	keys = [];
 	array_foreach(mall_get_slot_keys(), function(_key)  {
 		var _component = mall_get_slot(_key);
@@ -12,6 +14,7 @@ function PartySlot(_entity=other) : Mall() constructor
 	
 	#region METHODS
 	
+	/// @param {Struct.MallSlot} slotComponent
 	static createAtom = function(_slot) constructor 
 	{
 		/// @ignore
@@ -19,17 +22,28 @@ function PartySlot(_entity=other) : Mall() constructor
 
 		key        = _slot.key;
 		displayKey = _slot.displayKey;
-	
-		permited = {};    // Items permetidos
-		active   = true;  // Si se puede usar
-	
+		
+		/// @ignore Items permetidos
+		permited = {};
+		active   = _slot.init;  // Si se puede usar
+		
 		equipped = undefined; // Donde se almacenan los objetos que lleva
 		previous = undefined; // Objeto anterior que se llevo
-		desequip = false;     // Indicar que se desequipa o no
-	
+		
+		/// @ignore Indicar que se desequipa o no
+		desequip = false;
+		
+		/// @ignore
+		checkItem  = _slot.checkItem ;
 		funCompare = _slot.funCompare;
-	
+		
 		#region METHODS
+		/// @ignore
+		static fnDefaultCompare = function(_entity, _itemA, _itemB)
+		{
+			return {noUse: true}
+		}
+		
 		static send = function()
 		{
 			return {
@@ -41,13 +55,21 @@ function PartySlot(_entity=other) : Mall() constructor
 			};
 		}
 		
-		/// @param {struct.PartyStat} partyStat
-		/// @param {struct.PocketItem} itemEquipped
-		/// @param {struct.PocketItem} itemCompare
-		exCompare = function(_partyStat, _itemA, _itemB)
+		/// @param {struct.PartyStat}  entity
+		/// @param {struct.PocketItem} item
+		exCheckItem = function(_entity, _item)
 		{
-			static fun = dark_get_function(funCompare);
-			return (fun(_partyStat, _itemA, _itemB) );
+			static fun = dark_get_function(checkItem) ?? function(_entity, _item) {return true};
+			return (fun(_entity, _item) );
+		}
+
+		/// @param {struct.PartyStat}  entity
+		/// @param {struct.PocketItem} itemA
+		/// @param {struct.PocketItem} itemB
+		exCompare  = function(_entity, _itemA, _itemB)
+		{
+			static fun = dark_get_function(funCompare) ?? defaultCompare;
+			return (fun(_entity, _itemA, _itemB) );
 		}
 		
 		/// @desc Guarda este componente
@@ -60,6 +82,7 @@ function PartySlot(_entity=other) : Mall() constructor
 				
 				equipped: (_this.equipped == undefined) ? undefined : _this.equipped.key,
 				previous: (_this.previous == undefined) ? undefined : _this.previous.key,
+				active  : _this.active
 				
 			});
 		}
@@ -70,6 +93,8 @@ function PartySlot(_entity=other) : Mall() constructor
 			if (_l.is != is) exit;
 			equipped = (is_ptr(_l.equipped) ) ? undefined : pocket_data_get(_l.equipped);
 			previous = (is_ptr(_l.previous) ) ? undefined : pocket_data_get(_l.previous);
+			active   = _l.active;
+			
 			return self;
 		}
 	
@@ -82,34 +107,38 @@ function PartySlot(_entity=other) : Mall() constructor
 	{
         return (self[$ _key] );
     } 
-	
-	
+		
 	/// @param {String} slotKey  Llave del slot
-	/// @param {String} key      Puede ser un itemtype para aceptar todos los objetos que son de ese tipo. o un itemKey para objetos individuales
+	/// @param {String,Array} key      Puede ser un itemtype para aceptar todos los objetos que son de ese tipo. o un itemKey para objetos individuales
 	static setPermited = function(_slotKey, _key)
 	{
-		static types = MallDatabase().pocket.type ;
-		static items = MallDatabase().pocket.items;
+		static types = MallDatabase.pocket.type ;
+		static items = MallDatabase.pocket.items;
 		
-		var _slot = get(_slotKey);
-		if (_slot == undefined) return self;
-		var _slotPermited = _slot.permited;
+		if (is_array(_key) ) {
+			var i=0; repeat(array_length(_key) ) {
+				setPermited(_slotKey, _key[i++] );
+			}
+		} else {
+			var _slot = get(_slotKey);
+			if (_slot == undefined) return self;
+			var _slotPermited = _slot.permited;
 		
-		// Si se paso un tipo
-		if (variable_struct_exists(types, _key) ) {
-			var _types = types[$ _key]; // Obtener la string de todos los objetos
-			var _keys  = variable_struct_get_names(_types);
-			var i=0; repeat(array_length(_keys) ) {
-				var _k = _keys[i];
-				_slotPermited[$ _k] = 0;
-				i = i + 1;
+			// Si se paso un tipo
+			if (variable_struct_exists(types, _key) ) {
+				var _types = types[$ _key]; // Obtener la string de todos los objetos
+				var _keys  = variable_struct_get_names(_types);
+				var i=0; repeat(array_length(_keys) ) {
+					var _k = _keys[i];
+					_slotPermited[$ _k] = 0;
+					i = i + 1;
+				}
+			}
+			// Se paso un objeto
+			else if (variable_struct_exists(items, _key) ) {
+				_slotPermited[$ _key] = 0;
 			}
 		}
-		// Se paso un objeto
-		else if (variable_struct_exists(items, _key) ) {
-			_slotPermited[$ _key] = 0;
-		}
-		
 		return self;
 	}
 	
@@ -117,8 +146,8 @@ function PartySlot(_entity=other) : Mall() constructor
 	/// @param {String} key
 	static removePermited = function(_slotKey, _key)
 	{
-		static types = MallDatabase().pocket.type ;
-		static items = MallDatabase().pocket.items;
+		static types = MallDatabase.pocket.type ;
+		static items = MallDatabase.pocket.items;
 		
 		var _slot = get(_slotKey);
 		if (_slot == undefined) return self;
@@ -144,12 +173,11 @@ function PartySlot(_entity=other) : Mall() constructor
 	
 	
 	/// @desc Equipa un objeto en el slot indicado. Si se logra equipar devuelve un struct
-	/// @param {String} slotKey
-	/// @param {String} itemKey
+	/// @param {String} slotKey En que slot equipar el objeto
+	/// @param {String} itemKey Llave del objeto
 	static equip = function(_key, _item_key) 
 	{
 		// Feather ignore all
-		var _ret  = {result: false, previous: undefined};
 		var _slot = get(_key);
 		if (MALL_ERROR) {
 			if (is_undefined(_slot) ) {
@@ -158,12 +186,17 @@ function PartySlot(_entity=other) : Mall() constructor
 			}
 		}
 		
+		var _ret = {result: false, previous: _slot.previous};
+
 		// Obtener datos de este objeto
 		var _item = pocket_data_get(_item_key);
-		
+
 		// Si puede equipar este objeto
-		if (variable_struct_exists(_slot.permited, _item.key) ) {
-			var _entity   = getEntity()
+		if (!is_undefined(_item) && variable_struct_exists(_slot.permited, _item.key) ) {
+			var _entity = getEntity();
+			// Check propio del slot respecto a un objeto
+			if (!_slot.exCheckItem(_entity, _item) ) return _ret;
+			
 			var _previous = _slot.previous;
 			// Equipar objeto y actualizar el previo
 			_slot.previous = _slot.equipped;
@@ -192,11 +225,10 @@ function PartySlot(_entity=other) : Mall() constructor
 		return _ret;
     } 
 	
-	
 	/// @param {String} slotKey
 	static desequip = function(_key) 
 	{
-		static noitem = new PocketItem("");
+		static noitem = new PocketItem("", "");
 		var _ret  = {result: false, previous: undefined};
 		var _slot = get(_key);
 		if (MALL_ERROR) {
@@ -253,13 +285,29 @@ function PartySlot(_entity=other) : Mall() constructor
 		return self;
 	}
 	
-	/// @param {String} itemKey
+	/// @param {String} slotKey
 	/// @returns {Bool}
 	static isEquipped = function(_key) 
 	{
-		var _item = get(_key).equipped;
-        return (_item.key == _key);
+		var _slot = get(_key);
+        return (_slot.equipped != undefined);
     }
+
+	/// @param {String} slotKey
+	/// @returns {Bool}
+	static isEmpty = function(_key) {
+		var _slot = get(_key);
+		return (_slot.equipped == undefined);
+	}
+
+	/// @param {String} slotKey
+	/// @param {String} typeKey
+	static isPermited = function(_key, _typeKey)
+	{
+		var _slot = get(_key);
+		return (variable_struct_exists(_slot.permited, _typeKey) );
+	}
+	
 	
 	/// Compara las estadisticas del objeto actual con otro objeto obteniendo la diferencia en estadisticas
 	/// @param {String} slotKey
@@ -270,13 +318,12 @@ function PartySlot(_entity=other) : Mall() constructor
 		if (!weak_ref_alive(from) ) exit;
 		var _slot = get(_key);
 		
-		var _itemE = _slot.equipped;
-		var _itemC = pocket_data_get(_itemKey);
+		var _itemA = _slot.equipped;            // Equipado
+		var _itemB = pocket_data_get(_itemKey); // A Equipar
 
-		var _stats = getEntityStat();
-		return (_slot.exCompare(_stats, _itemE, _itemC) );
+		var _entity = getEntity();
+		return (_slot.exCompare(_entity, _itemA, _itemB) );
 	}
-	
 	
 	/// @desc Regresa las estadisticas sin este objeto equipado.
 	/// @param {String} equipment_key
@@ -286,9 +333,9 @@ function PartySlot(_entity=other) : Mall() constructor
 		static noitem = new PocketItem("");
 		var _slot = get(_key);
 		
-		var _item = _slot.equipped;
-		var _stats = getEntityStat();
-		return (_slot.exCompare(_stats, _item, noitem) );
+		var _item   = _slot.equipped;
+		var _entity = getEntity();
+		return (_slot.exCompare(_entity, _item, noitem) );
 	}
 	
 	
@@ -321,7 +368,7 @@ function PartySlot(_entity=other) : Mall() constructor
 			version = MALL_VERSION;
 			is      = _this.is    ;
 			
-			flags = _this.flags;
+			vars = _this.vars;
 		}
 		
 		var i=0; repeat(array_length(keys) ) {
@@ -338,7 +385,7 @@ function PartySlot(_entity=other) : Mall() constructor
 	static load = function(_l)
 	{
 		if (_l.is != is) exit;
-		flags = _l.flags;
+		vars = _l.vars;
 		
 		var i=0; repeat(array_length(keys) ) {
 			var _key = keys[i]   ;

@@ -5,7 +5,7 @@
 /// @return {Struct.PocketBag}
 function pocket_get(_bagKey, _key=0, _flags)
 {
-	static database = MallDatabase().pocket.bags;
+	static database = MallDatabase.pocket.bags;
 	var _bag = database[$ _bagKey];
 	// Si es a partir del indice
 	if (is_numeric(_key) ) {_key = _bag.order[_key]; }

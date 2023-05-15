@@ -1,10 +1,12 @@
-/// @param {String}                effectKey
-/// @param {Real}                  startValue
-/// @param {Enum.MALL_NUMTYPE}     startType
-/// @param {Real, Array}           turnStart          array para una cantidad aleatoria
-/// @param {Real, Array}           turnEnd            array para una cantidad aleatoria
-/// @param {string}                [funTurnStart]
-/// @param {string}                [funTurnEnd]
+// Feather ignore all
+
+/// @param {String}            effectKey
+/// @param {Real}              startValue
+/// @param {Enum.MALL_NUMTYPE} startType
+/// @param {Real, Array}       turnStart          array para una cantidad aleatoria
+/// @param {Real, Array}       turnEnd            array para una cantidad aleatoria
+/// @param {string}            [funTurnStart]
+/// @param {string}            [funTurnEnd]
 function DarkEffect(_effectKey, _startVal, _startType, _turnStart, _turnEnd, _funTurnStart, _funTurnEnd) : Mall(_effectKey) constructor 
 {
 	static effectNumber = 1;
@@ -12,11 +14,12 @@ function DarkEffect(_effectKey, _startVal, _startType, _turnStart, _turnEnd, _fu
 	commandKey = "" // Que Comando lo crea
 
 	value =  _startVal; // Valor que cambia real/porcentual
-	type  = _startType; 
+	type  = _startType;
 	
-	ready = false;     // Se marca que el efecto termino
+	// Se marca que el efecto termino
+	ready = false;
 	
-	turn = 0;        // En que turno va
+	turn = 0; // En que turno va
 	turnMarkStart = 0;   // En que turno global empezo
 	turnMarkEnd   = 0;   // En que turno global termino
 	turnType      = 0;
@@ -73,14 +76,14 @@ function DarkEffect(_effectKey, _startVal, _startType, _turnStart, _turnEnd, _fu
 		static fun = dark_get_function(funRemove);
 		return (fun(_entity) );
 	}
-
+	
 	/// @param {Real} turnType
 	/// @param {struct.PartyEntity} partyEntity
 	exTurn = function(_type=0, _entity)
 	{
 		static tstart = dark_get_function(funTurnStart);
 		static tend   = dark_get_function(funTurnEnd);
-		return (!_type)	? tstart(_entity) : tend(_entity)
+		return (!_type) ? tstart(_entity) : tend(_entity)
 	}
 	
 	

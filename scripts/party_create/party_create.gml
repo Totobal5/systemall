@@ -6,14 +6,14 @@
 /// @return {Struct.PartyEntity}
 function party_create(_key, _group=undefined, _level=1, _args={}) 
 {
-	static templates = MallDatabase().party.templates;
+	static templates = MallDatabase.party.templates;
 	var _template = templates[$ _key];
 	
 	// Nivel global maximo 
 	var _maxLevel = clamp(_level, MALL_PARTY_MIN_LEVEL, MALL_PARTY_MAX_LEVEL);
 	
 	// Crear entidad a partir de un template
-	var _entity = _template(_maxLevel, _args).setKey(_key);
+	var _entity = _template(_maxLevel, _args);
 	
 	// Añadir a un grupo si se requiere
 	if (is_string(_group) ) party_add(_group, _entity);
