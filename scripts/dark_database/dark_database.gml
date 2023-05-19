@@ -3,80 +3,83 @@
 #macro DARK_TYPE_ALLMENU   "MENU&BATALLA"
 #macro DARK_TYPE_MENU      "MENU"
 #macro DARK_TYPE_BATTLE    "BATALLA"
+#macro DARK_TYPE_EXTRA     "EXTRAS"
 
 /// En esta funcion se inician todos los comandos y funciones para usar en MallRPG
 function dark_database() 
 {
-	#region Dark stats
-	dark_create_function("fStatLevel01", function(_partyStat, _level) {
-		return round( (base * _level) + (_level+10) );
-	});
+	#macro DARK_COM_DEFAULT_ATTACK "DARK.COM.DEFAULT.ATTACK"
+	dark_create(new (function() : DarkCommand(DARK_COM_DEFAULT_ATTACK) constructor 
+	{
+		// No aparecer en el menu
+		type = DARK_TYPE_BATTLE;
 	
-	// Para EXP
-	dark_create_function("fStatLevel02" , function(_partyStat, _level) {
-		/// @self PartyStat$$createAtom
-		return round( (base * _level * 8) + (_level*2) + 60);
-	});	
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static cinematic = function(_caster, _target) 
+		{
+			var _vtName = "BattleAnimation::" + key;
+			var _vt = vuelta(_vtName, [
+				new VueltaMove(  "instance", 1, -24, 0, true, 0.0, 0.1),
+				new VueltaMethod(function() /*=>*/ {
+					var _instance  = getVariable("instance");
+					
+					with (_instance) {
+						customShader = shNegativeColor;
+						call_later(.1, time_source_units_seconds, function() /*=>*/ {;customShader = noone});
+					}
+					
+					// Sonido
+					cueca_play(AUD_SOUND, snCombateGolpe01);
+					
+					// Avanzar mensajes y ejecutar comando de ataque fisico
+					oCoManager.msgAdvance();
+					var _this      = getVariable(  "this");
+					var _objective = getVariable("target");
+					var _command = getVariable("command");
+					
+					method(_this, action) (_objective);
+				}),
+				// Cambiar de color al target
+				new VueltaMethod(function()/*=>*/{
+					var _instance = getVariable("instanceT");
+					with (_instance) {
+						customShader = shNegativeColor;
+						call_later(.1, time_source_units_seconds, function() /*=>*/ {;customShader = noone});
+					}
+					// Regresar personaje a donde estaba
+					var _return = vuelta("BattleAnimation::ReturnPlayer", [
+						new VueltaMove("instance" , 1, 24, 0, true)
+					] )
+					_return.setVariable("instance", getVariable("instance") );
+					_return.start();
+				}),
+				new VueltaMove("instanceT", 2, -8, 0, true),
+				new VueltaMove("instanceT", 2,  8, 0, true),
+				new VueltaLoop(function() /*=>*/ {
+					if (oCoManager.msgIsReady() ) {
+						oCoManager.msgAdvance();
+						return true;
+					}
+					
+					return false;
+				})
+			] );
+			
+			_vt.setVariable("this"   , self);
+			_vt.setVariable("command", _command);
+			_vt.setVariable("target" ,  _target);
+			_vt.setVariable("instance" , getVar("Instancia") );
+			_vt.setVariable("instanceT", _target.getVar("Instancia") );
+			
+			setVar("WaitFor", _vt.start() );
+		}
 	
-	// Otras estadisticas
-	dark_create_function("fStatLevel03" , function(_partyStat, _level) {
-		return round( ( (base * _level) / 40) + 5);
-	})
+		static action = DK_DefaultAttack
 	
-	dark_create_function("fStatLevel04" , function(_partyStat, _level) {
-		/// @self Struct.PartyStat
-		var _velocidad = _partyStat.get(STAT_VELOCIDAD);
-		return round( (_velocidad.peak / 10) );
-	});
+	})());
 	
-	#endregion
 	
-	#region Dark states
-	dark_create_function("fStateVenenoS"   , function(_entity, _vars) {
-		var _stat = _entity.getStat();
-		var _sub  = _stat.add(STAT_EN, -30, MALL_NUMTYPE.PERCENT, 2);
-		// Enviar mensaje al bus
-		mall_message_send(
-			lexicon_text("GUI.VENENO.MSG", _entity.key, _sub)
-		)
-	});
-
-	dark_create_function("fStateQuemadoS"  , function(entity, _vars) {
-		var _stat = entity.getStats();
-		var _sub  = _stat. add("PS", -10, MALL_NUMTYPE.PERCENT, 2); 
-		
-		// enviar mensaje
-		mall_message_send(
-			lexicon_text("GUI.QUEMADO.MSG", entity.key, _sub) 
-		);
-	});
-
-	dark_create_function("fStateCongeladoS", function(entity, _vars) {
-		// Pasar el turno
-		entity.pass = true;
-		
-		// enviar mensaje
-		mall_message_send(
-			lexicon_text("GUI.CONGELADO.MSG", entity.key) 
-		);
-	});
-
-	dark_create_function("fStateDormidoS"  , function(entity, _vars) {
-		// Pasar el turno
-		entity.pass = true;
-		
-		// enviar mensaje
-		mall_message_send(
-			lexicon_text("GUI.DORMIDO.MSG", entity.key) 
-		);
-	});
-	
-	#endregion
-	
-	dark_create_function("fPartyCheckExp"  , function(_vars) {
-		var _exp = get(STAT_EXP);
-		return (_exp.actual >= _exp.peak);
-	});
 	
 	#region Dark Objetos
 	/// Aumentar el especial en 20% por 1 turno cada 2 turnos
@@ -88,19 +91,10 @@ function dark_database()
 	
 	#endregion
 
-	#region Dark Combates
-	dark_create_function("fWateDefaultAttack", function(_power, _fue, _def) {
-		var _sum = (_fue + _def) / 80;
-		var _res = _fue / _def;
-		return round(_power * _res * _sum);
-	})
-	
-	
-	#endregion
 
 	#region Dark Commands
 	#macro DARK_COMMAND_HEAL1 "DARK.COMMAND.HEAL1"
-	dark_create_command(
+	dark_create(
 		new DarkCommand(DARK_COMMAND_HEAL1, 10, true, 1).
 		setCheck  (function(_caster, _target) {
 			var _ccontrol = _caster.getControl(), _tcontrol = _target.getControl();
@@ -144,7 +138,7 @@ function dark_database()
 	);
 	
 	#macro DARK_COMMAND_HEAL2 "DARK.COMMAND.HEAL2"
-	dark_create_command(
+	dark_create(
 		new DarkCommand(DARK_COMMAND_HEAL2, 60, false, 1).
 		setExecute(function(_caster, _target) {
 			var _ret = {result: false, value: 0};
@@ -172,7 +166,7 @@ function dark_database()
 	);
 
 	#macro DARK_COMMAND_HEAL3 "DARK.COMMAND.HEAL3"
-	dark_create_command(
+	dark_create(
 		new DarkCommand(DARK_COMMAND_HEAL3, 90, true, 1).
 		setCheck  (function(_caster, _target) {
 			var _ccontrol = _caster.getControl(), _tcontrol = _target.getControl();
@@ -217,7 +211,7 @@ function dark_database()
 	);
 
 	#macro DARK_COMMAND_ANTIDOTO "DARK.COMMAND.ANTIDOTO"
-	dark_create_command(
+	dark_create(
 		new DarkCommand(DARK_COMMAND_ANTIDOTO, 60, true, 1).
 		setExecute(function(_caster, _target) {
 			var _ret = {result: false, value: 0};
@@ -283,7 +277,7 @@ function dark_database()
 	_.onAllies  = false;
 	_.onEnemies = true;  // Solo se pueden seleccionar enemigos
 	
-	dark_create_command(_);
+	dark_create(_);
 	
 	#region CAST.FORED
 	_ = new DarkCommand("DARK.COMMAND.CAST.FORED", 20, true, 1).setExecute(function(_caster) {
@@ -344,10 +338,65 @@ function dark_database()
 	#endregion
 	
 	
-	dark_create_command(_);
+	dark_create(_);
 
 
 
 
 	#endregion
 }
+
+
+function DK_DefaultAttack(_target)
+{
+	var _cf = statGet(STAT_FUERZA).control;
+	var _td = _target.statGet(STAT_DEFENSA).control;
+	
+	var _sum = (_cf + _td) / 80;
+	var _res = _cf / _td;
+	
+	var _power = statGet(STAT_PODER).control;
+	return round(_power * _res * _sum)
+}
+
+function DK_DefaultPoisoned()
+{
+	return (statAdd(STAT_EN, -30, MALL_NUMTYPE.PERCENT, 2) );
+}
+
+function DK_DefaultBurned()
+{
+	return (statAdd(STAT_EN, -10, MALL_NUMTYPE.PERCENT, 2) );
+}
+
+function DK_DefaultPassTurn()
+{
+	pass = true;
+	passCount++;
+}
+
+
+#region Efectos
+#macro DARK_EFF_DIBUJO "DARK.EFF.DIBUJO"
+function DK_ACCDibujo() : DarkEffect(DARK_EFF_DIBUJO, "") constructor
+{
+	stateKey = "ACCDibujo1";
+	
+	/// @param {Struct.PartyEntity} entity
+	static added = function(entity) 
+	{
+		var _control = entity.controlGet(stateKey);
+		
+		// Añadir
+		_control.stats[$ STAT_FESPECIAL] = [10, MALL_NUMTYPE.PERCENT];
+		array_push(_control.statsKeys, STAT_FESPECIAL);
+	}
+	
+	/// @param {Struct.PartyEntity} entity
+	static combatEnd = function(entity)
+	{
+		entity.controlEffectRemove(stateKey, function(effect) {return (effect.key = DARK_EFF_DIBUJO);} );
+	}
+}
+
+#endregion

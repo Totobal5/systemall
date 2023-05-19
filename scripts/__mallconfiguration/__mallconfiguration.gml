@@ -1,10 +1,10 @@
-#macro MALL_MY_VERSION  ":1.0"
-#macro MALL_VERSION     "v2.5"+MALL_MY_VERSION
+#macro MALL_VERSION     "v2.8"
+#macro MALL_MY_VERSION  MALL_VERSION+"::1.0"
 #macro MALL_TRACE       true
 #macro MALL_ERROR       true
 #macro MALL_MSJ_DV      "MallRPG "
 
-// -- STATS
+#region STATS
 #macro MALL_STAT_ROUND       1               // 0: value, 1: round(x), 2: floor(x)
 #macro MALL_STAT_DEFAULT_MAX 9999
 #macro MALL_STAT_DEFAULT_MIN 0
@@ -12,17 +12,24 @@
 #macro MALL_STAT_DEFAULT_LEVEL_MIN 0
 #macro MALL_STAT_DEFAULT_LEVEL_MAX 100
 
+enum STAT_NUMTARG {
+	ACTUAL, PEAK, EQUIPMENT, CONTROL, LACTUAL, LPEAK
+}
+
+#endregion
+
 #region PARTY
-#macro MALL_PARTY_TRACE true
-#macro MALL_PARTY_MIN_LEVEL 1
-#macro MALL_PARTY_MAX_LEVEL 100
+#macro __MALL_PARTY_TRACE true    // Indicar procesos realizados
+#macro __MALL_PARTY_DEBUG false   // Comprobar por errores
+#macro __MALL_PARTY_MIN_LEVEL 1
+#macro __MALL_PARTY_MAX_LEVEL 100
 
 #endregion
 
 #region POCKET
-#macro MALL_POCKET_TRACE true
-#macro MALL_POCKET_BAG_MIN	 0
-#macro MALL_POCKET_BAG_MAX	99
+#macro __MALL_POCKET_TRACE   true
+#macro __MALL_POCKET_BAG_MIN 0
+#macro __MALL_POCKET_BAG_MAX 99
 
 #endregion
 
@@ -36,8 +43,15 @@
 
 #endregion
 
-enum MALL_NUMTYPE {REAL , PERCENT}
-enum MALL_NUMVAL  {VALUE, TYPE}
+enum MALL_NUMTYPE 
+{
+	REAL , PERCENT
+}
+
+enum MALL_NUMVAL  
+{
+	VALUE, TYPE
+}
 
 function MallDatabase()
 {
@@ -73,16 +87,8 @@ function MallDatabase()
 	}
 	
 	// -- Core
-	static dark   = {
-		commands : {},
-		functions: {
-			// Definir defaults
-			fStatEquip00: function(_entity, _stat) {actual = control; },
-		}
-	};
-	static darkDebugMessage = function(_str) {
-		show_debug_message("MallRPG Dark: \n{0}", _str); 
-	}
+	static dark = {};
+	static darkShow = function(_str) {show_debug_message("MallRPG Dark: \n{0}", _str); }
 	
 	static party  = {
 		templates: {},
@@ -95,6 +101,8 @@ function MallDatabase()
 		type : {}
 	}
 	
+	static items = {};
+	
 	static wate   = {
 		manager  : {}, // Manager actual singleton
 		templates: {}
@@ -105,6 +113,8 @@ function MallDatabase()
 
 // Generar la base de datos (estaticos)
 MallDatabase(); 
+var _f = new Mall()
+
 
 // Iniciar comandos y funciones
 dark_database();

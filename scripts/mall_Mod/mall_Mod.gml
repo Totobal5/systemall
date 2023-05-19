@@ -1,100 +1,24 @@
-/// @desc	Donde se guarda la configuracion para los modificadores del proyecto
-///			Se configuran: 
+/// @desc   Donde se guarda la configuracion para los modificadores del proyecto
+///         Se configuran: 
 /// @param {String} modKey
 /// @return {Struct.MallMod}
-function MallMod(_modKey) : MallComponent(_modKey, false) constructor 
+function MallMod(_modKey) : Mall(_modKey) constructor 
 {
-	// -- Eventos --
-	/// @ignore
-	funStart = "";
-	/// @ignore
-	funEnd   = "";
+	static startAction = __dummy;
+	static endAction   = __dummy;
 	
-	/// @ignore
-	funEquip    = "";
-	/// @ignore
-	funDesequip = "";
-	/// @ignore
-	funTurnStart = "";
-	/// @ignore
-	funTurnEnd   = "";
+	static turnAction = __dummy;
+	static turnStart  = __dummy;
+	static turnEnd    = __dummy;
 	
-	#region METHODS	
-
-	/// @param	{String} [funStart]   
-	/// @param	{String} [funEnd]       
-	/// @return {Struct.MallMod}
-	static setFunSE = function(_funS, _funE)
-	{
-		funStart = _funS;
-		funEnd   = _funE;
-		return self;
-	}
-
-	/// @param	{String} funEquip
-	static setFunEquip    = function(_fun)
-	{
-		funEquip = _fun;
-		return self;
-	}
-	
-	/// @param	{String} funDesequip
-	/// @desc funcion a ejecutar cuando se equip
-	static setFunDesequip = function(_fun) 
-	{
-		funDesequip = _fun;
-		return self;
-	}
-
-	/// @param	{String} [funStart]   
-	/// @param	{String} [funEnd]     
-	static setFunTurn = function(_funS, _funE)
-	{
-		funTurnStart = _funS ?? funTurnStart;
-		funTurnEnd   = _funE ??   funTurnEnd;
-		return self;
-	}
-	
-	
-	#region Funciones
-	/// @param {struct.PartyEntity} partyEntity	
-	exStart = function(_entity)
-	{
-		static fun = dark_get_function(funStart) ?? function(_entity) {} 
-		return (fun(_entity) );
-	}
-
-	/// @param {struct.PartyEntity} partyEntity
-	exEnd   = function(_entity)
-	{
-		static fun = dark_get_function(funEnd)   ?? function(_entity) {};
-		return (fun(_entity) );
-	}
-	
-	/// @param {struct.PartyEntity} partyEntity
-	exEquip    = function(_entity)
-	{
-		static fun = dark_get_function(funEquip)    ?? function(_entity) {};
-		return (fun(_entity) );
-	}
-
-	/// @param {struct.PartyEntity} partyEntity
-	exDesequip = function(_entity)
-	{
-		static fun = dark_get_function(funDesequip) ?? function(_entity) {};
-		return (fun(_entity) );
-	}
-	
-	
-	#endregion
-	
-	
-	#endregion
+	/// @desc Este evento se utiliza cuando se equipa un objeto
+	static equip    = __dummy;
+	static desequip = __dummy;
 }
 
 /// @desc Crea un modificador
 /// @param {String} modKey...
-function mall_add_mod() 
+function mall_create_mod() 
 {
 	static mods = MallDatabase.mods;
 	static keys = MallDatabase.modsKeys;

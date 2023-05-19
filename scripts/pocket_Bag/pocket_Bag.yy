@@ -5,7 +5,7 @@
   "isCompatibility": false,
   "isDnD": false,
   "parent": {
-    "name": "Constructor",
-    "path": "folders/Systemall/Pocket/Constructor.yy",
+    "name": "Pocket",
+    "path": "folders/Systemall/Pocket.yy",
   },
 }

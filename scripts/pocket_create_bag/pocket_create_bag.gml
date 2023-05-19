@@ -1,14 +1,13 @@
 /// @desc Crea una bolsa para agregar objetos
-/// @param	{String} bagKey
-/// @param	{Function} initFunction
+/// @param {String} bagKey
+/// @param {Struct.PocketBag} bag
 /// @return {Struct.PocketBag}
-function pocket_create_bag(_bagKey, _initFun)
+function pocket_create_bag(_bagkey, _bag)
 {
 	static database = MallDatabase.pocket.bags;
-	if (!variable_struct_exists(database, _bagKey) ) {
-		database[$ _bagKey] = new PocketBag(_initFun);
-		if (MALL_POCKET_TRACE) show_debug_message("MallRPG Pocket: {0} se ha creado", _bagKey);
+	if (!struct_exists(database, _bagkey) ) {
+		database[$ _bagkey] = _bag;
+		if (__MALL_PARTY_TRACE) show_debug_message("MallRPG Pocket: {0} se ha creado", _bagkey);
 	}
-	
-	return (database[$ _bagKey] );
+	return _bag;
 }

@@ -5,12 +5,15 @@ function PocketBag(_init) constructor
 	order = [];
 	items = {};
 	// Limites de objetos que puede llevar
-	limit = [MALL_POCKET_BAG_MIN, MALL_POCKET_BAG_MAX]; 
+	limit = [__MALL_POCKET_BAG_MIN, __MALL_POCKET_BAG_MAX]; 
 	
 	/// @desc Struct que guarda la informacion de los objetos agregados
-	static itemComponent = function(_key, _count, _index) constructor
+	/// @param {Struct.PartyItem} item
+	/// @param {real}             count
+	/// @param {real}             index
+	static itemComponent = function(_item, _count, _index) constructor
 	{
-		key   = _key;
+		item  = _item;
 		count = _count;
 		index = _index;
 	}
@@ -119,7 +122,7 @@ function PocketBag(_init) constructor
 		}
 	}
 	
-	#region Misq
+	#region -- Misq
 	static updateItems = function()
 	{
 		array_foreach(order, function(v, i) {
@@ -152,38 +155,4 @@ function PocketBag(_init) constructor
 	}
 	
 	#endregion
-	
-	/// @param {Function} event_add
-	static setAdd = function(_METHOD) 
-	{
-		add = method(self, _METHOD);
-		return self;
-	}
-	
-	
-	/// @param {Function} event_delete
-	static setRemove = function(_METHOD) 
-	{
-		remove = method(self, _METHOD);
-		return self;
-	}	
-	
-	
-	/// @param {Function} foreach_method
-	static setForeach = function(_METHOD) 
-	{
-		foreach = method(self,_METHOD);
-		return self;
-	}
-	
-	
-	/// @param {Function} get_method
-	static setGet = function(_METHOD) 
-	{
-		get = method(self, _METHOD);
-		return self;
-	}
-
-	// Ejecutar funcion de inicio
-	if (is_method(_init) ) method(self, _init)();
 }

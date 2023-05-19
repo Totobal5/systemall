@@ -25,48 +25,99 @@
 #macro TYPE_ALL  "ALL"
 #macro TYPE_BOSS "BOSS"
 
+
+function MallStatEN()  : MallStat() constructor 
+{
+	key  = "UI.STAT.ENERGY";
+	type = MALL_NUMTYPE.REAL;
+	limitMin = 0;
+	limitMax = 9999;
+	
+	// Nivel
+	levelLimitMin = 0;
+	levelLimitMax = 100;
+	funLevel  = function(stat, level) {return round( (base * level) + (level+10) ); }
+	
+	// Guardar valores
+	saveValue = true;
+}
+
+function MallStatEPM() : MallStatEN() constructor 
+{
+	key = "UI.STAT.ENERGY";
+}
+
+function MallStatEXP() : MallStat() constructor 
+{
+	key  = "UI.STAT.EXP";
+	type = MALL_NUMTYPE.REAL;
+	limitMin = 0;
+	limitMax = 999999;
+	
+	// Nivel
+	levelLimitMin = 0;
+	levelLimitMax = 100;
+	funLevel = function(stat, level) {return round( (base * level * 8) + (level*2) + 60); }
+	
+	// Cuando sube de nivel se regresa al valor minimo
+	iterSetMin(1, true, -1);
+	
+	saveValue = true;
+}
+
+function MallStatExt(_key) : MallStat(_key) constructor 
+{
+	type = MALL_NUMTYPE.REAL;
+	limitMin = 0;
+	limitMax = 999;
+	
+	// Nivel
+	levelLimitMin = 0;
+	levelLimitMax = 100;
+	funLevel  = function(stat, level) {return round( ( (base * level) / 40) + 5);}
+}
+
 /// @ignore
 function mall_database()
 {
 	// Crear estadisticas
-	mall_add_stat (STAT_EN, STAT_EPM, STAT_EXP, STAT_PODER, STAT_FUERZA, STAT_DEFENSA, STAT_FESPECIAL, STAT_DESPECIAL, STAT_VELOCIDAD, STAT_CRITICO);
-	mall_add_state(STATE_VIVO, STATE_VENENO, STATE_QUEMADO, STATE_CONGELADO, STATE_DORMIDO, STATE_VORTEX);
-	mall_add_slot (SLOT_ARMA , SLOT_CUERPO , SLOT_ACCESORIO1, SLOT_ACCESORIO2);
-	
-	mall_add_type (TYPE_ALL, TYPE_BOSS);
-	
-	#region Stats
-	mall_customize_stat(STAT_EN, 0, MALL_NUMTYPE.REAL, [0, 9999], "UI.STAT.ENERGY").setLevel(0, 100, "fStatLevel01").setFunEquip("").toggleSValue();
-	mall_inherit_stat  (STAT_EPM, STAT_EN, true, true, "UI.STAT.ECTOPLASMA").setFunEquip("").toggleSValue();
-	mall_customize_stat(STAT_EXP, 0, MALL_NUMTYPE.REAL, [0, 99999] , "UI.STAT.EXP").iterSetMin(1, true, -1).setLevel(0, 100, "fStatLevel02").setFunEquip("").toggleSValue();
-	
-	mall_customize_stat(STAT_FUERZA, 0, MALL_NUMTYPE.REAL, [0, 999], "UI.STAT.FUERZA").setLevel(0, 100, "fStatLevel03");
-	mall_inherit_stat  (STAT_DEFENSA  , STAT_FUERZA, true, true,   "UI.STAT.DEFENSA");
-	mall_inherit_stat  (STAT_FESPECIAL, STAT_FUERZA, true, true, "UI.STAT.FESPECIAL");
-	mall_inherit_stat  (STAT_DESPECIAL, STAT_FUERZA, true, true, "UI.STAT.DESPECIAL");
-	mall_inherit_stat  (STAT_VELOCIDAD, STAT_FUERZA, true, true, "UI.STAT.VELOCIDAD");
+	mall_create_stat(STAT_EN ,  new MallStatEN() );
+	mall_create_stat(STAT_EPM, new MallStatEPM() );
+	mall_create_stat(STAT_EXP, new MallStatEXP() );
+	mall_create_stat(STAT_FUERZA   , new MallStatExt("UI.STAT.FUERZA") );
+	mall_create_stat(STAT_DEFENSA  , new MallStatExt("UI.STAT.DEFENSA") );
+	mall_create_stat(STAT_FESPECIAL, new MallStatExt("UI.STAT.FESPECIAL") );
+	mall_create_stat(STAT_DESPECIAL, new MallStatExt("UI.STAT.DESPECIAL") );
+	mall_create_stat(STAT_VELOCIDAD, new MallStatExt("UI.STAT.VELOCIDAD") );
 
-	mall_customize_stat(STAT_CRITICO, 0, MALL_NUMTYPE.PERCENT, [0, 100], "UI.STAT.CRITICAL").setLevel(0, 100, "fStatLevel04");
+	var _critico = function() : MallStat(STAT_CRITICO) constructor {
+		key  = "UI.STAT.CRITICAL";
+		type = MALL_NUMTYPE.PERCENT; 
 	
-	mall_customize_stat(STAT_PODER  , 0, MALL_NUMTYPE.PERCENT, [0, 200], "UI.STAT.PODER");
-	
-	#endregion
-	
-	#region States
-	mall_customize_state(STATE_VIVO, true, 100, 1, false, "UI.STATE.VIVO");
-	mall_customize_state(STATE_VENENO   , false, 20, -1,  true,   "UI.STATE.VENENO").setFunTurn( "fStateVenenoS");
-	mall_customize_state(STATE_QUEMADO  , false, 42, -1, true,   "UI.STATE.QUEMADO").setFunTurn("fStateQuemadoS");
-	mall_customize_state(STATE_DORMIDO  , false, 25, -1, true,   "UI.STATE.DORMIDO").setFunTurn("fStateDormidoS");
-	mall_customize_state(STATE_CONGELADO, false, 10, -1, true, "UI.STATE.CONGELADO").setFunTurn("fStateCongeladoS");
-	mall_customize_state(STATE_VORTEX   , false, 10, -1, true, "UI.STATE.VORTEXT"  ).setFunTurn("fStateVortex");
-	#endregion
-	
-	#region Slot
-	mall_customize_slot(SLOT_ARMA  , true,   "UI.SLOT.ARMA");
-	mall_customize_slot(SLOT_CUERPO, true, "UI.SLOT.CUERPO");
-	mall_customize_slot(SLOT_ACCESORIO1, true, "UI.SLOT.ACCESORIO.1");
-	mall_customize_slot(SLOT_ACCESORIO2, true, "UI.SLOT.ACCESORIO.2");
-	
+		limitMin = 0;
+		limitMax = 100;
 
-	#endregion
+		levelLimitMin = 0;
+		levelLimitMax = 100;
+		funLevel = function(stat, level) {
+			/// @self Struct.PartyStat
+			var _velocidad = stat.get(STAT_VELOCIDAD);
+			return round( (_velocidad.peak / 25) );
+		}
+	}
+	mall_create_stat(STAT_CRITICO, new _critico() );
+	
+	var _poder = function() : MallStat(STAT_PODER) constructor {
+		key  = "UI.STAT.PODER";
+		type = MALL_NUMTYPE.PERCENT;
+	
+		start = 0;
+		limitMin = 0;
+		limitMax = 200;
+	
+		levelLimitMin = 0;
+		levelLimitMax = 100;
+	}
+	mall_create_stat(STAT_PODER  , new _poder() );
+
 }
