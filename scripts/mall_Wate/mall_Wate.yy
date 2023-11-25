@@ -1,11 +1,11 @@
 {
   "resourceType": "GMScript",
   "resourceVersion": "1.0",
-  "name": "dark_Effect",
+  "name": "mall_Wate",
   "isCompatibility": false,
   "isDnD": false,
   "parent": {
-    "name": "Constructor",
-    "path": "folders/Systemall/Dark/Constructor.yy",
+    "name": "Wate",
+    "path": "folders/Systemall/Wate.yy",
   },
 }

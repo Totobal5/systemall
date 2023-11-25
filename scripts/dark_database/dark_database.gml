@@ -79,283 +79,308 @@ function dark_database()
 	
 	})());
 	
-	
-	
-	#region Dark Objetos
-	/// Aumentar el especial en 20% por 1 turno cada 2 turnos
-	dark_create_function("fPocketJonDibujo", function(_vars) {
-	
-	});
-	
-	var _thin = "";
-	
-	#endregion
-
-
-	#region Dark Commands
 	#macro DARK_COMMAND_HEAL1 "DARK.COMMAND.HEAL1"
-	dark_create(
-		new DarkCommand(DARK_COMMAND_HEAL1, 10, true, 1).
-		setCheck  (function(_caster, _target) {
-			var _ccontrol = _caster.getControl(), _tcontrol = _target.getControl();
-			// Que los 2 esten vivos
-			if (_ccontrol.getState(STATE_VIVO) && _tcontrol.getState(STATE_VIVO) ) {
-				var _cstats = _caster.getStat(), _tstats = _target.getStat();
-				// obtener EPM del caster y EN del target
-				var _cep = _cstats.get(STAT_EPM);
-				if (_cep.actual >= consume) { // Asegurarse que posea más energía que el consumo
-					var _ten = _tstats.get( STAT_EN);
-					if (_ten.actual < _ten.control) {
-						return true;
-					}
+	dark_create(new function() : DarkCommand(DARK_COMMAND_HEAL1) constructor
+	{
+		type = DARK_TYPE_ALLMENU;
+		consume = 10;
+		restore = 10;
+		targets =  1;
+		
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static check = function(caster, target)
+		{
+			var _casterAlive = caster.controlState(STATE_VIVO);
+			var _targetAlive = target.controlState(STATE_VIVO);
+			if (_casterAlive && _targetAlive) {
+				var _casterEPM = caster.statGet(STAT_EPM);
+				// Asegurarse que el caster posee más energía que el consumo
+				if (_casterEPM.actual >= getConsume(caster)) {
+					var _targetEN = target.statGet(STAT_EN);
+					// Que posea si o si menos que el control
+					if (_targetEN.actual < _targetEN.control) return true;
 				}
 			}
+			
 			return false;
-		}).
-		setExecute(function(_caster, _target) {
-			var _ret = {result: false, value: 0};
-			var _ccontrol = _caster.getControl(), _tcontrol = _target.getControl();
-			// Que los 2 esten vivos
-			if (_ccontrol.getState(STATE_VIVO) && _tcontrol.getState(STATE_VIVO) ) {
-				var _cstats = _caster.getStat(), _tstats = _target.getStat();
-				// obtener EPM del caster y EN del target
-				var _cep = _cstats.get(STAT_EPM);
-				if (_cep.actual >= consume) { // Asegurarse que posea más energía que el consumo
-					var _ten = _tstats.get( STAT_EN);
-					if (_ten.actual < _ten.control) {
-						// Quitar EPM de consumo
-						_cstats.add(STAT_EPM, -consume, MALL_NUMTYPE.REAL);
-						// Guardar valor recuperado
-						_ret.value  = _tstats.add(STAT_EN, 10, MALL_NUMTYPE.PERCENT, 5);
-						_ret.result = true;	
-					}
-				}
-			}
+		}
 
-			return (_ret);
-		}).
-		setType(DARK_TYPE_ALLMENU)
-	);
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static action = function(caster, target)
+		{
+			var _return = {result: false, consumed: 0, value: 0};
+			// Si no estan vivos
+			if (caster.controlState(STATE_VIVO) && target.controlState(STATE_VIVO) ) {
+				return (_return);
+			}
+			_return.consumed = caster.statAdd(STAT_EPM, -getConsume(caster), MALL_NUMTYPE.REAL);
+			_return.value =    target.statAdd(STAT_EN,   restore,      MALL_NUMTYPE.PERCENT, 5);
+			
+			_return.result = true;
+			
+			return (_return);
+		}
+		
+		static getConsume = function(caster) 
+		{
+			return consume * (caster.controlState(STATE_VORTEX) ? 1.5 : 1);
+		}
+	
+	}());
 	
 	#macro DARK_COMMAND_HEAL2 "DARK.COMMAND.HEAL2"
-	dark_create(
-		new DarkCommand(DARK_COMMAND_HEAL2, 60, false, 1).
-		setExecute(function(_caster, _target) {
-			var _ret = {result: false, value: 0};
-			var _ccontrol = _caster.getControl(), _tcontrol = _target.getControl();
-			// Que los 2 esten vivos
-			if (_ccontrol.getState(STATE_VIVO) && _tcontrol.getState(STATE_VIVO) ) {
-				var _cstats = _caster.getStat(), _tstats = _target.getStat();
-				// obtener EPM del caster y EN del target
-				var _cep = _cstats.get(STAT_EPM);
-				if (_cep.actual >= consume) { // Asegurarse que posea más energía que el consumo
-					var _ten = _tstats.get( STAT_EN);
-					if (_ten.actual < _ten.control) {
-						// Quitar EPM de consumo
-						_cstats.add(STAT_EPM, -consume, MALL_NUMTYPE.REAL);
-						// Guardar valor recuperado
-						_ret.value  = _tstats.add(STAT_EN, 25, MALL_NUMTYPE.PERCENT, 5);
-						_ret.result = true;	
-					}
-				}
-			}
-
-			return (_ret);
-		}).
-		setType(DARK_TYPE_ALLMENU)
-	);
-
-	#macro DARK_COMMAND_HEAL3 "DARK.COMMAND.HEAL3"
-	dark_create(
-		new DarkCommand(DARK_COMMAND_HEAL3, 90, true, 1).
-		setCheck  (function(_caster, _target) {
-			var _ccontrol = _caster.getControl(), _tcontrol = _target.getControl();
-			// Que los 2 esten vivos
-			if (_ccontrol.getState(STATE_VIVO) && _tcontrol.getState(STATE_VIVO) ) {
-				var _cstats = _caster.getStat(), _tstats = _target.getStat();
-				// obtener EPM del caster y EN del target
-				var _cep = _cstats.get(STAT_EPM);
-				if (_cep.actual >= consume) { // Asegurarse que posea más energía que el consumo
-					var _ten = _tstats.get( STAT_EN);
-					if (_ten.actual < _ten.control) {
-						return true;
-					}
+	dark_create(new function() : DarkCommand(DARK_COMMAND_HEAL2) constructor
+	{
+		type = DARK_TYPE_ALLMENU;
+		consume = 60;
+		restore = 25;
+		target =  1;
+		
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static check =  function(caster, target)
+		{
+			var _casterAlive = caster.controlState(STATE_VIVO);
+			var _targetAlive = target.controlState(STATE_VIVO);
+			if (_casterAlive && _targetAlive) {
+				var _casterEPM = caster.statGet(STAT_EPM);
+				// Asegurarse que el caster posee más energía que el consumo
+				if (_casterEPM.actual >= getConsume(caster)) {
+					var _targetEN = target.statGet(STAT_EN);
+					// Que posea si o si menos que el control
+					if (_targetEN.actual < _targetEN.control) return true;
 				}
 			}
 			
 			return false;
-		}).
-		setExecute(function(_caster, _target) {
-			var _ret = {result: false, value: 0};
-			var _ccontrol = _caster.getControl(), _tcontrol = _target.getControl();
-			// Que los 2 esten vivos
-			if (_ccontrol.getState(STATE_VIVO) && _tcontrol.getState(STATE_VIVO) ) {
-				var _cstats = _caster.getStat(), _tstats = _target.getStat();
-				// obtener EPM del caster y EN del target
-				var _cep = _cstats.get(STAT_EPM);
-				if (_cep.actual >= consume) { // Asegurarse que posea más energía que el consumo
-					var _ten = _tstats.get( STAT_EN);
-					if (_ten.actual < _ten.control) {
-						// Quitar EPM de consumo
-						_cstats.add(STAT_EPM, -consume, MALL_NUMTYPE.REAL);
-						// Guardar valor recuperado
-						_ret.value  = _tstats.add(STAT_EN, 40, MALL_NUMTYPE.PERCENT, 5);
-						_ret.result = true;	
-					}
+		}
+
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static action = function(caster, target) 
+		{
+			var _return = {result: false, consumed: 0, value: 0};
+			// Si no estan vivos
+			if (caster.controlState(STATE_VIVO) && target.controlState(STATE_VIVO) ) {
+				return (_return);
+			}
+			
+			_return.consumed = caster.statAdd(STAT_EPM, -getConsume(caster), MALL_NUMTYPE.REAL);
+			_return.value =    target.statAdd(STAT_EN,    restore, MALL_NUMTYPE.PERCENT, 5); 
+			// Cambiar estado
+			_return.result = true;
+			
+			return _return;
+		}
+	
+		static getConsume = function(caster) 
+		{
+			return consume * (caster.controlState(STATE_VORTEX) ? 1.5 : 1);
+		}	
+	}());
+
+	#macro DARK_COMMAND_HEAL3 "DARK.COMMAND.HEAL3"
+	dark_create(new function() : DarkCommand(DARK_COMMAND_HEAL3) constructor
+	{
+		type = DARK_TYPE_ALLMENU;
+		consume = 90;
+		restore = 45;
+		target =  1;
+		
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static check =  function(caster, target)
+		{
+			var _casterAlive = caster.controlState(STATE_VIVO);
+			var _targetAlive = target.controlState(STATE_VIVO);
+			if (_casterAlive && _targetAlive) {
+				var _casterEPM = caster.statGet(STAT_EPM);
+				// Asegurarse que el caster posee más energía que el consumo
+				if (_casterEPM.actual >= getConsume(caster)) {
+					var _targetEN = target.statGet(STAT_EN);
+					// Que posea si o si menos que el control
+					if (_targetEN.actual < _targetEN.control) return true;
 				}
 			}
+			
+			return false;
+		}
 
-			return (_ret);
-		}).
-		setType(DARK_TYPE_ALLMENU)
-	);
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static action = function(caster, target) 
+		{
+			var _return = {result: false, consumed: 0, value: 0};
+			// Si no estan vivos
+			if (caster.controlState(STATE_VIVO) && target.controlState(STATE_VIVO) ) {
+				return (_return);
+			}
+			
+			_return.consumed = caster.statAdd(STAT_EPM, -getConsume(caster), MALL_NUMTYPE.REAL);
+			_return.value =    target.statAdd(STAT_EN,   restore, MALL_NUMTYPE.PERCENT, 5); 
+			// Cambiar estado
+			_return.result = true;
+			
+			return _return;
+		}
+	
+		static getConsume = function(caster) 
+		{
+			return consume * (caster.controlState(STATE_VORTEX) ? 1.5 : 1);
+		}		
+	}());
 
 	#macro DARK_COMMAND_ANTIDOTO "DARK.COMMAND.ANTIDOTO"
-	dark_create(
-		new DarkCommand(DARK_COMMAND_ANTIDOTO, 60, true, 1).
-		setExecute(function(_caster, _target) {
-			var _ret = {result: false, value: 0};
-			var _ccontrol = _caster.getControl(), _tcontrol = _target.getControl();
-			// Que los 2 esten vivos
-			if (_ccontrol.getState(STATE_VIVO) && _tcontrol.getState(STATE_VIVO) ) {
-				var _cstats = _caster.getStat(), _tstats = _target.getStat();
-				// obtener EPM del caster y EN del target
-				var _cep = _cstats.get(STAT_EPM);
-				if (_cep.actual >= consume) { // Asegurarse que posea más energía que el consumo
-					var _ten = _tstats.get( STAT_EN);
-					if (_ten.actual < _ten.control) {
-						// Quitar EPM de consumo
-						_cstats.add(STAT_EPM, -consume, MALL_NUMTYPE.REAL);
-						// Guardar valor recuperado
-						_ret.value  = _tstats.add(STAT_EN, 10, MALL_NUMTYPE.PERCENT, 5);
-						_ret.result = true;	
+	dark_create(new function() : DarkCommand(DARK_COMMAND_ANTIDOTO) constructor
+	{
+		type =    DARK_TYPE_BATTLE;
+		consume = 60;
+
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static check =  function(caster, target)
+		{
+			// Que ambos esten vivos
+			if (!caster.controlState(STATE_VIVO) && !target.controlState(STATE_VIVO) ) return false;
+			// Comprobar otras cosas
+			var _epm = caster.statGet(STAT_EPM);
+			return (target.controlState(STATE_VENENO) && _epm.actual >= getConsume(caster))
+		}
+
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static action = function(caster, target) 
+		{
+			var _return = {result: false, consumed: 0, value: 0};
+			// Que ambos esten vivos
+			if (caster.controlState(STATE_VIVO) && target.controlState(STATE_VIVO) ) {
+				// Que este envenenado
+				if (target.controlState(STATE_VENENO) ) {
+					// Posee más del consumo requerido
+					var _epm = caster.statGet(STAT_EPM);
+					if (_epm.actual >= consume) {
+						_return.consumed = caster.statAdd(STAT_EPM, -consume, MALL_NUMTYPE.REAL);
+						// Reiniciar control del veneno
+						target.controlStateSet(STATE_VENENO, false);
+						// Eliminar cada efecto
+						target.controlEffectRemoveAll(STATE_VENENO);
+						
+						_return.result   = true;
 					}
 				}
 			}
-
-			return (_ret);
-		}).
-		setType(DARK_TYPE_BATTLE)
-	);
+			
+			return (_return);
+		}
+	
+		static getConsume = function(caster) 
+		{
+			return consume * (caster.controlState(STATE_VORTEX) ? 1.5 : 1);
+		}			
+	}());
 
 	// ATAQUE 01
-	var _ = new DarkCommand("DARK.COMMAND.ATAQUE.01", 0, true, 1).setExecute(function(_caster, _target, _vars) {
+	dark_create(new function() : DarkCommand("DARK.COMMAND.ATAQUE.01") constructor
+	{
+		// Solo se puede usar en batallas
+		type = DARK_TYPE_BATTLE;
+		onSelf    = false;
+		onAllies  = false;
+		
+		// Solo se pueden seleccionar enemigos		
+		onEnemies = true;  
+
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static action = function(caster, target, vars) 
+		{
+			var _return = {damage: 0, defeated: false};
 			// Solo ataca a 1
-			var _fn = dark_get_function("fWateDefaultAttack");
-			
-			var _cStats = _caster.getStat();
-			var _tStats = _target.getStat();
-			
-			var _cFUE = _cStats.get( STAT_FUERZA).control;
-			var _cPOW = _cStats.get(  STAT_PODER).control;
-			var _tDEF = _tStats.get(STAT_DEFENSA).control;
-			
-			var _attackResult = _fn(_cPOW, _cFUE, _tDEF);
+			var _damage = DK_DefaultAttack(caster, target);
 			
 			// Dañar al target y obtener el daño producido
-			var _substractResult = _tStats.add(STAT_EN, -_attackResult);
+			var _result = target.statAdd(STAT_EN, -_damage);
+			_return.damage = _result;
 			
-			var _nameCaster = lexicon_text(_caster.displayKey);
-			var _nameTarget = lexicon_text(_target.displayKey);
-			var _msg = lexicon_text("UI.MESSAGES.ATTACK.01", _nameCaster, _nameTarget, string(_attackResult) );
+			var _nameCaster = lexicon_text(caster.displayKey);
+			var _nameTarget = lexicon_text(target.displayKey);
+			var _msg = lexicon_text("UI.MESSAGES.ATTACK.01", _nameCaster, _nameTarget, string(_result) );
 			oCoManager.msgSend(_msg, 60);
 			oCoManager.msgAdvance();
 			
 			// Si el target es 0
-			if (_tStats.isBelow(STAT_EN, 1) ) {
+			if (target.statGet(STAT_EN).control < 1) {
+				_return.defeated = true;
 				// Indicar que esta muerto
-				var _alive = _target.getControl();
-				_alive.setState(STATE_VIVO, false);
+				target.controlStateSet(STATE_VIVO, false);
 				
 				_msg = lexicon_text("UI.MESSAGES.DEFEAT.01", _nameTarget);
 				oCoManager.msgSend(_msg, 60);
 				oCoManager.msgAdvance();
 			}
-	})
-	_.type = DARK_TYPE_BATTLE; // Solo se puede usar en batallas
-	_.onSelf    = false;
-	_.onAllies  = false;
-	_.onEnemies = true;  // Solo se pueden seleccionar enemigos
-	
-	dark_create(_);
-	
-	#region CAST.FORED
-	_ = new DarkCommand("DARK.COMMAND.CAST.FORED", 20, true, 1).setExecute(function(_caster) {
-		var _stats   = _caster.getStat();
-		var _control = _caster.getControl();
-		
-		var _epm = _stats.get(STAT_EPM); 
-		
-		// Revisar el uso de ectoplasma
-		var _consume = 20;
-		if (_control.getState(STATE_VORTEX) ) _consume *= 1.5;
-
-		var _name = lexicon_text(_caster.displayKey), _msg;
-		// Comprobar que poseo la energía
-		if (_epm.actual > _consume) {
-			_stats.add(STAT_EPM, -_consume);
-			_msg = lexicon_text("UI.MESSAGES.CAST.FORED", _name);
-			oCoManager.msgSend(_msg, 60);
-			oCoManager.msgAdvance();
-			
-			// Actualizar stats de los personajes en la party
-			oCoManager.updatePartyStats();
-			
-			// Completado
-			return true;
 		}
-		else {
-			// Error
-			return false;
+	
+	}());
+	
+	#macro DARK_COMMAND_FORED "DARK.COMMAND.FORED"
+	dark_create(new function() : DarkCommand(DARK_COMMAND_FORED) constructor 
+	{
+		type = DARK_TYPE_BATTLE;
+		// Cuanto consume
+		consume = 20;
+		
+		onSelf    = true;
+		onAllies  = false;
+		onEnemies = true;
+		
+		/// @param {Struct.PartyEntity} caster
+		static check =  function(caster)
+		{
+			// Que el caster este vivo y no posea el estado RED
+			if (!caster.controlState(STATE_VIVO) && caster.controlState("CONTROL.RED") ) return false;
+			// Comprobar otras cosas
+			var _epm = caster.statGet(STAT_EPM);
+			return (_epm.actual >= getConsume(caster) );
 		}
-	});
-	_.type = DARK_TYPE_BATTLE;
-	_.onSelf   = true;
-	_.onAllies = false;
-	_.onEnemies = true;
-	_.setVar("animation", method(_, function(entity, target) {
-		var _vt = vuelta("CAST.FORED::Animation", [
-			// Que se mueva la instancia del caster
-			new VueltaMove("instanceE", 1, -24, 0, true, 0.0, 0.3),
-			new VueltaMethod(function() {
-				var _command = getVariable("Command");
-				_command.exAction(getVariable("Entity") );
-			}),
-			new VueltaMove("instanceE", 1,  24, 0, true)
-		]);
 		
-		// Establecer variables para la vuelta!
-		_vt.setVariable("Command",   self);
-		_vt.setVariable("Entity" , entity);
-		_vt.setVariable("Target" , target);
-		_vt.setVariable("instanceE", entity.getVar("Instancia") );
-		_vt.setVariable("instanceT", target.getVar("Instancia") );
+		/// @param {Struct.PartyEntity} caster
+		static action = function(caster)
+		{
+			var _return = {result: false, consumed: 0};
+			
+			_return.consumed = caster.statAdd(STAT_EPM, -getConsume(caster), MALL_NUMTYPE.REAL);
+			_return.result = true;
+			
+			// Establecer estado
+			if (caster.controlExists("CONTROL.RED") ) caster.controlCreate("CONTROL.RED", true);
+			
+			return (_return);
+		}
 		
-		// Para que espere que termine el vuelta para continuar
-		entity.setVar("WaitFor", _vt.start() );
-	}) );
-	
-	#endregion
-	
-	
-	dark_create(_);
+		/// @param {Struct.PartyEntity} caster
+		static getConsume = function(caster) 
+		{
+			var _epm = caster.statGet(STAT_EPM);
+			var _con = (_epm.control * consume) / 100; // 20 %
+			
+			return _con * (caster.controlState(STATE_VORTEX) ? 1.5 : 1);
+		}			
+	}());
 
-
-
-
-	#endregion
 }
 
 
-function DK_DefaultAttack(_target)
+function DK_DefaultAttack(caster, target)
 {
-	var _cf = statGet(STAT_FUERZA).control;
-	var _td = _target.statGet(STAT_DEFENSA).control;
+	var _cf = caster.statGet(STAT_FUERZA) .control;
+	var _td = target.statGet(STAT_DEFENSA).control;
 	
 	var _sum = (_cf + _td) / 80;
 	var _res = _cf / _td;
 	
-	var _power = statGet(STAT_PODER).control;
+	var _power = caster.statGet(STAT_PODER).control;
 	return round(_power * _res * _sum)
 }
 
@@ -395,7 +420,9 @@ function DK_ACCDibujo() : DarkEffect(DARK_EFF_DIBUJO, "") constructor
 	/// @param {Struct.PartyEntity} entity
 	static combatEnd = function(entity)
 	{
-		entity.controlEffectRemove(stateKey, function(effect) {return (effect.key = DARK_EFF_DIBUJO);} );
+		entity.controlEffectRemove(stateKey, function(effect) {
+			return (effect.key = DARK_EFF_DIBUJO);
+		} );
 	}
 }
 

@@ -19,12 +19,12 @@ function pocket_database()
 {
 	/// Feather ignore all
 	// Inventario de los heroes
-	var _bag = function() : PocketBag() constructor {
+	pocket_create_bag(POCKET_BAG, new function() : PocketBag() constructor {
 		order = array_create_ext(3, function() {return array_create(0); });
 		items = {consumibles: {}, equipos: {}, etc: {} };
 		
 		/// @param {Struct.PocketItem} item
-		set = function(_item, _count, _index, _vars) 
+		static set = function(_item, _count, _index, _vars) 
 		{
 			static dfilter = function(item) {return (itemkey == item.key); }; 
 			var _return = {result: true, item: undefined, left: 0};
@@ -79,7 +79,7 @@ function pocket_database()
 		
 		/// @param {string} itemkey
 		/// @return {Struct.PocketItem}
-		get = function(_key) 
+		static get = function(_key) 
 		{
 			if (is_string(_key) ) {
 				if (!struct_exists(items.consumibles, _key) ) return (items.consumibles[$ _key] );
@@ -92,7 +92,7 @@ function pocket_database()
 		/// @desc Agrega o elimina objetos de esta bolsa
 		/// @param {Struct.PocketItem} item
 		/// @param {real} count
-		add = function(_item, _count)
+		static add = function(_item, _count)
 		{
 			var _return = {result: true, item: undefined, left: 0};
 			var _array, _struct;
@@ -154,7 +154,7 @@ function pocket_database()
 		}
 		
 		/// @return {Struct.PocketBag$$itemComponent}
-		remove = function(_key)
+		static remove = function(_key)
 		{
 			var _array, _struct;
 			if (struct_exists(items.consumibles, _key) ) {
@@ -180,7 +180,7 @@ function pocket_database()
 		}
 
 		/// @desc Actualiza el orden de los objetos
-		updateItems = function() 
+		static updateItems = function() 
 		{
 			static fc = function(v, i) {
 				var _item = items.consumible[$ v];
@@ -200,7 +200,7 @@ function pocket_database()
 			array_foreach(order[2], ft);
 		}
 
-		save = function() 
+		static save = function() 
 		{
 			var _this = self;
 			var _save = {order: variable_clone(_this.order), items: {consumibles: {}, equipos: {}, etc: {} } }
@@ -235,7 +235,7 @@ function pocket_database()
 			return _save;
 		}
 
-		load = function(_l) 
+		static load = function(_l) 
 		{
 			// Cargar objetos
 			order = _l.order;
@@ -264,13 +264,13 @@ function pocket_database()
 			// Actualizar
 			updateItems();
 		}
-	}
-	pocket_create_bag(POCKET_BAG, new _bag());
+	}());
 
 
 	#region -- Items
+	// -- Recuperar EN
 	#macro POCKET_ITEM_MANZANA_ROJA "POCKET.MANZANA.ROJA"
-	pocket_create(function() : PocketItem(POCKET_ITEM_MANZANA_ROJA, POCKET_ITEMTYPE_CONSM) constructor 
+	pocket_create(new function() : PocketItem(POCKET_ITEM_MANZANA_ROJA, POCKET_ITEMTYPE_CONSM) constructor 
 	{
 		buy=60; sell=20;
 		
@@ -297,836 +297,1000 @@ function pocket_database()
 		restoreNumtarget = 5;
 	} ());
 	
-	
-	#endregion
-}
-
-#region -- Items
-
-
-	
-#macro POCKET_ITEM_MANZANA_VERDE "POCKET.MANZANA.VERDE"
-function IT_ManzanaVerde() : IT_ManzanaRoja() constructor
-{
-	key = POCKET_ITEM_MANZANA_VERDE;
-	buy *= 4; sell *= 2;
-	restore *= 1.5;
-}
-	
-#macro POCKET_ITEM_MANZANA_LADY "POCKET.MANZANA.VERDE"
-function IT_ManzanaLady() : IT_ManzanaRoja() constructor
-{
-	key = POCKET_ITEM_MANZANA_LADY;
-	buy *= 8; sell *= 4;
-	restore *= 2.1;
-}
-	
-// -- Recuperar EN
-#macro POCKET_ITEM_AGUA_MINERAL "POCKET.AGUA.MINERAL"
-function IT_AguaMineral() : PocketItem(POCKET_ITEM_AGUA_MINERAL, POCKET_ITEMTYPE_CONSM) constructor
-{
-	buy = 80; sell=10;
-		
-	/// @param {struct.PartyEntity} caster
-	/// @param {struct.PartyEntity} target
-	fnUse = function(caster, target) {
-		var _return = {result: false, restore: 0};
-		var _epm =    target.statGet(STAT_EPM);
-		// From item
-		var _value  = target.statAdd(STAT_EPM, restore, type, numtarget);
-		_return.result  = (_value != 0);
-		_return.restore = _value;
-			
-		return (_return);
-	}
-		
-	restore =   15; 
-	type =      MALL_NUMTYPE.PERCENT;
-	numtarget = 5;
-}
-
-#macro POCKET_ITEM_BEBIDA "POCKET.BEBIDA"
-function IT_Bebida() : IT_AguaMineral() constructor
-{
-	key = POCKET_ITEM_BEBIDA
-	buy*=2; sell*=2;
-	restore *= 2;
-}
-	
-#macro POCKET_ITEM_BEBIDA_ENERGETICA "POCKET.BEBIDA.ENERGETICA"
-function IT_BebidaEN() : IT_Bebida() constructor
-{
-	key = POCKET_ITEM_BEBIDA_ENERGETICA;
-	buy*=2; sell*=2;
-	restore *= 1.5;
-}
-	
-
-// -- Recuperar EN y EMP
-#macro POCKET_ITEM_PERLA_AZUL "POCKET.PERLA.AZUL"
-function IT_PerlaAzul() : PocketItem(POCKET_ITEM_PERLA_AZUL, POCKET_ITEMTYPE_CONSM) constructor
-{
-	buy=300; sell=10;
-	/// @param {Struct.PartyEntity} caster
-	/// @param {Struct.PartyEntity} target
-	fnUse = function(caster, target) {
-		var _result = {result: [false, false], restore: [0, 0]};
-		
-		var _stats = _target.getStat(), _value;
-			
-		_value  = target.statAdd(STAT_EN, restoreEN, numtype, numtarg);
-		_result.result  [0] = (_value != 0);
-		_result.restore [0] = _value;
-			
-		_value = target.statAdd(STAT_EPM, restoreEPM, numtype, numtarg);
-		_result.result  [1] = (_value != 0);
-		_result.restore [1] = _value;
-			
-		return (_result);
-	}
-		
-	restoreEN  = 15;
-	restoreEPM = 15;
-		
-	numtype = MALL_NUMTYPE.PERCENT;
-	numtarg = 0;
-}
-	
-#macro POCKET_ITEM_PERLA_ROJA "POCKET.PERLA.ROJA"
-function IT_PerlaRoja() : IT_PerlaAzul() constructor
-{
-	key = POCKET_ITEM_PERLA_ROJA;
-	restoreEN  = round(restoreEN *1.6);
-	restoreEPM = round(restoreEPM*1.5);
-}
-	
-#macro POCKET_ITEM_PERLA_VERDE "POCKET.PERLA.VERDE"
-function IT_PerlaVerde() : IT_PerlaRoja() constructor 
-{
-	key = POCKET_ITEM_PERLA_VERDE;
-	restoreEN  *= 2; 
-	restoreEPM *= 1.5;
-}
-
-// -- Revivir
-#macro POCKET_ITEM_ESCENCIA_AZUL "POCKET.ESCENCIA.AZUL"
-function IT_EscenciaAzul() : PocketItem(POCKET_ITEM_ESCENCIA_AZUL, POCKET_ITEMTYPE_CONSM) constructor {
-	buy = 200; sell = 150;
-		
-	/// @param {Struct.PartyEntity} caster
-	/// @param {Struct.PartyEntity} target
-	fnCanUse = function(caster, target) {
-		return (!target.controlState(STATE_VIVO) && target.statGet(STAT_EN).control <= 0); 
-	}
-
-	/// @param {Struct.PartyEntity} caster
-	/// @param {Struct.PartyEntity} target
-	fnUse = function(caster, target) {
-		/// @self Struct.PocketItem
-		var _result =  {result: false, restore: 0};
-		// Si esta en false
-		var _en =    target.statGet(STAT_EN);
-		var _value = target.statAdd(STAT_EN, restore, numtype, numtarg);
-		// Indicar que esta vivo
-		target.controlStateSet(STATE_VIVO, true);
-			
-		// Cambiar resultado
-		_result.result  = true;
-		_result.restore = _value;
-			
-		return (_result);
-	}
-		
-	restore = 30;
-	numtype = MALL_NUMTYPE.PERCENT;
-	numtarg = STAT_NUMTARG.CONTROL;
-}
-	
-#macro POCKET_ITEM_ESCENCIA_ROJA "POCKET.ESCENCIA.ROJA"
-function IT_EscenciaRoja()  : IT_EscenciaAzul() constructor
-{
-	key = POCKET_ITEM_ESCENCIA_ROJA;
-	restore *= 1.5;
-}
-	
-#macro POCKET_ITEM_ESCENCIA_VERDE "POCKET.ESCENCIA.VERDE"
-function IT_EscenciaVerde() : IT_EscenciaAzul() constructor
-{
-	key = POCKET_ITEM_ESCENCIA_VERDE;
-	restore *= 1.4;
-}
-
-#endregion
-
-#region -- Jon Items
-// LVL 1 -> 6
-#macro POCKET_ITEM_CUCHARITA "POCKET.JON.CUCHARITA"
-function IT_JonCucharita() : PocketItem(POCKET_ITEM_CUCHARITA, POCKET_ITEMTYPE_ARMA, 150,80) constructor 
-{
-	setStat(STAT_PODER, 12, MALL_NUMTYPE.REAL);
-}
-	
-// LVL 6 -> 12
-#macro POCKET_ITEM_CUCHARA_PLASTICA "POCKET.JON.CUCHARA.PLASTICA"
-function IT_JonCucharaPlastica() : PocketItem(POCKET_ITEM_CUCHARA_PLASTICA, POCKET_ITEMTYPE_ARMA) constructor {
-	buy  = 320;
-	sell = 100;
-		
-	setStat(STAT_FUERZA, 6 , MALL_NUMTYPE.REAL,  STAT_FESPECIAL, 5, MALL_NUMTYPE.REAL);
-	setStat(STAT_PODER , 16, MALL_NUMTYPE.REAL);
-}
-	
-// LVL 6 -> 12
-#macro POCKET_ITEM_TENEDOR_PLASTICO "POCKET.JON.TENEDOR.PLASTICA"
-function IT_JonTenedorPlastico() : PocketItem(POCKET_ITEM_TENEDOR_PLASTICO, POCKET_ITEMTYPE_ARMA) constructor {
-	buy = 480;
-	sell= 100;
-	setStat(
-		STAT_FUERZA,    8 , MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 10, MALL_NUMTYPE.REAL,
-		STAT_PODER,     11, MALL_NUMTYPE.REAL
-		);
-}
-	
-// LVL 12 -> 24
-#macro POCKET_ITEM_CUCHARA_HIERRO "POCKET.JON.CUCHARA.HIERRO"
-function IT_JonCucharaHierro() : PocketItem(POCKET_ITEM_CUCHARA_HIERRO, POCKET_ITEMTYPE_ARMA) constructor {
-	buy = 680;
-	sell= 300;
-		
-	setStat(
-		STAT_FUERZA, 10, MALL_NUMTYPE.REAL,  STAT_FESPECIAL, 11, MALL_NUMTYPE.REAL,
-		STAT_PODER , 19, MALL_NUMTYPE.REAL
-		);
-}
-	
-// LVL 12 -> 24
-#macro POCKET_ITEM_TENEDOR_HIERRO "POCKET.JON.TENEDOR.HIERRO"
-function IT_JonTenedorHierro() : PocketItem(POCKET_ITEM_TENEDOR_HIERRO, POCKET_ITEMTYPE_ARMA) constructor {
-	buy = 725;
-	sell= 320;
-		
-	setStat(
-		STAT_FUERZA   , 15, MALL_NUMTYPE.REAL,
-		STAT_DEFENSA  ,  3, MALL_NUMTYPE.REAL, STAT_DESPECIAL, -6, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 14, MALL_NUMTYPE.REAL,
-		STAT_PODER, 18, MALL_NUMTYPE.REAL
-		);
-}
-	
-// LVL 24 -> 30
-#macro POCKET_ITEM_CUCHARA_PLATA "POCKET.JON.CUCHARA.PLATA"
-function IT_JonCucharaPlata() : PocketItem(POCKET_ITEM_CUCHARA_PLATA, POCKET_ITEMTYPE_ARMA) constructor {
-	buy = 6_000;
-	sell= 1_000;
-		
-	setStat(
-		STAT_FUERZA, 14, MALL_NUMTYPE.REAL, STAT_FESPECIAL, 17, MALL_NUMTYPE.REAL,
-		STAT_PODER , 22, MALL_NUMTYPE.REAL
-		);
-}
-	
-// LVL 24 -> 30
-#macro POCKET_ITEM_TENEDOR_PLATA "POCKET.JON.TENEDOR.PLATA"
-function IT_JonTenedorPlata() : PocketItem(POCKET_ITEM_CUCHARA_HIERRO, POCKET_ITEMTYPE_ARMA) constructor {
-	buy = 6_000;
-	sell= 1_200;
-		
-	setStat(
-		STAT_FUERZA   , 22, MALL_NUMTYPE.REAL,
-		STAT_DEFENSA  ,  5, MALL_NUMTYPE.REAL, STAT_DESPECIAL, -16, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 18, MALL_NUMTYPE.REAL,
-		STAT_PODER, 25, MALL_NUMTYPE.REAL,
-		);
-}
-	
-// Mezcla de tenedor y cuchara
-// LVL 30 -> 36
-#macro POCKET_ITEM_CUCHARA_TENEDOR_HIERRO "POCKET.JON.CUCHARA_TENEDOR.HIERRO"
-function IT_JonCTHierro() : PocketItem(POCKET_ITEM_CUCHARA_TENEDOR_HIERRO, POCKET_ITEMTYPE_ARMA) constructor {
-	buy = 6_000;
-	sell= 1_600;
-	
-	setStat(
-		STAT_FUERZA   , 16, MALL_NUMTYPE.REAL, STAT_DEFENSA  , 4, MALL_NUMTYPE.REAL,
-		STAT_FESPECIAL, 14, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 2, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 11, MALL_NUMTYPE.REAL, 
-		STAT_PODER    , 26, MALL_NUMTYPE.REAL 
-		);
-}
-
-// LVL 36 -> 42
-#macro POCKET_ITEM_CUCHARA_TENEDOR_PLATA "POCKET.JON.CUCHARA_TENEDOR.PLATA"
-function IT_JonCTPlata() : PocketItem(POCKET_ITEM_CUCHARA_TENEDOR_PLATA, POCKET_ITEMTYPE_ARMA) constructor {
-	buy  = 6_000;
-	sell = 1_600;
-
-	setStat(
-		STAT_FUERZA ,   20, MALL_NUMTYPE.REAL, STAT_DEFENSA  , 10, MALL_NUMTYPE.REAL,
-		STAT_FESPECIAL, 20, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 10, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 16, MALL_NUMTYPE.REAL,
-		STAT_PODER    , 30, MALL_NUMTYPE.REAL,
-		);
-}
-	
-// LVL 42 -> 48 De ahora empezar a restar algunas estadisticas
-#macro POCKET_ITEM_CUCHARON_HIERRO "POCKET.JON.CUCHARON.HIERRO" 
-function IT_JonCucharonHierro() : PocketItem(POCKET_ITEM_CUCHARON_HIERRO, POCKET_ITEMTYPE_ARMA) constructor {
-	buy  = 6_000;
-	sell = 1_600;
-		
-	setStat(
-		STAT_FUERZA   ,  25, MALL_NUMTYPE.REAL, STAT_DEFENSA  , 17, MALL_NUMTYPE.REAL,
-		STAT_FESPECIAL,  25, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 17, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD,  21, MALL_NUMTYPE.REAL, 
-		STAT_PODER    ,  37, MALL_NUMTYPE.REAL
-		);
-}
-	
-// LVL 48 -> 54 De ahora empezar a restar algunas estadisticas
-#macro POCKET_ITEM_CUCHARON_PLATA "POCKET.JON.CUCHARON.PLATA" 
-function IT_JonCucharonPlata() : PocketItem(POCKET_ITEM_CUCHARON_PLATA, POCKET_ITEMTYPE_ARMA) constructor {
-	buy = 6_000; sell = 1_600; 
-		
-	setStat(
-		STAT_FUERZA   ,  25, MALL_NUMTYPE.REAL, STAT_DEFENSA  , 17, MALL_NUMTYPE.REAL,
-		STAT_FESPECIAL,  25, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 17, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD,  21, MALL_NUMTYPE.REAL, 
-		STAT_PODER    ,  37, MALL_NUMTYPE.REAL
-		);
-}
-
-#endregion
-
-#region -- Gabi Items
-// LVL 50 -> 56
-#macro POCKET_ITEM_GUANTES_BLANCOS "POCKET.GABI.GUANTES.BLANCOS" // Enfoque especial
-function IT_GabiGuantesBlancos() : PocketItem(POCKET_ITEM_GUANTES_BLANCOS, POCKET_ITEMTYPE_ARMA) constructor 
-{
-	buy=1_020; sell=104;
-	setStat(
-		STAT_FUERZA, 18, MALL_NUMTYPE.REAL,  STAT_FESPECIAL, 28, MALL_NUMTYPE.REAL,
-		STAT_PODER , 43, MALL_NUMTYPE.REAL
-	);
-}// 4 6 3 
-// LVL 50 -> 56
-#macro POCKET_ITEM_GUANTES_NEGROS "POCKET.GABI.GUANTES.NEGROS" // Enfoque fisico
-function IT_GabiGuantesNegros() : PocketItem(POCKET_ITEM_GUANTES_NEGROS, POCKET_ITEMTYPE_ARMA) constructor 
-{
-	buy=2_200; sell=500;
-		
-	setStat(
-		STAT_FUERZA   , 28, MALL_NUMTYPE.REAL, 
-		STAT_VELOCIDAD, 16, MALL_NUMTYPE.REAL,
-		STAT_PODER    , 38, MALL_NUMTYPE.REAL
-	)
-} // 4 6 3
-	
-// LVL 62 -> 68
-#macro POCKET_ITEM_GUANTES_ROJOS "POCKET.GABI.GUANTES.ROJOS"
-function IT_GabiGuantesRojos() : PocketItem(POCKET_ITEM_GUANTES_ROJOS, POCKET_ITEMTYPE_ARMA, 2800, 500) constructor 
-{
-	setStat(
-		STAT_FUERZA   ,  22, MALL_NUMTYPE.REAL, STAT_FESPECIAL, 34, MALL_NUMTYPE.REAL,
-		STAT_DEFENSA  , -10, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD,  13, MALL_NUMTYPE.REAL,
-		STAT_PODER    ,  46, MALL_NUMTYPE.REAL
-		);
-}// -3 4 
-// LVL 62 -> 68
-#macro POCKET_ITEM_GUANTES_VERDES "POCKET.GABI.GUANTES.VERDES"
-function IT_GabiGuantesVerdes() : PocketItem(POCKET_ITEM_GUANTES_VERDES, POCKET_ITEMTYPE_ARMA, 2620, 100) constructor
-{
-	setStat(
-		STAT_FUERZA   , 32, MALL_NUMTYPE.REAL, STAT_DEFENSA, 10, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 22, MALL_NUMTYPE.REAL,
-		STAT_PODER    , 41, MALL_NUMTYPE.REAL
-		);
-}// 4 
-	
-// LVL 73 -> 78
-#macro POCKET_ITEM_GUANTES_CUERO "POCKET.GABI.GUANTES.CUERO"
-function IT_GabiGuantesCuero() : PocketItem(POCKET_ITEM_GUANTES_CUERO, POCKET_ITEMTYPE_ARMA, 2620, 100) constructor
-{
-	setStat(
-		STAT_FUERZA   , 26, MALL_NUMTYPE.REAL, STAT_DEFENSA  , -13, MALL_NUMTYPE.REAL,
-		STAT_FESPECIAL, 38, MALL_NUMTYPE.REAL, STAT_DESPECIAL,  13, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 15, MALL_NUMTYPE.REAL,
-		STAT_PODER    , 40, MALL_NUMTYPE.REAL
-		);
-}
-
-#endregion
-
-#region -- Fernando Items
-// LVL 40 -> 47
-#macro POCKET_ITEM_MONEDA_988 "POCKET.FEN.MONEDA.988"
-function IT_FernMoneda988() : PocketItem(POCKET_ITEM_MONEDA_988, POCKET_ITEMTYPE_ARMA) constructor 
-{	
-	setStat(
-		STAT_FUERZA , 20, MALL_NUMTYPE.REAL,
-		STAT_CRITICO, 10, MALL_NUMTYPE.REAL,
-		STAT_PODER  , 32, MALL_NUMTYPE.REAL
-		);
-}
-	
-// LVL 47 - 54
-#macro POCKET_ITEM_MONEDA_942 "POCKET.FEN.MONEDA.942"
-function IT_FernMoneda942() : PocketItem(POCKET_ITEM_MONEDA_942, POCKET_ITEMTYPE_ARMA) constructor
-{
-	setStat(
-		STAT_FUERZA   , 24, MALL_NUMTYPE.REAL,
-		STAT_DESPECIAL, 11, MALL_NUMTYPE.REAL,
-		STAT_CRITICO, 11, MALL_NUMTYPE.REAL,
-		STAT_PODER  , 35, MALL_NUMTYPE.REAL
-		);
-}
-	
-// LVL 61 - 68
-#macro POCKET_ITEM_MONEDA_NIQUEL "POCKET.FEN.MONEDA.NIQUEL"
-function IT_FernMonedaNiquel() : PocketItem(POCKET_ITEM_MONEDA_NIQUEL, POCKET_ITEMTYPE_ARMA) constructor
-{
-	setStat(
-		STAT_FUERZA   , 30, MALL_NUMTYPE.REAL, STAT_DEFENSA, 8, MALL_NUMTYPE.REAL,
-		STAT_DESPECIAL,  9, MALL_NUMTYPE.REAL,
-		STAT_CRITICO, 13, MALL_NUMTYPE.REAL,
-		STAT_PODER  , 38, MALL_NUMTYPE.REAL
-		);
-}
-	
-// LVL 68 - 75
-#macro POCKET_ITEM_MONEDA_PLATA "POCKET.FEN.MONEDA.PLATA"
-function IT_FernMonedaPlata() : PocketItem(POCKET_ITEM_MONEDA_PLATA, POCKET_ITEMTYPE_ARMA) constructor
-{
-	setStat(
-		STAT_FUERZA   , 36, MALL_NUMTYPE.REAL, STAT_DEFENSA, 16, MALL_NUMTYPE.REAL,
-		STAT_DESPECIAL, 16, MALL_NUMTYPE.REAL,
-		STAT_CRITICO, 14, MALL_NUMTYPE.REAL,
-		STAT_PODER  , 41, MALL_NUMTYPE.REAL
-		);
-}
-	
-// LVL 75 - 82
-#macro POCKET_ITEM_MONEDA_ORO "POCKET.FEN.MONEDA.ORO"
-function IT_FernMonedaOro() : PocketItem(POCKET_ITEM_MONEDA_ORO, POCKET_ITEMTYPE_ARMA) constructor
-{
-	setStat(
-		STAT_FUERZA   , 42, MALL_NUMTYPE.REAL, STAT_DEFENSA, 24, MALL_NUMTYPE.REAL,
-		STAT_DESPECIAL, 25, MALL_NUMTYPE.REAL,
-		STAT_CRITICO, 16, MALL_NUMTYPE.REAL,
-		STAT_PODER  , 44, MALL_NUMTYPE.REAL
-		);
-}
-
-#endregion
-
-
-#region -- Equipo para el cuerpo
-// -- Polera y Camisa 
-// Polera: Defensa y Velocidad
-// Camisa: Defensa y Despecial
-	
-// LVL 1 -> 4 (Jon, Susana)
-#macro POCKET_ITEM_CAMISA_COLEGIO "POCKET.CUE.CAMISA.COLEGIO"
-function IT_CPCamisaColegia() : PocketItem(POCKET_ITEM_CAMISA_COLEGIO, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor 
-{
-	setStat(STAT_DEFENSA,6,MALL_NUMTYPE.REAL,  STAT_DESPECIAL,3,MALL_NUMTYPE.REAL);
-} // Sumar: 6 3
-// LVL 1 -> 4 (Jon, Susana)
-#macro POCKET_ITEM_POLERA_COLEGIO "POCKET.POLERA.COLEGIO"
-function IT_CPPoleraColegio() : PocketItem(POCKET_ITEM_POLERA_COLEGIO, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor
-{
-	setStat(STAT_DEFENSA,5,MALL_NUMTYPE.REAL,  STAT_VELOCIDAD,4,MALL_NUMTYPE.REAL);
-}; // Sumar: 5 7
-	
-// LVL 4 -> 9 (Jon, Susana)
-#macro POCKET_ITEM_CAMISA_CUADROS "POCKET.CAMISA.CUADROS"
-function IT_CPCamisaCuadros() : PocketItem(POCKET_ITEM_CAMISA_CUADROS, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor
-{
-	setStat(STAT_DEFENSA,12,MALL_NUMTYPE.REAL,  STAT_DESPECIAL,6,MALL_NUMTYPE.REAL);
-};
-// LVL 4 -> 9 (Jon, Susana)
-#macro POCKET_ITEM_POLERA_COLORIDA "POCKET.POLERA.COLORIDA"
-function IT_CPPoleraColorida() : PocketItem(POCKET_ITEM_POLERA_COLORIDA, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor
-{
-	setStat(STAT_DEFENSA,10,MALL_NUMTYPE.REAL,  STAT_VELOCIDAD,7,MALL_NUMTYPE.REAL);
-}
-	
-// LVL 9 -> 14 (Jon, Susana)
-#macro POCKET_ITEM_CAMISA_VEBRES "POCKET.CAMISA.VEBRES" // Vebres marca famosa de ropa
-function IT_CPCamisaVebres() : PocketItem(POCKET_ITEM_CAMISA_VEBRES, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor
-{
-	setStat(STAT_DEFENSA,18,MALL_NUMTYPE.REAL,  STAT_DESPECIAL,9,MALL_NUMTYPE.REAL);
-}; // Sumar: 6 3
-// LVL 9 -> 14 (Jon, Susana)
-#macro POCKET_ITEM_POLERA_VEBRES "POCKET.POLERA.VEBRES"
-function IT_CPPoleraVebres() : PocketItem(POCKET_ITEM_POLERA_VEBRES, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor
-{
-	setStat(STAT_DEFENSA,15,MALL_NUMTYPE.REAL,  STAT_VELOCIDAD,10,MALL_NUMTYPE.REAL);
-}; // Sumar: 5 7
-	
-// LVL 40 -> 46 (Gabi, Fernando)
-#macro POCKET_ITEM_PLATINAS_HIERRO "POCKET.PLATINAS.HIERRO" 
-function IT_CPPlatinasHierro() : PocketItem(POCKET_ITEM_PLATINAS_HIERRO, POCKET_ITEMTYPE_ARMDU1, 530,200) constructor
-{
-	setStat(
-		STAT_DEFENSA  , 30, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 15, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, -6, MALL_NUMTYPE.REAL,
-		STAT_PODER, 4, MALL_NUMTYPE.REAL 
-		);
-};// 5 5 -4 1
-// LVL 40 -> 46 (Gabi, Fernando)
-#macro POCKET_ITEM_PLATINAS_ECTO "POCKET.PLATINAS.ECTO"
-function IT_CPPlatinasEcto() : PocketItem(POCKET_ITEM_PLATINAS_ECTO, POCKET_ITEMTYPE_ARMDU1, 53,200) constructor
-{
-	setStat(
-		STAT_DEFENSA, 14, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 30, MALL_NUMTYPE.REAL,
-		STAT_PODER, 3, MALL_NUMTYPE.REAL
-		);
-}; // 5 5 1
-	
-// LVL 46 -> 52 (Gabi, Fernando)
-#macro POCKET_ITEM_CHALECO_BLINDADO "POCKET.CHALECO.BLINDADO"
-function IT_CPChalecoBlindado() : PocketItem(POCKET_ITEM_CHALECO_BLINDADO, POCKET_ITEMTYPE_ARMDU1, 530,200) constructor
-{
-	setStat(
-		STAT_DEFENSA  ,  35, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 20, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, -10, MALL_NUMTYPE.REAL,
-		STAT_PODER, 5, MALL_NUMTYPE.REAL 
-		);
-};
-// LVL 46 -> 52 (Gabi, Fernando)
-#macro POCKET_ITEM_CHALECO_IMBUIDO "POCKET.CHALECO.IMBUIDO"
-function IT_CPChalecoImbuido() : PocketItem(POCKET_ITEM_CHALECO_IMBUIDO, POCKET_ITEMTYPE_ARMDU1, 53,200) constructor
-{
-	setStat(
-		STAT_DEFENSA, 19, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 30, MALL_NUMTYPE.REAL,
-		STAT_PODER  ,  4, MALL_NUMTYPE.REAL
-		);
-};
-	
-// LVL 52 -> 59 (Gabi, Fernando)
-#macro POCKET_ITEM_CHALECO_REFORZADO "POCKET.CHALECO.REFORZADO"
-function IT_CPChalecoReforzado() : PocketItem(POCKET_ITEM_CHALECO_REFORZADO, POCKET_ITEMTYPE_ARMDU1, 530,200) constructor
-{
-	setStat(
-		STAT_DEFENSA  ,  40, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 25, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, -14, MALL_NUMTYPE.REAL,
-		STAT_PODER, 6, MALL_NUMTYPE.REAL
-		);
-}; // 5 5 -4 1
-// LVL 52 -> 59 (Gabi, Fernando)
-#macro POCKET_ITEM_CHALECO_TRATADO "POCKET.CHALECO.TRATADO"
-function IT_CPChalecoTratado() : PocketItem(POCKET_ITEM_CHALECO_TRATADO, POCKET_ITEMTYPE_ARMDU1, 530, 200) constructor
-{
-	setStat(
-		STAT_DEFENSA, 24, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 35, MALL_NUMTYPE.REAL,
-		STAT_PODER  ,  5, MALL_NUMTYPE.REAL
-		);
-}; // 5 5 1
-	
-// LVL 59 -> 66 (Gabi, Fernando)
-#macro POCKET_ITEM_CHALECO_ELDRO "POCKET.CHALECO.ELDRO" // ELDRO fabricante de equipo para policias, militares, etc
-function IT_CPChalecoEldro() : PocketItem(POCKET_ITEM_CHALECO_ELDRO, POCKET_ITEMTYPE_ARMDU1, 530,200) constructor
-{
-	setStat(
-		STAT_DEFENSA  , 45, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 30, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD,-18, MALL_NUMTYPE.REAL,
-		STAT_PODER, 7, MALL_NUMTYPE.REAL
-		);
-};
-// LVL 59 -> 66 (Gabi, Fernando)
-#macro POCKET_ITEM_CHALECO_ECTO "POCKET.CHALECO.ECTO"
-function IT_CPChalecoEcto() : PocketItem(POCKET_ITEM_CHALECO_ECTO, POCKET_ITEMTYPE_ARMDU1, 53,200) constructor
-{
-	setStat(
-		STAT_DEFENSA, 29, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 40, MALL_NUMTYPE.REAL,
-		STAT_PODER  ,  6, MALL_NUMTYPE.REAL
-		);
-};
-// LVL 66 -> 73 (Gabi, Fernando)
-#macro POCKET_ITEM_CHALECO_SQUAD "POCKET.CHALECO.SQUAD" // SQUAD equipo para amenazas "normales" peligrosas
-function IT_CPChalecoSquad() : PocketItem(POCKET_ITEM_CHALECO_SQUAD, POCKET_ITEMTYPE_ARMDU1,  530,200) constructor 
-{
-	setStat(
-		STAT_DEFENSA  , 50, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 35, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD,-22, MALL_NUMTYPE.REAL,
-		STAT_PODER, 8, MALL_NUMTYPE.REAL
-		);
-};
-// LVL 66 -> 73 (Gabi, Fernando)
-#macro POCKET_ITEM_CHALECO_ECTLDRO "POCKET.CHALECO.ECTLDRO" // Un chaleco Eldro imbuido en ecto
-function IT_CPChalecoEctldro() : PocketItem(POCKET_ITEM_CHALECO_ECTLDRO, POCKET_ITEMTYPE_ARMDU1, 53,200) constructor
-{
-	setStat(
-		STAT_DEFENSA, 34, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 45, MALL_NUMTYPE.REAL,
-		STAT_PODER  ,  6, MALL_NUMTYPE.REAL
-		);
-};
-	
-// LVL 73 -> 80 (Gabi, Fernando)
-#macro POCKET_ITEM_CHALECO_MILITAR "POCKET.CHALECO.MILITAR"
-function IT_CPChalecoMilitar() : PocketItem(POCKET_ITEM_CHALECO_SQUAD, POCKET_ITEMTYPE_ARMDU1, 530,200) constructor
-{
-	setStat(
-		STAT_DEFENSA  , 60, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 45, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD,-30, MALL_NUMTYPE.REAL,
-		STAT_PODER, 10, MALL_NUMTYPE.REAL
-		);
-};
-// LVL 73 -> 80 (Gabi, Fernando)
-#macro POCKET_ITEM_CHALECO_MUERTO "POCKET.CHALECO.MUERO" // "Muerto" se refiere a que un espiritu lo posee
-function IT_CPChalecoMuero() : PocketItem(POCKET_ITEM_CHALECO_ECTLDRO, POCKET_ITEMTYPE_ARMDU1, 53,200) constructor
-{
-	setStat(
-		STAT_DEFENSA, 44, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 55, MALL_NUMTYPE.REAL,
-		STAT_PODER  ,  8, MALL_NUMTYPE.REAL
-		);
-};
-
-#endregion
-
-#region -- Equipo para los pies
-// Zapatos
-// LVL 8 -> 14 (Jon, Susana)
-#macro POCKET_ITEM_ZAPATOS_MANCHADOS "POCKET.ZAPATOS.MANCHADOS"
-function IT_PSZapatosManchados() : PocketItem(POCKET_ITEM_ZAPATOS_MANCHADOS,POCKET_ITEMTYPE_ACCES2,  320,130) constructor 
-{
-	setStat(
-		STAT_DEFENSA,   7, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 9, MALL_NUMTYPE.REAL
-		);
-};
-	
-// LVL 14 -> 18 (Jon, Susana)
-#macro POCKET_ITEM_ZAPATOS_GENERICOS "POCKET.ZAPATOS.GENERICOS"
-function IT_PSZapatos() : PocketItem(POCKET_ITEM_ZAPATOS_GENERICOS,POCKET_ITEMTYPE_ACCES2,  320,130) constructor
-{
-	setStat(
-		STAT_DEFENSA,   12, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 14, MALL_NUMTYPE.REAL
-		);
-};
-	
-// LVL 18 -> 24 (Jon, Susana)
-#macro POCKET_ITEM_ZAPATOS_IMITACION "POCKET.ZAPATOS.IMITACION"
-function IT_PSZapatosImitacion() : PocketItem(POCKET_ITEM_ZAPATOS_IMITACION,POCKET_ITEMTYPE_ACCES2,  320,130) constructor
-{
-	setStat(
-		STAT_DEFENSA,   17, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 19, MALL_NUMTYPE.REAL
-		);
-};
-	
-// Zapatillas
-// LVL 4 -> 8 (Jon, Susana)
-#macro POCKET_ITEM_ZAPATILLAS_MANCHADAS "POCKET.ZAPATILLAS.MANCHADAS"
-function IT_PSZapatillasManchadas() : PocketItem(POCKET_ITEM_ZAPATILLAS_MANCHADAS,POCKET_ITEMTYPE_ACCES2,  320,130) constructor 
-{
-	setStat(STAT_VELOCIDAD, 11, MALL_NUMTYPE.REAL);
-}
-	
-// LVL 8 -> 14 (Jon, Susana)
-#macro POCKET_ITEM_ZAPATILLAS_GASTADAS "POCKET.ZAPATILLAS.GASTADAS"
-function IT_PSZapatillasGastadas() : PocketItem(POCKET_ITEM_ZAPATILLAS_GASTADAS,POCKET_ITEMTYPE_ACCES2,  320,130) constructor
-{
-	setStat(
-		STAT_DEFENSA,    2, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 17, MALL_NUMTYPE.REAL
-		);
-};
-	
-// LVL 14 -> 18 (Jon, Susana)
-#macro POCKET_ITEM_ZAPATILLAS "POCKET.ZAPATILLAS"
-function IT_PSZapatillas() : PocketItem(POCKET_ITEM_ZAPATILLAS,POCKET_ITEMTYPE_ACCES2,  320,130) constructor
-{
-	setStat(
-		STAT_DEFENSA,    4, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 23, MALL_NUMTYPE.REAL
-		);
-};
-	
-// LVL 18 -> 24 (Jon, Susana)
-#macro POCKET_ITEM_ZAPATILLAS_IMITACION "POCKET.ZAPATILLAS.IMITACION"
-function IT_PSZapatillasImitacion() : PocketItem(POCKET_ITEM_ZAPATILLAS_IMITACION,POCKET_ITEMTYPE_ACCES2,  320,130) constructor
-{
-	setStat(
-		STAT_DEFENSA,    6, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 29, MALL_NUMTYPE.REAL
-		);
-};
-// LVL 36 -> 40 (Jon, Fernando, Gabi)
-#macro POCKET_ITEM_ZAPATILLAS_SEGURIDAD "POCKET.ZAPATILLAS.SEGURIDAD"
-function IT_PSZapatillasSeguridad() : PocketItem(POCKET_ITEM_ZAPATILLAS_SEGURIDAD,POCKET_ITEMTYPE_ACCES2,  650,150) constructor
-{
-	setStat(
-		STAT_DEFENSA,   18, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 26, MALL_NUMTYPE.REAL
-		);
-};	
-
-// Botas
-// LVL 24 -> 36 (Gabi, Fernando)
-#macro POCKET_ITEM_BOTAS "POCKET.BOTAS"
-function IT_PSBotas() : PocketItem(POCKET_ITEM_BOTAS,POCKET_ITEMTYPE_ACCES2,  650,150) constructor
-{
-	setStat(
-		STAT_DEFENSA,  16, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 4, MALL_NUMTYPE.REAL
-		);
-};
-	
-// LVL 24 -> 36 (Jon, Gabi, Fernando)
-#macro POCKET_ITEM_BOTAS_LIGERAS "POCKET.BOTAS.LIGERAS"
-function IT_PSBotasLigeras() : PocketItem(POCKET_ITEM_BOTAS_LIGERAS,POCKET_ITEMTYPE_ACCES2,  650,150) constructor
-{
-	setStat(
-		STAT_DEFENSA,   8, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 9, MALL_NUMTYPE.REAL
-		);
-};
-	
-// LVL 30 -> 42 (Gabi, Fernando)
-#macro POCKET_ITEM_BOTAS_ESCENCIA "POCKET.BOTAS.ESCENCIA"
-function IT_PSBotasEscencia() : PocketItem(POCKET_ITEM_BOTAS_ESCENCIA,POCKET_ITEMTYPE_ACCES2,  650,150) constructor
-{
-	setStat(
-		STAT_DEFENSA,   12, MALL_NUMTYPE.REAL,
-		STAT_DESPECIAL, 14, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD,  4, MALL_NUMTYPE.REAL
-		);
-};	
-
-#endregion
-
-#region -- Equipo para accesorios 1
-// LVL 1 -> 8 (Jon, Susana)
-#macro POCKET_ITEM_GORRO_LANA "POCKET.ACC1.GORRO_DE_LANA"
-function IT_ACCGorroLana() : PocketItem(POCKET_ITEM_GORRO_LANA, POCKET_ITEMTYPE_ACCES1, 220, 10) constructor
-{
-	setStat(STAT_DEFENSA, 2, MALL_NUMTYPE.REAL);
-}
-	
-// LVL 1 -> 8 (Jon, Susana)
-#macro POCKET_ITEM_CRUZ "POCKET.ACC1.CRUZ"
-function IT_ACCCruz() : PocketItem(POCKET_ITEM_CRUZ, POCKET_ITEMTYPE_ACCES1, 220, 0) constructor 
-{
-	setStat(STAT_DEFENSA,3,MALL_NUMTYPE.REAL,  STAT_DESPECIAL,3,MALL_NUMTYPE.REAL);
-}
-	
-// LVL 1 -> 8 (Jon)
-#macro POCKET_ITEM_DIBUJO "POCKET.ACC1.DIBUJO"
-function IT_ACCDibujo() : PocketItem(POCKET_ITEM_DIBUJO,  POCKET_ITEMTYPE_ACCES1,  100, 2) constructor
-{
-	setStat(STAT_PODER, 2, MALL_NUMTYPE.REAL)
-		
-	/// @desc En 2 turnos aumenta el ataque especial en un 10%
-	/// @param {real} turn
-	/// @param {struct.PartyEntity} caster
-	static turnStart = function(turn, entity)
+	#macro POCKET_ITEM_MANZANA_VERDE "POCKET.MANZANA.VERDE"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_MANZANA_ROJA, POCKET_ITEMTYPE_CONSM) constructor
 	{
-		if (turn == 2) {
-			entity.controlEffectAdd(new DK_ACCDibujo());
-		}		
-	}
-}
+		buy = 240; sell = 80;
+		
+		/// @param {struct.PartyEntity} caster
+		/// @param {struct.PartyEntity} target
+		static use = function(caster, target) 
+		{
+			var _return = {result: false, restore: 0};
+		
+			var _en = target.statGet(STAT_EN);
+			// Si no hay por que curar
+			if (_en.actual != _en.control) return _return;
+			// Curar si se puede
+			var _value  = target.statAdd(STAT_EN, restore, restoreType, restoreNumtarget);
+			_return.result  = (_value != 0);
+			_return.restore = _value;
+		
+			return (_return);
+		}
+		
+		// Valores para curar
+		restore     = 45;
+		restoreType = MALL_NUMTYPE.PERCENT;
+		restoreNumtarget = 5;
+	}());
 	
-// LVL 1 -> 8 (Jon, Susana)
-#macro POCKET_ITEM_ZAPATOS_GASTADOS "POCKET.ZAPATOS.GASTADOS"
-function IT_ACCZapatosGastados() : PocketItem(POCKET_ITEM_ZAPATOS_GASTADOS, POCKET_ITEMTYPE_ACCES1, 320, 130) constructor
-{
-	setStat(
-		STAT_DEFENSA  , 1, MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, 1, MALL_NUMTYPE.REAL
-		);
-}
+	#macro POCKET_ITEM_MANZANA_LADY "POCKET.MANZANA.VERDE"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_MANZANA_LADY, POCKET_ITEMTYPE_CONSM) constructor 
+	{
+		buy=480; sell=80;
+		
+		/// @param {struct.PartyEntity} caster
+		/// @param {struct.PartyEntity} target
+		static use = function(caster, target) 
+		{
+			var _return = {result: false, restore: 0};
+		
+			var _en = target.statGet(STAT_EN);
+			// Si no hay por que curar
+			if (_en.actual != _en.control) return _return;
+			// Curar si se puede
+			var _value  = target.statAdd(STAT_EN, restore, restoreType, restoreNumtarget);
+			_return.result  = (_value != 0);
+			_return.restore = _value;
+		
+			return (_return);
+		}
+		
+		// Valores para curar
+		restore     = 63;
+		restoreType = MALL_NUMTYPE.PERCENT;
+		restoreNumtarget = 5;	
+	}());
 	
-/*  */
+	// -- Recuperar EPM
+	#macro POCKET_ITEM_AGUA_MINERAL "POCKET.AGUA.MINERAL"	
+	pocket_create(new function() : PocketItem(POCKET_ITEM_AGUA_MINERAL, POCKET_ITEMTYPE_CONSM) constructor
+	{
+		buy = 80; sell=10;
+		
+		/// @param {struct.PartyEntity} caster
+		/// @param {struct.PartyEntity} target
+		static use = function(caster, target) 
+		{
+			var _return = {result: false, restore: 0};
+			var _epm =    target.statGet(STAT_EPM);
+			// From item
+			var _value  = target.statAdd(STAT_EPM, restore, type, numtarget);
+			_return.result  = (_value != 0);
+			_return.restore = _value;
+			
+			return (_return);
+		}
+		
+		restore =   15; 
+		type =      MALL_NUMTYPE.PERCENT;
+		numtarget = 5;		
+		
+	}() );
 	
-// LVL 30 - 40
-#macro POCKET_ITEM_AMULETO_GALLO "POCKET.ACC1.AMULETO.GALLO"
-function IT_ACCAnilloGallo() : PocketItem(POCKET_ITEM_AMULETO_GALLO, POCKET_ITEMTYPE_ACCES1, 600, 500) constructor
-{
-	setStat(STAT_VELOCIDAD, 18, MALL_NUMTYPE.REAL);
-}
+	#macro POCKET_ITEM_BEBIDA "POCKET.BEBIDA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_BEBIDA, POCKET_ITEMTYPE_CONSM) constructor
+	{
+		buy = 160; sell = 20;
+		
+		/// @param {struct.PartyEntity} caster
+		/// @param {struct.PartyEntity} target
+		static use = function(caster, target) 
+		{
+			var _return = {result: false, restore: 0};
+			var _epm =    target.statGet(STAT_EPM);
+			// From item
+			var _value  = target.statAdd(STAT_EPM, restore, type, numtarget);
+			_return.result  = (_value != 0);
+			_return.restore = _value;
+			
+			return (_return);
+		}
+		
+		restore =   30; 
+		type =      MALL_NUMTYPE.PERCENT;
+		numtarget = 5;					
+	}());
 	
-// LVL 30 - 40
-#macro POCKET_ITEM_ANILLO_TORO "POCKET.ACC1.ANILLO.TORO"
-function IT_ACCAnilloToro() : PocketItem(POCKET_ITEM_ANILLO_TORO, POCKET_ITEMTYPE_ACCES1, 600, 500) constructor
-{
-	setStat(
-		STAT_FUERZA ,    8, MALL_NUMTYPE.REAL, 
-		STAT_DEFENSA,   24, MALL_NUMTYPE.REAL,  STAT_DESPECIAL,18,MALL_NUMTYPE.REAL,
-		STAT_VELOCIDAD, -8, MALL_NUMTYPE.REAL,
-		STAT_PODER,3,MALL_NUMTYPE.REAL
-		);
-}
-	
-// LVL 30 - 40
-#macro POCKET_ITEM_ANILLO_CABRA "POCKET.ACC1.ANILLO.CABRA"
-function IT_ACCAnilloCabra() : PocketItem(POCKET_ITEM_ANILLO_CABRA, POCKET_ITEMTYPE_ACCES1, 600, 500) constructor
-{
-	setStat(STAT_FUERZA,14,MALL_NUMTYPE.REAL,  STAT_VELOCIDAD,18,MALL_NUMTYPE.REAL);
-}
-	
-// LVL 40 - 50
-#macro POCKET_ITEM_ANILLO_CABALLO "POCKET.ACC1.ANILLO.CABALLO"
-function IT_ACCAnilloCaballo() : PocketItem(POCKET_ITEM_ANILLO_CABALLO, POCKET_ITEMTYPE_ACCES1, 600, 500) constructor
-{
-	setStat(STAT_DEFENSA,20,MALL_NUMTYPE.REAL,  STAT_DESPECIAL,20,MALL_NUMTYPE.REAL);
-}
+	#macro POCKET_ITEM_BEBIDA_ENERGETICA "POCKET.BEBIDA.ENERGETICA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_BEBIDA, POCKET_ITEMTYPE_CONSM) constructor
+	{
+		buy = 320; sell = 40;
+		
+		/// @param {struct.PartyEntity} caster
+		/// @param {struct.PartyEntity} target
+		static use = function(caster, target) 
+		{
+			var _return = {result: false, restore: 0};
+			var _epm =    target.statGet(STAT_EPM);
+			// From item
+			var _value  = target.statAdd(STAT_EPM, restore, type, numtarget);
+			_return.result  = (_value != 0);
+			_return.restore = _value;
+			
+			return (_return);
+		}
+		
+		restore =   45; 
+		type =      MALL_NUMTYPE.PERCENT;
+		numtarget = 5;					
+	}());
 
-#endregion
+	// -- Recuperar EN y EMP
+	#macro POCKET_ITEM_PERLA_AZUL "POCKET.PERLA.AZUL"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_PERLA_AZUL, POCKET_ITEMTYPE_CONSM) constructor
+	{
+		buy=300; sell=10;
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static use = function(caster, target) 
+		{
+			var _result = {result: [false, false], restore: [0, 0]};
+		
+			var _stats = _target.getStat(), _value;
+			
+			_value  = target.statAdd(STAT_EN, restoreEN, numtype, numtarg);
+			_result.result  [0] = (_value != 0);
+			_result.restore [0] = _value;
+			
+			_value = target.statAdd(STAT_EPM, restoreEPM, numtype, numtarg);
+			_result.result  [1] = (_value != 0);
+			_result.restore [1] = _value;
+			
+			return (_result);
+		}
+		
+		restoreEN  = 15;
+		restoreEPM = 15;
+		
+		numtype = MALL_NUMTYPE.PERCENT;
+		numtarg = 0;
+	}());
 
-#region -- Equipo para objetos etc
-#macro POCKET_ITEM_ECTOLITA "POCKET.OBJ.ECTOLITA"
-function IT_DropsEctolita() : PocketItem(POCKET_ITEM_ECTOLITA, POCKET_ITEMTYPE_ETC, 0,50) constructor {}
+	#macro POCKET_ITEM_PERLA_ROJA "POCKET.PERLA.ROJA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_PERLA_ROJA, POCKET_ITEMTYPE_CONSM) constructor
+	{
+		buy = 600; sell = 100;
+
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static use = function(caster, target) 
+		{
+			var _result = {result: [false, false], restore: [0, 0]};
+		
+			var _stats = _target.getStat(), _value;
+			
+			_value  = target.statAdd(STAT_EN, restoreEN, numtype, numtarg);
+			_result.result  [0] = (_value != 0);
+			_result.restore [0] = _value;
+			
+			_value = target.statAdd(STAT_EPM, restoreEPM, numtype, numtarg);
+			_result.result  [1] = (_value != 0);
+			_result.restore [1] = _value;
+			
+			return (_result);
+		}
+		
+		// 
+		restoreEN  = 24;
+		restoreEPM = 24;
+		
+		numtype = MALL_NUMTYPE.PERCENT;
+		numtarg = 0;		
+	}());
+
+	#macro POCKET_ITEM_PERLA_VERDE "POCKET.PERLA.VERDE"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_PERLA_ROJA, POCKET_ITEMTYPE_CONSM) constructor
+	{
+		buy = 1200; sell = 200;
+
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static use = function(caster, target) 
+		{
+			var _result = {result: [false, false], restore: [0, 0]};
+		
+			var _stats = _target.getStat(), _value;
+			
+			_value  = target.statAdd(STAT_EN, restoreEN, numtype, numtarg);
+			_result.result  [0] = (_value != 0);
+			_result.restore [0] = _value;
+			
+			_value = target.statAdd(STAT_EPM, restoreEPM, numtype, numtarg);
+			_result.result  [1] = (_value != 0);
+			_result.restore [1] = _value;
+			
+			return (_result);
+		}
+		
+		// 
+		restoreEN  = 48;
+		restoreEPM = 36;
+		
+		numtype = MALL_NUMTYPE.PERCENT;
+		numtarg = 0;		
+	}());
+	
+	// -- Revivir
+	#macro POCKET_ITEM_ESCENCIA_AZUL "POCKET.ESCENCIA.AZUL"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ESCENCIA_AZUL, POCKET_ITEMTYPE_CONSM) constructor 
+	{
+		buy = 1200; sell = 150;
+		
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static canUse = function(caster, target) 
+		{
+			return (!target.controlState(STATE_VIVO) && target.statGet(STAT_EN).control <= 0); 
+		}
+
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static use = function(caster, target) 
+		{
+			/// @self Struct.PocketItem
+			var _result =  {result: false, restore: 0};
+			// Si esta en false
+			var _en =    target.statGet(STAT_EN);
+			var _value = target.statAdd(STAT_EN, restore, numtype, numtarg);
+			// Indicar que esta vivo
+			target.controlStateSet(STATE_VIVO, true);
+			
+			// Cambiar resultado
+			_result.result  = true;
+			_result.restore = _value;
+			
+			return (_result);
+		}
+		
+		restore = 30;
+		numtype = MALL_NUMTYPE.PERCENT;
+		numtarg = STAT_NUMTARG.CONTROL;
+	}());
+	
+	#macro POCKET_ITEM_ESCENCIA_ROJA "POCKET.ESCENCIA.ROJA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ESCENCIA_ROJA, POCKET_ITEMTYPE_CONSM) constructor 
+	{
+		buy = 2560; sell = 600;
+		
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static canUse = function(caster, target) 
+		{
+			return (!target.controlState(STATE_VIVO) && target.statGet(STAT_EN).control <= 0); 
+		}
+
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static use = function(caster, target) 
+		{
+			/// @self Struct.PocketItem
+			var _result =  {result: false, restore: 0};
+			// Si esta en false
+			var _en =    target.statGet(STAT_EN);
+			var _value = target.statAdd(STAT_EN, restore, numtype, numtarg);
+			// Indicar que esta vivo
+			target.controlStateSet(STATE_VIVO, true);
+			
+			// Cambiar resultado
+			_result.result  = true;
+			_result.restore = _value;
+			
+			return (_result);
+		}
+		
+		restore = 45;
+		numtype = MALL_NUMTYPE.PERCENT;
+		numtarg = STAT_NUMTARG.CONTROL;
+	}());
+
+	#macro POCKET_ITEM_ESCENCIA_VERDE "POCKET.ESCENCIA.VERDE"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ESCENCIA_VERDE, POCKET_ITEMTYPE_CONSM) constructor 
+	{
+		buy = 5600; sell = 1200;
+		
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static canUse = function(caster, target) 
+		{
+			return (!target.controlState(STATE_VIVO) && target.statGet(STAT_EN).control <= 0); 
+		}
+
+		/// @param {Struct.PartyEntity} caster
+		/// @param {Struct.PartyEntity} target
+		static use = function(caster, target) 
+		{
+			/// @self Struct.PocketItem
+			var _result =  {result: false, restore: 0};
+			// Si esta en false
+			var _en =    target.statGet(STAT_EN);
+			var _value = target.statAdd(STAT_EN, restore, numtype, numtarg);
+			// Indicar que esta vivo
+			target.controlStateSet(STATE_VIVO, true);
+			
+			// Cambiar resultado
+			_result.result  = true;
+			_result.restore = _value;
+			
+			return (_result);
+		}
+		
+		restore = 60;
+		numtype = MALL_NUMTYPE.PERCENT;
+		numtarg = STAT_NUMTARG.CONTROL;
+	}());
+
+
+	#endregion
+
+	#region -- Jon Items
+	// LVL 1 -> 6
+	#macro POCKET_ITEM_CUCHARITA "POCKET.JON.CUCHARITA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CUCHARITA, POCKET_ITEMTYPE_ARMA, 150,80) constructor 
+	{
+		setStat(STAT_PODER, 12, MALL_NUMTYPE.REAL);	
+	}());
+	
+	// LVL 6 -> 12
+	#macro POCKET_ITEM_CUCHARA_PLASTICA "POCKET.JON.CUCHARA.PLASTICA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CUCHARA_PLASTICA, POCKET_ITEMTYPE_ARMA, 300,100) constructor 
+	{
+		buy  = 320;
+		sell = 100;
+		
+		setStat(STAT_FUERZA, 6 , MALL_NUMTYPE.REAL,  STAT_FESPECIAL, 5, MALL_NUMTYPE.REAL);
+		setStat(STAT_PODER , 16, MALL_NUMTYPE.REAL);
+	}());
+
+	// LVL 6 -> 12
+	#macro POCKET_ITEM_TENEDOR_PLASTICO "POCKET.JON.TENEDOR.PLASTICA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_TENEDOR_PLASTICO, POCKET_ITEMTYPE_ARMA, 480,100) constructor 
+	{
+		setStat(
+			STAT_FUERZA,    8 , MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 10, MALL_NUMTYPE.REAL,
+			STAT_PODER,     11, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 12 -> 24
+	#macro POCKET_ITEM_CUCHARA_HIERRO "POCKET.JON.CUCHARA.HIERRO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CUCHARA_HIERRO, POCKET_ITEMTYPE_ARMA, 680,300) constructor 
+	{
+		setStat(
+			STAT_FUERZA, 10, MALL_NUMTYPE.REAL,  STAT_FESPECIAL, 11, MALL_NUMTYPE.REAL,
+			STAT_PODER , 19, MALL_NUMTYPE.REAL
+			);
+	}());
+		
+	// LVL 12 -> 24
+	#macro POCKET_ITEM_TENEDOR_HIERRO "POCKET.JON.TENEDOR.HIERRO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_TENEDOR_HIERRO, POCKET_ITEMTYPE_ARMA, 720, 320) constructor 
+	{
+		setStat(
+			STAT_FUERZA   , 15, MALL_NUMTYPE.REAL,
+			STAT_DEFENSA  ,  3, MALL_NUMTYPE.REAL, STAT_DESPECIAL, -6, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 14, MALL_NUMTYPE.REAL,
+			STAT_PODER, 18, MALL_NUMTYPE.REAL
+			);
+	}());
+		
+	// LVL 24 -> 30
+	#macro POCKET_ITEM_CUCHARA_PLATA "POCKET.JON.CUCHARA.PLATA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CUCHARA_PLATA, POCKET_ITEMTYPE_ARMA, 6_000, 1_000) constructor 
+	{
+		setStat(
+			STAT_FUERZA, 14, MALL_NUMTYPE.REAL, STAT_FESPECIAL, 17, MALL_NUMTYPE.REAL,
+			STAT_PODER , 22, MALL_NUMTYPE.REAL
+			);
+	}());
+		
+	// LVL 24 -> 30
+	#macro POCKET_ITEM_TENEDOR_PLATA "POCKET.JON.TENEDOR.PLATA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CUCHARA_HIERRO, POCKET_ITEMTYPE_ARMA, 6_000, 1_200) constructor 
+	{
+		setStat(
+			STAT_FUERZA   , 22, MALL_NUMTYPE.REAL,
+			STAT_DEFENSA  ,  5, MALL_NUMTYPE.REAL, STAT_DESPECIAL, -16, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 18, MALL_NUMTYPE.REAL,
+			STAT_PODER, 25, MALL_NUMTYPE.REAL,
+			);
+	}());
+
+	// Mezcla de tenedor y cuchara
+	// LVL 30 -> 36
+	#macro POCKET_ITEM_CUCHARA_TENEDOR_HIERRO "POCKET.JON.CUCHARA_TENEDOR.HIERRO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CUCHARA_TENEDOR_HIERRO, POCKET_ITEMTYPE_ARMA, 6_000, 1_600) constructor 
+	{
+		setStat(
+			STAT_FUERZA   , 16, MALL_NUMTYPE.REAL, STAT_DEFENSA  , 4, MALL_NUMTYPE.REAL,
+			STAT_FESPECIAL, 14, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 2, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 11, MALL_NUMTYPE.REAL, 
+			STAT_PODER    , 26, MALL_NUMTYPE.REAL 
+			);
+	}());
+
+	// LVL 36 -> 42
+	#macro POCKET_ITEM_CUCHARA_TENEDOR_PLATA "POCKET.JON.CUCHARA_TENEDOR.PLATA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CUCHARA_TENEDOR_PLATA, POCKET_ITEMTYPE_ARMA, 6_000, 1_600) constructor 
+	{
+		setStat(
+			STAT_FUERZA ,   20, MALL_NUMTYPE.REAL, STAT_DEFENSA  , 10, MALL_NUMTYPE.REAL,
+			STAT_FESPECIAL, 20, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 10, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 16, MALL_NUMTYPE.REAL,
+			STAT_PODER    , 30, MALL_NUMTYPE.REAL,
+			);
+	}());
+	
+	// LVL 42 -> 48 De ahora empezar a restar algunas estadisticas
+	#macro POCKET_ITEM_CUCHARON_HIERRO "POCKET.JON.CUCHARON.HIERRO" 
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CUCHARON_HIERRO, POCKET_ITEMTYPE_ARMA, 6_000, 1_600) constructor 
+	{
+		setStat(
+			STAT_FUERZA   ,  25, MALL_NUMTYPE.REAL, STAT_DEFENSA  , 17, MALL_NUMTYPE.REAL,
+			STAT_FESPECIAL,  25, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 17, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD,  21, MALL_NUMTYPE.REAL, 
+			STAT_PODER    ,  37, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 48 -> 54 De ahora empezar a restar algunas estadisticas
+	#macro POCKET_ITEM_CUCHARON_PLATA "POCKET.JON.CUCHARON.PLATA" 
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CUCHARON_PLATA, POCKET_ITEMTYPE_ARMA, 6_000, 1_600) constructor 
+	{
+		setStat(
+			STAT_FUERZA   ,  25, MALL_NUMTYPE.REAL, STAT_DEFENSA  , 17, MALL_NUMTYPE.REAL,
+			STAT_FESPECIAL,  25, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 17, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD,  21, MALL_NUMTYPE.REAL, 
+			STAT_PODER    ,  37, MALL_NUMTYPE.REAL
+			);
+	}());
+
+
+	#endregion
+
+	#region -- Gabi Items
+	// LVL 50 -> 56
+	#macro POCKET_ITEM_GUANTES_BLANCOS "POCKET.GABI.GUANTES.BLANCOS" // Enfoque especial
+	pocket_create(new function() : PocketItem(POCKET_ITEM_GUANTES_BLANCOS, POCKET_ITEMTYPE_ARMA, 1_020, 104) constructor 
+	{
+		setStat(
+			STAT_FUERZA, 18, MALL_NUMTYPE.REAL,  STAT_FESPECIAL, 28, MALL_NUMTYPE.REAL,
+			STAT_PODER , 43, MALL_NUMTYPE.REAL
+			);
+	}()); // 4 6 3 
+	
+	// LVL 50 -> 56
+	#macro POCKET_ITEM_GUANTES_NEGROS "POCKET.GABI.GUANTES.NEGROS" // Enfoque fisico
+	pocket_create(new function() : PocketItem(POCKET_ITEM_GUANTES_NEGROS, POCKET_ITEMTYPE_ARMA, 2_200, 500) constructor 
+	{
+		setStat(
+			STAT_FUERZA   , 28, MALL_NUMTYPE.REAL, 
+			STAT_VELOCIDAD, 16, MALL_NUMTYPE.REAL,
+			STAT_PODER    , 38, MALL_NUMTYPE.REAL
+			);
+	}()); // 4 6 3
+	
+	// LVL 62 -> 68
+	#macro POCKET_ITEM_GUANTES_ROJOS "POCKET.GABI.GUANTES.ROJOS"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_GUANTES_ROJOS, POCKET_ITEMTYPE_ARMA, 2800, 500) constructor 
+	{
+		setStat(
+			STAT_FUERZA   ,  22, MALL_NUMTYPE.REAL, STAT_FESPECIAL, 34, MALL_NUMTYPE.REAL,
+			STAT_DEFENSA  , -10, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD,  13, MALL_NUMTYPE.REAL,
+			STAT_PODER    ,  46, MALL_NUMTYPE.REAL
+			);
+	}()); // -3 4 
+
+
+	// LVL 62 -> 68
+	#macro POCKET_ITEM_GUANTES_VERDES "POCKET.GABI.GUANTES.VERDES"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_GUANTES_VERDES, POCKET_ITEMTYPE_ARMA, 2620, 100) constructor
+	{
+		setStat(
+			STAT_FUERZA   , 32, MALL_NUMTYPE.REAL, STAT_DEFENSA, 10, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 22, MALL_NUMTYPE.REAL,
+			STAT_PODER    , 41, MALL_NUMTYPE.REAL
+			);
+	}()); // 4 
+	
+	// LVL 73 -> 78
+	#macro POCKET_ITEM_GUANTES_CUERO "POCKET.GABI.GUANTES.CUERO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_GUANTES_CUERO, POCKET_ITEMTYPE_ARMA, 2620, 100) constructor
+	{
+		setStat(
+			STAT_FUERZA   , 26, MALL_NUMTYPE.REAL, STAT_DEFENSA  , -13, MALL_NUMTYPE.REAL,
+			STAT_FESPECIAL, 38, MALL_NUMTYPE.REAL, STAT_DESPECIAL,  13, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 15, MALL_NUMTYPE.REAL,
+			STAT_PODER    , 40, MALL_NUMTYPE.REAL
+			);
+	}());
+
+
+	#endregion
+
+	#region -- Fernando Items
+	// LVL 40 -> 47
+	#macro POCKET_ITEM_MONEDA_988 "POCKET.FEN.MONEDA.988"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_MONEDA_988, POCKET_ITEMTYPE_ARMA) constructor 
+	{	
+		setStat(
+			STAT_FUERZA , 20, MALL_NUMTYPE.REAL,
+			STAT_CRITICO, 10, MALL_NUMTYPE.REAL,
+			STAT_PODER  , 32, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 47 - 54
+	#macro POCKET_ITEM_MONEDA_942 "POCKET.FEN.MONEDA.942"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_MONEDA_942, POCKET_ITEMTYPE_ARMA) constructor
+	{
+		setStat(
+			STAT_FUERZA   , 24, MALL_NUMTYPE.REAL,
+			STAT_DESPECIAL, 11, MALL_NUMTYPE.REAL,
+			STAT_CRITICO, 11, MALL_NUMTYPE.REAL,
+			STAT_PODER  , 35, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 61 - 68
+	#macro POCKET_ITEM_MONEDA_NIQUEL "POCKET.FEN.MONEDA.NIQUEL"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_MONEDA_NIQUEL, POCKET_ITEMTYPE_ARMA) constructor
+	{
+		setStat(
+			STAT_FUERZA   , 30, MALL_NUMTYPE.REAL, STAT_DEFENSA, 8, MALL_NUMTYPE.REAL,
+			STAT_DESPECIAL,  9, MALL_NUMTYPE.REAL,
+			STAT_CRITICO, 13, MALL_NUMTYPE.REAL,
+			STAT_PODER  , 38, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 68 - 75
+	#macro POCKET_ITEM_MONEDA_PLATA "POCKET.FEN.MONEDA.PLATA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_MONEDA_PLATA, POCKET_ITEMTYPE_ARMA) constructor
+	{
+		setStat(
+			STAT_FUERZA   , 36, MALL_NUMTYPE.REAL, STAT_DEFENSA, 16, MALL_NUMTYPE.REAL,
+			STAT_DESPECIAL, 16, MALL_NUMTYPE.REAL,
+			STAT_CRITICO, 14, MALL_NUMTYPE.REAL,
+			STAT_PODER  , 41, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 75 - 82
+	#macro POCKET_ITEM_MONEDA_ORO "POCKET.FEN.MONEDA.ORO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_MONEDA_ORO, POCKET_ITEMTYPE_ARMA) constructor
+	{
+		setStat(
+			STAT_FUERZA   , 42, MALL_NUMTYPE.REAL, STAT_DEFENSA, 24, MALL_NUMTYPE.REAL,
+			STAT_DESPECIAL, 25, MALL_NUMTYPE.REAL,
+			STAT_CRITICO, 16, MALL_NUMTYPE.REAL,
+			STAT_PODER  , 44, MALL_NUMTYPE.REAL
+			);
+	}());
+
+	#endregion
+	
+	#region -- Equipo para el cuerpo
+	// -- Polera y Camisa 
+	// Polera: Defensa y Velocidad
+	// Camisa: Defensa y Despecial
+	
+	// LVL 1 -> 4 (Jon, Susana)
+	#macro POCKET_ITEM_CAMISA_COLEGIO "POCKET.CUE.CAMISA.COLEGIO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CAMISA_COLEGIO, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor 
+	{
+		setStat(STAT_DEFENSA,6,MALL_NUMTYPE.REAL,  STAT_DESPECIAL,3,MALL_NUMTYPE.REAL);
+	}()); // Sumar: 6 3
+	// LVL 1 -> 4 (Jon, Susana)
+	#macro POCKET_ITEM_POLERA_COLEGIO "POCKET.POLERA.COLEGIO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_POLERA_COLEGIO, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor
+	{
+		setStat(STAT_DEFENSA,5,MALL_NUMTYPE.REAL,  STAT_VELOCIDAD,4,MALL_NUMTYPE.REAL);
+	}()); // Sumar: 5 7
+	
+	// LVL 4 -> 9 (Jon, Susana)
+	#macro POCKET_ITEM_CAMISA_CUADROS "POCKET.CAMISA.CUADROS"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CAMISA_CUADROS, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor
+	{
+		setStat(STAT_DEFENSA,12,MALL_NUMTYPE.REAL,  STAT_DESPECIAL,6,MALL_NUMTYPE.REAL);
+	}());
+	// LVL 4 -> 9 (Jon, Susana)
+	#macro POCKET_ITEM_POLERA_COLORIDA "POCKET.POLERA.COLORIDA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_POLERA_COLORIDA, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor
+	{
+		setStat(STAT_DEFENSA,10,MALL_NUMTYPE.REAL,  STAT_VELOCIDAD,7,MALL_NUMTYPE.REAL);
+	}());
+	
+	// LVL 9 -> 14 (Jon, Susana)
+	#macro POCKET_ITEM_CAMISA_VEBRES "POCKET.CAMISA.VEBRES" // Vebres marca famosa de ropa
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CAMISA_VEBRES, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor
+	{
+		setStat(STAT_DEFENSA,18,MALL_NUMTYPE.REAL,  STAT_DESPECIAL,9,MALL_NUMTYPE.REAL);
+	}()); // Sumar: 6 3
+	// LVL 9 -> 14 (Jon, Susana)
+	#macro POCKET_ITEM_POLERA_VEBRES "POCKET.POLERA.VEBRES"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_POLERA_VEBRES, POCKET_ITEMTYPE_ARMDU1, 200,80) constructor
+	{
+		setStat(STAT_DEFENSA,15,MALL_NUMTYPE.REAL,  STAT_VELOCIDAD,10,MALL_NUMTYPE.REAL);
+	}()); // Sumar: 5 7
+	
+	// LVL 40 -> 46 (Gabi, Fernando)
+	#macro POCKET_ITEM_PLATINAS_HIERRO "POCKET.PLATINAS.HIERRO" 
+	pocket_create(new function() : PocketItem(POCKET_ITEM_PLATINAS_HIERRO, POCKET_ITEMTYPE_ARMDU1, 530,200) constructor
+	{
+		setStat(
+			STAT_DEFENSA  , 30, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 15, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, -6, MALL_NUMTYPE.REAL,
+			STAT_PODER, 4, MALL_NUMTYPE.REAL 
+			);
+	}()); // 5 5 -4 1
+	// LVL 40 -> 46 (Gabi, Fernando)
+	#macro POCKET_ITEM_PLATINAS_ECTO "POCKET.PLATINAS.ECTO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_PLATINAS_ECTO, POCKET_ITEMTYPE_ARMDU1, 53,200) constructor
+	{
+		setStat(
+			STAT_DEFENSA, 14, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 30, MALL_NUMTYPE.REAL,
+			STAT_PODER, 3, MALL_NUMTYPE.REAL
+			);
+	}()); // 5 5 1
+	
+	// LVL 46 -> 52 (Gabi, Fernando)
+	#macro POCKET_ITEM_CHALECO_BLINDADO "POCKET.CHALECO.BLINDADO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CHALECO_BLINDADO, POCKET_ITEMTYPE_ARMDU1, 530,200) constructor
+	{
+		setStat(
+			STAT_DEFENSA  ,  35, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 20, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, -10, MALL_NUMTYPE.REAL,
+			STAT_PODER, 5, MALL_NUMTYPE.REAL 
+			);
+	}());
+	// LVL 46 -> 52 (Gabi, Fernando)
+	#macro POCKET_ITEM_CHALECO_IMBUIDO "POCKET.CHALECO.IMBUIDO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CHALECO_IMBUIDO, POCKET_ITEMTYPE_ARMDU1, 53,200) constructor
+	{
+		setStat(
+			STAT_DEFENSA, 19, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 30, MALL_NUMTYPE.REAL,
+			STAT_PODER  ,  4, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 52 -> 59 (Gabi, Fernando)
+	#macro POCKET_ITEM_CHALECO_REFORZADO "POCKET.CHALECO.REFORZADO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CHALECO_REFORZADO, POCKET_ITEMTYPE_ARMDU1, 530,200) constructor
+	{
+		setStat(
+			STAT_DEFENSA  ,  40, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 25, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, -14, MALL_NUMTYPE.REAL,
+			STAT_PODER, 6, MALL_NUMTYPE.REAL
+			);
+	}()); // 5 5 -4 1
+	// LVL 52 -> 59 (Gabi, Fernando)
+	#macro POCKET_ITEM_CHALECO_TRATADO "POCKET.CHALECO.TRATADO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CHALECO_TRATADO, POCKET_ITEMTYPE_ARMDU1, 530, 200) constructor
+	{
+		setStat(
+			STAT_DEFENSA, 24, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 35, MALL_NUMTYPE.REAL,
+			STAT_PODER  ,  5, MALL_NUMTYPE.REAL
+			);
+	}()); // 5 5 1
+	
+	// LVL 59 -> 66 (Gabi, Fernando)
+	#macro POCKET_ITEM_CHALECO_ELDRO "POCKET.CHALECO.ELDRO" // ELDRO fabricante de equipo para policias, militares, etc
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CHALECO_ELDRO, POCKET_ITEMTYPE_ARMDU1, 530,200) constructor
+	{
+		setStat(
+			STAT_DEFENSA  , 45, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 30, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD,-18, MALL_NUMTYPE.REAL,
+			STAT_PODER, 7, MALL_NUMTYPE.REAL
+			);
+	}());
+	// LVL 59 -> 66 (Gabi, Fernando)
+	#macro POCKET_ITEM_CHALECO_ECTO "POCKET.CHALECO.ECTO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CHALECO_ECTO, POCKET_ITEMTYPE_ARMDU1, 53,200) constructor
+	{
+		setStat(
+			STAT_DEFENSA, 29, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 40, MALL_NUMTYPE.REAL,
+			STAT_PODER  ,  6, MALL_NUMTYPE.REAL
+			);
+	}());
+	// LVL 66 -> 73 (Gabi, Fernando)
+	#macro POCKET_ITEM_CHALECO_SQUAD "POCKET.CHALECO.SQUAD" // SQUAD equipo para amenazas "normales" peligrosas
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CHALECO_SQUAD, POCKET_ITEMTYPE_ARMDU1,  530,200) constructor 
+	{
+		setStat(
+			STAT_DEFENSA  , 50, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 35, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD,-22, MALL_NUMTYPE.REAL,
+			STAT_PODER, 8, MALL_NUMTYPE.REAL
+			);
+	}());
+	// LVL 66 -> 73 (Gabi, Fernando)
+	#macro POCKET_ITEM_CHALECO_ECTLDRO "POCKET.CHALECO.ECTLDRO" // Un chaleco Eldro imbuido en ecto
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CHALECO_ECTLDRO, POCKET_ITEMTYPE_ARMDU1, 53,200) constructor
+	{
+		setStat(
+			STAT_DEFENSA, 34, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 45, MALL_NUMTYPE.REAL,
+			STAT_PODER  ,  6, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 73 -> 80 (Gabi, Fernando)
+	#macro POCKET_ITEM_CHALECO_MILITAR "POCKET.CHALECO.MILITAR"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CHALECO_SQUAD, POCKET_ITEMTYPE_ARMDU1, 530,200) constructor
+	{
+		setStat(
+			STAT_DEFENSA  , 60, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 45, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD,-30, MALL_NUMTYPE.REAL,
+			STAT_PODER, 10, MALL_NUMTYPE.REAL
+			);
+	}());
+	// LVL 73 -> 80 (Gabi, Fernando)
+	#macro POCKET_ITEM_CHALECO_MUERTO "POCKET.CHALECO.MUERO" // "Muerto" se refiere a que un espiritu lo posee
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CHALECO_ECTLDRO, POCKET_ITEMTYPE_ARMDU1, 53,200) constructor
+	{
+		setStat(
+			STAT_DEFENSA, 44, MALL_NUMTYPE.REAL, STAT_DESPECIAL, 55, MALL_NUMTYPE.REAL,
+			STAT_PODER  ,  8, MALL_NUMTYPE.REAL
+			);
+	}());
+
+	#endregion
+
+	#region -- Equipo para los pies
+	// Zapatos
+	// LVL 8 -> 14 (Jon, Susana)
+	#macro POCKET_ITEM_ZAPATOS_MANCHADOS "POCKET.ZAPATOS.MANCHADOS"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ZAPATOS_MANCHADOS,POCKET_ITEMTYPE_ACCES2,  320,130) constructor 
+	{
+		setStat(
+			STAT_DEFENSA,   7, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 9, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 14 -> 18 (Jon, Susana)
+	#macro POCKET_ITEM_ZAPATOS_GENERICOS "POCKET.ZAPATOS.GENERICOS"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ZAPATOS_GENERICOS,POCKET_ITEMTYPE_ACCES2,  320,130) constructor
+	{
+		setStat(
+			STAT_DEFENSA,   12, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 14, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 18 -> 24 (Jon, Susana)
+	#macro POCKET_ITEM_ZAPATOS_IMITACION "POCKET.ZAPATOS.IMITACION"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ZAPATOS_IMITACION,POCKET_ITEMTYPE_ACCES2,  320,130) constructor
+	{
+		setStat(
+			STAT_DEFENSA,   17, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 19, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// Zapatillas
+	// LVL 4 -> 8 (Jon, Susana)
+	#macro POCKET_ITEM_ZAPATILLAS_MANCHADAS "POCKET.ZAPATILLAS.MANCHADAS"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ZAPATILLAS_MANCHADAS,POCKET_ITEMTYPE_ACCES2,  320,130) constructor 
+	{
+		setStat(STAT_VELOCIDAD, 11, MALL_NUMTYPE.REAL);
+	}());
+	
+	// LVL 8 -> 14 (Jon, Susana)
+	#macro POCKET_ITEM_ZAPATILLAS_GASTADAS "POCKET.ZAPATILLAS.GASTADAS"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ZAPATILLAS_GASTADAS,POCKET_ITEMTYPE_ACCES2,  320,130) constructor
+	{
+		setStat(
+			STAT_DEFENSA,    2, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 17, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 14 -> 18 (Jon, Susana)
+	#macro POCKET_ITEM_ZAPATILLAS "POCKET.ZAPATILLAS"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ZAPATILLAS,POCKET_ITEMTYPE_ACCES2,  320,130) constructor
+	{
+		setStat(
+			STAT_DEFENSA,    4, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 23, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 18 -> 24 (Jon, Susana)
+	#macro POCKET_ITEM_ZAPATILLAS_IMITACION "POCKET.ZAPATILLAS.IMITACION"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ZAPATILLAS_IMITACION,POCKET_ITEMTYPE_ACCES2,  320,130) constructor
+	{
+		setStat(
+			STAT_DEFENSA,    6, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 29, MALL_NUMTYPE.REAL
+			);
+	}());
+	// LVL 36 -> 40 (Jon, Fernando, Gabi)
+	#macro POCKET_ITEM_ZAPATILLAS_SEGURIDAD "POCKET.ZAPATILLAS.SEGURIDAD"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ZAPATILLAS_SEGURIDAD,POCKET_ITEMTYPE_ACCES2,  650,150) constructor
+	{
+		setStat(
+			STAT_DEFENSA,   18, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 26, MALL_NUMTYPE.REAL
+			);
+	}());	
+
+	// Botas
+	// LVL 24 -> 36 (Gabi, Fernando)
+	#macro POCKET_ITEM_BOTAS "POCKET.BOTAS"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_BOTAS,POCKET_ITEMTYPE_ACCES2,  650,150) constructor
+	{
+		setStat(
+			STAT_DEFENSA,  16, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 4, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 24 -> 36 (Jon, Gabi, Fernando)
+	#macro POCKET_ITEM_BOTAS_LIGERAS "POCKET.BOTAS.LIGERAS"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_BOTAS_LIGERAS,POCKET_ITEMTYPE_ACCES2,  650,150) constructor
+	{
+		setStat(
+			STAT_DEFENSA,   8, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 9, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 30 -> 42 (Gabi, Fernando)
+	#macro POCKET_ITEM_BOTAS_ESCENCIA "POCKET.BOTAS.ESCENCIA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_BOTAS_ESCENCIA,POCKET_ITEMTYPE_ACCES2,  650,150) constructor
+	{
+		setStat(
+			STAT_DEFENSA,   12, MALL_NUMTYPE.REAL,
+			STAT_DESPECIAL, 14, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD,  4, MALL_NUMTYPE.REAL
+			);
+	}());	
+
+	#endregion
+
+	#region -- Equipo para accesorios 1
+	// LVL 1 -> 8 (Jon, Susana)
+	#macro POCKET_ITEM_GORRO_LANA "POCKET.ACC1.GORRO_DE_LANA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_GORRO_LANA, POCKET_ITEMTYPE_ACCES1, 220, 10) constructor
+	{
+		setStat(STAT_DEFENSA, 2, MALL_NUMTYPE.REAL);
+	}());
+	
+	// LVL 1 -> 8 (Jon, Susana)
+	#macro POCKET_ITEM_CRUZ "POCKET.ACC1.CRUZ"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_CRUZ, POCKET_ITEMTYPE_ACCES1, 220, 0) constructor 
+	{
+		setStat(STAT_DEFENSA,3,MALL_NUMTYPE.REAL,  STAT_DESPECIAL,3,MALL_NUMTYPE.REAL);
+	}());
+	
+	// LVL 1 -> 8 (Jon)
+	#macro POCKET_ITEM_DIBUJO "POCKET.ACC1.DIBUJO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_DIBUJO,  POCKET_ITEMTYPE_ACCES1,  100, 2) constructor
+	{
+		setStat(STAT_PODER, 2, MALL_NUMTYPE.REAL)
+		
+		/// @desc En 2 turnos aumenta el ataque especial en un 10%
+		/// @param {real} turn
+		/// @param {struct.PartyEntity} caster
+		static turnStart = function(turn, entity)
+		{
+			if (turn == 2) {
+				entity.controlEffectAdd(new DK_ACCDibujo());
+			}		
+		}
+	}());
+	
+	// LVL 1 -> 8 (Jon, Susana)
+	#macro POCKET_ITEM_ZAPATOS_GASTADOS "POCKET.ZAPATOS.GASTADOS"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ZAPATOS_GASTADOS, POCKET_ITEMTYPE_ACCES1, 320, 130) constructor
+	{
+		setStat(
+			STAT_DEFENSA  , 1, MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, 1, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	/*  */
+	
+	// LVL 30 - 40
+	#macro POCKET_ITEM_AMULETO_GALLO "POCKET.ACC1.AMULETO.GALLO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_AMULETO_GALLO, POCKET_ITEMTYPE_ACCES1, 600, 500) constructor
+	{
+		setStat(STAT_VELOCIDAD, 18, MALL_NUMTYPE.REAL);
+	}());
+	
+	// LVL 30 - 40
+	#macro POCKET_ITEM_ANILLO_TORO "POCKET.ACC1.ANILLO.TORO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ANILLO_TORO, POCKET_ITEMTYPE_ACCES1, 600, 500) constructor
+	{
+		setStat(
+			STAT_FUERZA ,    8, MALL_NUMTYPE.REAL, 
+			STAT_DEFENSA,   24, MALL_NUMTYPE.REAL,  STAT_DESPECIAL,18,MALL_NUMTYPE.REAL,
+			STAT_VELOCIDAD, -8, MALL_NUMTYPE.REAL,
+			STAT_PODER,3,MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// LVL 30 - 40
+	#macro POCKET_ITEM_ANILLO_CABRA "POCKET.ACC1.ANILLO.CABRA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ANILLO_CABRA, POCKET_ITEMTYPE_ACCES1, 600, 500) constructor
+	{
+		setStat(STAT_FUERZA,14,MALL_NUMTYPE.REAL,  STAT_VELOCIDAD,18,MALL_NUMTYPE.REAL);
+	}());
+	
+	// LVL 40 - 50
+	#macro POCKET_ITEM_ANILLO_CABALLO "POCKET.ACC1.ANILLO.CABALLO"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ANILLO_CABALLO, POCKET_ITEMTYPE_ACCES1, 600, 500) constructor
+	{
+		setStat(STAT_DEFENSA,20,MALL_NUMTYPE.REAL,  STAT_DESPECIAL,20,MALL_NUMTYPE.REAL);
+	}());
+
+	#endregion
+
+
+	#region -- Equipo para objetos etc
+	#macro POCKET_ITEM_ECTOLITA "POCKET.OBJ.ECTOLITA"
+	pocket_create(new function() : PocketItem(POCKET_ITEM_ECTOLITA, POCKET_ITEMTYPE_ETC, 0,50) constructor {} ());
 	
 
-#endregion
+	#endregion
+
+	#region -- Equipo para los enemigos
+	// Para Floating Head 01
+	pocket_create(new function() : PocketItem("POCKET.ENE.MIRADA_DE_MIEDO", POCKET_ITEMTYPE_ENEMY) constructor
+	{
+		buy=999_999; sell=0;
+		setStat(STAT_PODER, 32);
+	}());
+	
+	// Para Floating Head 02
+	pocket_create(new function() : PocketItem("POCKET.ENE.MIRADA_DE_TEMOR", POCKET_ITEMTYPE_ENEMY) constructor
+	{
+		buy = 999_999; sell=0
+		setStat(
+			STAT_VELOCIDAD, 20, MALL_NUMTYPE.REAL,
+			STAT_PODER    , 36, MALL_NUMTYPE.REAL
+			);
+	}());
+	
+	// Para Dead Bird
+	pocket_create(new function() : PocketItem("POCKET.ENE.ALAS_DE_ECTO", POCKET_ITEMTYPE_ENEMY) constructor
+	{
+		buy = 999_999; sell=0;
+		setStat(STAT_PODER, 55);
+	}());
+	
+	// Para Dead Bird
+	pocket_create(new function() : PocketItem("POCKET.ENE.ALAS_DE_PETO", POCKET_ITEMTYPE_ENEMY) constructor
+	{
+		buy = 999_999; sell=0;
+		setStat(
+			STAT_PODER,     45,
+			STAT_DESPECIAL, 30
+			);
+	}());
+	
+	// Para Zombie
+	pocket_create(new function() : PocketItem("POCKET.ENE.BLOOD", POCKET_ITEMTYPE_ENEMY) constructor
+	{
+		buy = 999_999; sell=0;
+		setStat(STAT_PODER, 55);
+	}());
+
+	#endregion
 
 
-#region -- Equipo para los enemigos
-// Para Floating Head 01
-function IT_EnemyMiradaMiedo() : PocketItem("POCKET.ENE.MIRADA_DE_MIEDO", POCKET_ITEMTYPE_ENEMY) constructor
-{
-	buy=999_999; sell=0;
-	setStat(STAT_PODER, 32);
 }
-	
-// Para Floating Head 02
-function IT_EnemyMiradaTemor() : PocketItem("POCKET.ENE.MIRADA_DE_TEMOR", POCKET_ITEMTYPE_ENEMY) constructor
-{
-	buy = 999_999; sell=0
-	setStat(
-		STAT_VELOCIDAD, 20, MALL_NUMTYPE.REAL,
-		STAT_PODER    , 36, MALL_NUMTYPE.REAL
-		);
-}
-	
-// Para Dead Bird
-function IT_EnemyAlasEcto() : PocketItem("POCKET.ENE.ALAS_DE_ECTO", POCKET_ITEMTYPE_ENEMY) constructor
-{
-	buy = 999_999; sell=0;
-	setStat(STAT_PODER, 55);
-}
-	
-// Para Dead Bird
-function IT_EnemyAlasPeto() : PocketItem("POCKET.ENE.ALAS_DE_PETO", POCKET_ITEMTYPE_ENEMY) constructor
-{
-	buy = 999_999; sell=0;
-	setStat(
-		STAT_PODER,     45,
-		STAT_DESPECIAL, 30
-		);
-}
-	
-// Para Zombie
-function IT_EnemyDBlood() : PocketItem("POCKET.ENE.BLOOD", POCKET_ITEMTYPE_ENEMY) constructor
-{
-	buy = 999_999; sell=0;
-	setStat(STAT_PODER, 55);
-}
-
-#endregion
-

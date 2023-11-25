@@ -5,7 +5,7 @@
   "isCompatibility": false,
   "isDnD": false,
   "parent": {
-    "name": "Constructor",
-    "path": "folders/Systemall/Party/Group/Constructor.yy",
+    "name": "Group",
+    "path": "folders/Systemall/Party/Group.yy",
   },
 }

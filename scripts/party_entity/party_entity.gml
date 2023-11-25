@@ -948,6 +948,7 @@ function PartyEntity(_key) : Mall(_key) constructor
 	static controlState = function(_key) 
 	{
 		var _atom = controlGet(_key);
+		if (_atom == undefined) return undefined;
 		return (_atom.state);
 	}
 
@@ -1059,7 +1060,8 @@ function PartyEntity(_key) : Mall(_key) constructor
 		// Eliminar del array de contenido
 		array_delete(_content, _index, 1);
 		// Ejecutar funcion de eliminar
-		_effect.fnRemove(self);
+		_effect.remove(self);
+		
 		// Reducir valor
 		controlValuesAdd(_key, -_effect.value, _effect.type);
 		
@@ -1069,6 +1071,29 @@ function PartyEntity(_key) : Mall(_key) constructor
 		return (_effect);
 	}
 
+	/// @param	{String} controlKey  controlKey
+	static controlEffectRemoveAll = function(_key)
+	{
+		var _atom =    controlGet(_key);
+		var _content = _atom.getContent();
+		
+		for (var i=0,n=array_length(_content); i<n; i++)
+		{
+			var _effect = _content[i];
+			
+			_effect.remove(self);	
+			
+			// Reducir valor
+			controlValuesAdd(_key, -_effect.value, _effect.type);			
+			
+			array_delete(_content, 0, 1);
+			n--;
+		}
+		
+		// Actualizar valores de las estadisticas
+		updateComponents();		
+	}
+	
 	/// @desc Actualiza un control
 	/// @param {String} controlKey "all" para actualizar a todos
 	/// @param {Real}   turnType   0: Inicio del turno, 1: Final del turno, 2: Ambos

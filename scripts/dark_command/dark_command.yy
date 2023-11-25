@@ -5,7 +5,7 @@
   "isCompatibility": false,
   "isDnD": false,
   "parent": {
-    "name": "Constructor",
-    "path": "folders/Systemall/Dark/Constructor.yy",
+    "name": "Dark",
+    "path": "folders/Systemall/Dark.yy",
   },
 }

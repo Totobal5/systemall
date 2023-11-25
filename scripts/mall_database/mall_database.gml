@@ -26,9 +26,8 @@
 #macro TYPE_BOSS "BOSS"
 
 
-function MallStatEN()  : MallStat() constructor 
+function MallStatEN(_key) : MallStat(_key) constructor 
 {
-	key  = "UI.STAT.ENERGY";
 	type = MALL_NUMTYPE.REAL;
 	limitMin = 0;
 	limitMax = 9999;
@@ -36,20 +35,22 @@ function MallStatEN()  : MallStat() constructor
 	// Nivel
 	levelLimitMin = 0;
 	levelLimitMax = 100;
-	funLevel  = function(stat, level) {return round( (base * level) + (level+10) ); }
+	levelUp = function(_entity, _level) {
+		return round((base * _level) + (_level+10) ); 
+	}
 	
 	// Guardar valores
-	saveValue = true;
+	saveable = true;
 }
 
-function MallStatEPM() : MallStatEN() constructor 
+function MallStatEPM(_key) : MallStatEN(_key) constructor 
 {
-	key = "UI.STAT.ENERGY";
+	limitMin = 0;
+	limitMax = 999;
 }
 
-function MallStatEXP() : MallStat() constructor 
+function MallStatEXP(_key) : MallStat(_key) constructor 
 {
-	key  = "UI.STAT.EXP";
 	type = MALL_NUMTYPE.REAL;
 	limitMin = 0;
 	limitMax = 999999;
@@ -57,12 +58,14 @@ function MallStatEXP() : MallStat() constructor
 	// Nivel
 	levelLimitMin = 0;
 	levelLimitMax = 100;
-	funLevel = function(stat, level) {return round( (base * level * 8) + (level*2) + 60); }
+	levelUp = function(_entity, _level) {
+		return round((base * _level * 8) + (_level*2) + 60); 
+	}
 	
 	// Cuando sube de nivel se regresa al valor minimo
-	iterSetMin(1, true, -1);
+	iterator.configure(true, 1, true, -1);
 	
-	saveValue = true;
+	saveable = true;
 }
 
 function MallStatExt(_key) : MallStat(_key) constructor 
@@ -74,24 +77,25 @@ function MallStatExt(_key) : MallStat(_key) constructor
 	// Nivel
 	levelLimitMin = 0;
 	levelLimitMax = 100;
-	funLevel  = function(stat, level) {return round( ( (base * level) / 40) + 5);}
+	levelUp = function(_entity, _level) {
+		return round( ((base * _level) / 40) + 5);
+	}
 }
 
 /// @ignore
 function mall_database()
 {
 	// Crear estadisticas
-	mall_create_stat(STAT_EN ,  new MallStatEN() );
-	mall_create_stat(STAT_EPM, new MallStatEPM() );
-	mall_create_stat(STAT_EXP, new MallStatEXP() );
+	mall_create_stat(STAT_EN , new MallStatEN( "UI.STAT.ENERGY") );
+	mall_create_stat(STAT_EPM, new MallStatEPM("UI.STAT.ECTOPLASMA") );
+	mall_create_stat(STAT_EXP, new MallStatEXP("UI.STAT.EXP") );
 	mall_create_stat(STAT_FUERZA   , new MallStatExt("UI.STAT.FUERZA") );
 	mall_create_stat(STAT_DEFENSA  , new MallStatExt("UI.STAT.DEFENSA") );
 	mall_create_stat(STAT_FESPECIAL, new MallStatExt("UI.STAT.FESPECIAL") );
 	mall_create_stat(STAT_DESPECIAL, new MallStatExt("UI.STAT.DESPECIAL") );
 	mall_create_stat(STAT_VELOCIDAD, new MallStatExt("UI.STAT.VELOCIDAD") );
-
-	var _critico = function() : MallStat(STAT_CRITICO) constructor {
-		key  = "UI.STAT.CRITICAL";
+	
+	mall_create_stat(STAT_CRITICO, new function() : MallStat("UI.STAT.CRITICAL") constructor {
 		type = MALL_NUMTYPE.PERCENT; 
 	
 		limitMin = 0;
@@ -99,25 +103,22 @@ function mall_database()
 
 		levelLimitMin = 0;
 		levelLimitMax = 100;
-		funLevel = function(stat, level) {
+		levelUp = function(_entity, _level) {
 			/// @self Struct.PartyStat
-			var _velocidad = stat.get(STAT_VELOCIDAD);
+			var _velocidad = _entity.statGet(STAT_VELOCIDAD);
 			return round( (_velocidad.peak / 25) );
 		}
-	}
-	mall_create_stat(STAT_CRITICO, new _critico() );
+	}() );
 	
-	var _poder = function() : MallStat(STAT_PODER) constructor {
-		key  = "UI.STAT.PODER";
+	mall_create_stat(STAT_PODER,   new function() : MallStat("UI.STAT.PODER")    constructor {
 		type = MALL_NUMTYPE.PERCENT;
-	
+		
 		start = 0;
 		limitMin = 0;
 		limitMax = 200;
 	
 		levelLimitMin = 0;
 		levelLimitMax = 100;
-	}
-	mall_create_stat(STAT_PODER  , new _poder() );
+	}() );
 
 }
