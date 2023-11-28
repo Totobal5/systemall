@@ -14,12 +14,7 @@ function MallStat(_key) : MallMod(_key) constructor
     // True: enviar actual al maximo al equipar false: dejar como esta
     saveable = false;
     
-    /// @desc Este evento se utiliza cuando se equipa un objeto
-    static eEquip = function(_entity, _stat) 
-    {
-        actual = control; 
-    }
-    
+
     // Valor inicial
     start =         0;
     // Nivel inicial
@@ -38,21 +33,19 @@ function MallStat(_key) : MallMod(_key) constructor
     // Iterador
     iterator = new MallIterator();
     
-    /// @desc   Forma de subir de nivel
-    /// @param  {Struct.PartyStats} statEntity
-    /// @param  {Struct.PartyStats$$createAtom} statAtom
-    /// @param  {Any*} [vars]
+    /// @desc   Forma de subir de nivel.
+    /// @param  {Struct.PartyEntity} entity
+    /// @param  {Struct.PartyEntity$$AtomStat} stat_atom
     /// @return {Real}
-    static levelUp = function(stats, atom) 
+    static levelUp = function(_entity, _atom) 
     {
         return 0;
     };
     
-    /// @desc   Indicar si puede o no subir de nivel si sube individual
-    /// @param  {Struct.PartyStats} [statEntity]
-    /// @param  {Any*} [vars]
+    /// @desc   Indicar si puede o no subir de nivel si sube individual.
+    /// @param  {Struct.PartyEntity} entity
     /// @return {Bool}
-    static checkLevel  = function(stats) 
+    static checkLevel  = function(_entity)
     {
         return false; 
     };
@@ -61,6 +54,12 @@ function MallStat(_key) : MallMod(_key) constructor
     static entityUpdate = function(entity) 
     {
     };
+    
+    /// @desc Este evento se utiliza cuando se equipa un objeto
+    static eEquip = function(_entity, _stat) 
+    {
+        actual = control; 
+    }
 }
 
 /// @param {String}          key

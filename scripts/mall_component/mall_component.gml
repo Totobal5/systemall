@@ -46,6 +46,7 @@ function Mall(_key="") constructor
     };
     
     /// @desc Como guardar este componente
+    /// @return {Struct}
     static export = function(_struct=false)
     {
         var _this = self;

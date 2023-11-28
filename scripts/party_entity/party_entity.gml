@@ -1,29 +1,29 @@
-/// @param {String} entityKey
+/// @param {String} entity_key
 function PartyEntity(_key) : Mall(_key) constructor
 {
-	displayKey = _key;
-	// Llave del grupo al que pertenece
-	group = "";
-	
-	// Estructuras
-	level = __MALL_PARTY_MIN_LEVEL;
-	fnLevelStart = __dummy;
-	fnLevelEnd   = __dummy;
-	fnCLevel = __dummy;
-	
-	// Estadisticas
-	stats = {};
-	array_foreach(mall_get_stat_keys(), function(statKey, i) {
-		var _stat = mall_get_stat(statKey);
-		stats[$ statKey] = new AtomStat(_stat);
-		
-		_stat.fnStart(self);
-	})
-	
-	// Control y estados
-	controls = {};
-	controlsKeys = [];
-	
+    // Llave del grupo al que pertenece
+    group = "";
+    
+    // Estructuras
+    level = __MALL_PARTY_LEVEL_MIN;
+    
+    static levelStart = function() {};
+    static levelEnd =   function() {};
+    static levelCheck = function() {};
+    
+    // Estadisticas
+    stats = {};
+    array_foreach(mall_get_stat_keys(), function(statKey, i) {
+        var _stat = mall_get_stat(statKey);
+        stats[$ statKey] = new AtomStat(_stat);
+        
+        _stat.fnStart(self);
+    })
+    
+    // Control y estados
+    controls = {};
+    controlsKeys = [];
+    
 	// Slots y equipo
 	slots = {};
 	slotsKeys = [];

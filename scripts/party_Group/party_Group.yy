@@ -5,7 +5,7 @@
   "isCompatibility": false,
   "isDnD": false,
   "parent": {
-    "name": "Group",
-    "path": "folders/Systemall/Party/Group.yy",
+    "name": "Party",
+    "path": "folders/Systemall/Party.yy",
   },
 }
