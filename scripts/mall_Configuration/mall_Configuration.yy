@@ -1,11 +1,13 @@
 {
-  "resourceType": "GMScript",
-  "resourceVersion": "1.0",
-  "name": "mall_Configuration",
-  "isCompatibility": false,
-  "isDnD": false,
-  "parent": {
-    "name": "Systemall",
-    "path": "folders/Systemall.yy",
+  "$GMScript":"v1",
+  "%Name":"mall_Configuration",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_Configuration",
+  "parent":{
+    "name":"Systemall",
+    "path":"folders/Systemall.yy",
   },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
 }

@@ -1,5 +1,5 @@
 /// @desc Crea un comando dark y lo guarda en el sistema
-/// @param {Struct.DarkCommand} command
+/// @param	{Struct.DarkCommand} DarkCommand
 function dark_create_command(_command) 
 {
     if (!struct_exists(Systemall.dark, _command.key) ) 
@@ -8,8 +8,8 @@ function dark_create_command(_command)
     }
 }
 
-/// @param {string} key
-/// @param {Struct.DarkEffect} effect
+/// @param	{string} dark_key
+/// @param	{Struct.DarkEffect} DarkEffect
 function dark_create_effect(_key, _effect)
 {
     if (!struct_exists(Systemall.dark, _key) )
@@ -18,14 +18,14 @@ function dark_create_effect(_key, _effect)
     }
 }
 
-/// @param {String} key
+/// @param	{String} dark_key
 /// @return {Struct.DarkCommand, Struct.DarkEffect}
 function dark_get(_key)
 {
     return (Systemall.dark[$ _key] );
 }
 
-/// @param {String} key
+/// @param	{String} dark_key
 function dark_exists(_key)
 {
     return (struct_exists(Systemall.dark, _key) );

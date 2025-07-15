@@ -12,8 +12,14 @@
 #macro __MALL_STAT_LEVEL_MIN    0
 #macro __MALL_STAT_LEVEL_MAX    100
 
-enum STAT_NUMTARG {
-	ACTUAL, PEAK, EQUIPMENT, CONTROL, LAACTUAL, LAPEAK
+enum STAT_NUMTARG 
+{
+    CURRENT, 
+    PEAK, 
+    EQUIPMENT, 
+    CONTROL, 
+    LASCURRENT, 
+    LASPEAK
 }
 
 #endregion
@@ -40,6 +46,16 @@ enum STAT_NUMTARG {
 #region DARK
 #macro __MALL_DARK_TRACE        true
 #macro __MALL_DARK_SAFETY       false
+
+/*	0: Inicio del turno
+	1: Final  del turno
+    2: En el inicio y final del turno */	
+enum MALL_EFFECT_TURN 
+{
+	START, 
+	END, 
+	BOTH
+}
 
 #endregion
 
@@ -74,7 +90,6 @@ function Systemall()
     static messages =   [];
     static mcurrent =   undefined;
 }
-
 // Generar la base de datos (estaticos)
 Systemall(); 
 var _f = new Mall()
@@ -93,4 +108,4 @@ pocket_database();
 party_database();
 
 // Iniciar templates de combates
-wate_database()
+wate_database();

@@ -2,61 +2,63 @@
 /// @param {String} key
 function MallStat(_key) : MallMod(_key) constructor 
 {
-    // Valor inicial del estado
+    /// @ignore Valor inicial del estado.
     init = false;
-    // Tipo de numero que utiliza
+    /// @ignore Tipo de numero que utiliza.
     type = MALL_NUMTYPE.REAL;
-    // Si acepta el mismo efecto varias veces
-    same =      false;
-    // Cuantos se pueden agregar en party. -1 para infinitos (NO PUEDE SER 0)	
-    controls =  -1;
+    /// @ignore Si acepta el mismo efecto varias veces.
+    same = false;
+    // Cuantos se pueden agregar en party. -1 para infinitos (NO PUEDE SER 0).
+    controls = -1;
     
-    // True: enviar actual al maximo al equipar false: dejar como esta
-    saveable = false;
-    
+    /// @ignore True: enviar actual al maximo al equipar false: dejar como esta.
+    canSave = false;
 
-    // Valor inicial
-    start =         0;
-    // Nivel inicial
-    startLevel =    1;
-    // Limite del valor minimo
+    /// @ignore Valor inicial
+    start = 0;
+    /// @ignore Nivel inicial
+    startLevel = 1;
+    /// @ignore Limite del valor minimo
     limitMin = 0;
-    // Limite del valor maximo
+    /// @ignore Limite del valor maximo
     limitMax = 0;
     
-    // Nivel minimo y maximo
+    /// @ignore Nivel minimo.
     levelLimitMin = __MALL_STAT_LEVEL_MIN;
+	/// @ignore Nivel maximo.
     levelLimitMax = __MALL_STAT_LEVEL_MAX;
-    // Si sube de nivel aparte de otras estadisticas con su propia experencia etc
+    /// @ignore Si sube de nivel aparte de otras estadisticas con su propia experencia etc.
     levelSingle = false;
     
-    // Iterador
+    /// @ignore Iterador.
     iterator = new MallIterator();
     
-    /// @desc   Forma de subir de nivel.
-    /// @param  {Struct.PartyEntity} entity
-    /// @param  {Struct.PartyEntity$$AtomStat} stat_atom
+    static eInStart = function(_entity) {}
+    
+    /// @desc   Forma de subir de nivel. Se ejecuta desde un Atom.
+    /// @param  {Struct.PartyEntity} PartyEntity
     /// @return {Real}
-    static levelUp = function(_entity, _atom) 
+    static eLevelUp = function(_entity) 
     {
         return 0;
     };
     
     /// @desc   Indicar si puede o no subir de nivel si sube individual.
-    /// @param  {Struct.PartyEntity} entity
+    /// @param  {Struct.PartyEntity} PartyEntity
     /// @return {Bool}
-    static checkLevel  = function(_entity)
+    static eLevelCheck = function(_entity)
     {
         return false; 
     };
     
-    /// @param {Struct.PartyStats} entity
-    static entityUpdate = function(entity) 
+    /// @param {Struct.PartyEntity} PartyEntity
+    static eUpdate  = function(entity) 
     {
     };
     
-    /// @desc Este evento se utiliza cuando se equipa un objeto
-    static eEquip = function(_entity, _stat) 
+    /// @desc Este evento se utiliza cuando se equipa un objeto. Se ejecuta desde un Atom.
+	/// @param {Struct.PartyEntity} PartyEntity
+    static eEquip = function(_entity)
     {
         actual = control; 
     }
@@ -84,7 +86,6 @@ function mall_get_stat(_statKey)
 /// @param {String} statKey
 function mall_exists_stat(_statKey)
 {
-    static stats = MallDatabase.stats;
     return (struct_exists(Systemall.stats, _statKey) );
 }
 
@@ -97,7 +98,9 @@ function mall_get_stat_keys(_copy=false)
         var _array = array_create(0);
         array_copy(_array, 0, Systemall.statsKeys, 0, array_length(Systemall.statsKeys) );
         return _array;
-    } else {
+    }
+	else 
+	{
         return (Systemall.statsKeys);
     }
 }

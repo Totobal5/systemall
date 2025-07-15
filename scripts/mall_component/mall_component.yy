@@ -1,11 +1,13 @@
 {
-  "resourceType": "GMScript",
-  "resourceVersion": "1.0",
-  "name": "mall_Component",
-  "isCompatibility": false,
-  "isDnD": false,
-  "parent": {
-    "name": "Components",
-    "path": "folders/Systemall/Components.yy",
+  "$GMScript":"v1",
+  "%Name":"mall_Component",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_Component",
+  "parent":{
+    "name":"Components",
+    "path":"folders/Systemall/Components.yy",
   },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
 }

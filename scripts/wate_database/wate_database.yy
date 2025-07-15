@@ -1,11 +1,13 @@
 {
-  "resourceType": "GMScript",
-  "resourceVersion": "1.0",
-  "name": "wate_database",
-  "isCompatibility": false,
-  "isDnD": false,
-  "parent": {
-    "name": "Databases",
-    "path": "folders/Systemall/Databases.yy",
+  "$GMScript":"v1",
+  "%Name":"wate_database",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"wate_database",
+  "parent":{
+    "name":"Databases",
+    "path":"folders/Systemall/Databases.yy",
   },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
 }

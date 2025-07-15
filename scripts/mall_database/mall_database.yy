@@ -1,11 +1,13 @@
 {
-  "resourceType": "GMScript",
-  "resourceVersion": "1.0",
-  "name": "mall_database",
-  "isCompatibility": false,
-  "isDnD": false,
-  "parent": {
-    "name": "Databases",
-    "path": "folders/Systemall/Databases.yy",
+  "$GMScript":"v1",
+  "%Name":"mall_database",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_database",
+  "parent":{
+    "name":"Databases",
+    "path":"folders/Systemall/Databases.yy",
   },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
 }

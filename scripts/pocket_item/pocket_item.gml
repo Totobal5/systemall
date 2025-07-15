@@ -167,5 +167,3 @@ function pocket_item_exists(_key)
 {
     return (struct_exists(Systemall.items, _key) );
 }
-
-

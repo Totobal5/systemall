@@ -1,11 +1,13 @@
 {
-  "resourceType": "GMScript",
-  "resourceVersion": "1.0",
-  "name": "party_database",
-  "isCompatibility": false,
-  "isDnD": false,
-  "parent": {
-    "name": "Databases",
-    "path": "folders/Systemall/Databases.yy",
+  "$GMScript":"v1",
+  "%Name":"party_database",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"party_database",
+  "parent":{
+    "name":"Databases",
+    "path":"folders/Systemall/Databases.yy",
   },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
 }

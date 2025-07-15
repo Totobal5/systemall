@@ -1,8 +1,10 @@
 /// @desc Manager total.
 function Wate()
 {
+	/// @is {Struct.WateManager}
     static manager = undefined;
-    static result  = undefined;
+	/// @is {Struct.MallResult}
+    static result = undefined;
     
 } Wate();
 
@@ -11,85 +13,108 @@ function Wate()
 function WateManager(_key) constructor
 {
     key = _key;
-    // Grupos, every: Todas las entidades
-    groups =    {every: [] };
-    quantity =  {};
+    // Grupos, every: Todas las entidades.
+    groups = {every: [] };
+    quantity = {};
     
-    // Turno en que se encuentra
-    turn =          1;
-    turnGlobal =    1;
+    // Turno en que se encuentra.
+    turn = 1;
+    turnGlobal = 1;
     // Funcion a ejecutar cuando inicia el turno.
-    turnCallback =  [];
+    turnSCallback = [];
     // Funcion a ejecutar cuando finaliza el turno.
     turnECallback = [];
     // Orden de entidades por constructor.
-    turnOrder =     [];
+    turnOrder = [];
     // Orden de entidades por llave.
-    turnOrderKey =  [];
+    turnOrderKey = [];
     // Orden de entidades forzado.
-    turnForced =    [];
+    turnForced = [];
     turnForcedKey = [];
-    turnStatic =    true;
+    turnStatic = true;
     
-    // Entidad actual
-    entityCurrent =         undefined;
-    entityCurrentIndex =    -1;
+    // Entidad actual.
+    entityCurrent = undefined;
+    entityCurrentIndex = -1;
     
-    // Entidad a forzar
-    entityForce =       false;
-    entityForceIndex =  -1;
+    // Entidad a forzar.
+    entityForce = false;
+    entityForceIndex = -1;
     
-    // Que puede entregar al finalizar el combate
-    lootTable   = [];
-    // Que entregará al finalizar el combate
-    lootFinal   = [];
+    // Que puede entregar al finalizar el combate.
+    lootTable = [];
+    // Que entregará al finalizar el combate.
+    lootFinal = [];
     
-    /// @desc Que realizar cuando termina el combate
-    fnComplete  = function() {};
-    /// @desc Evento para cambiar de cuarto
-    fnRoomEnter = function() {}
-    /// @desc Evento para salir de un cuarto
-    fnRoomExit  = function() {}
+    /// @desc Que realizar cuando termina el combate.
+    eComplete = function()
+	{
+	};
+	
+    /// @desc Evento para cambiar de cuarto.
+    eRoomEnter = function()
+	{
+	};
+	
+    /// @desc Evento para salir de un cuarto.
+    eRoomExit = function()
+	{
+	};
     
     #region MANIPULATE
     /// @desc Agrega entidades a este grupo
-    /// @param {string}             key     Llave del grupo
-    /// @param {Struct.PartyEntity} entity  entidad a agregar
+    /// @param	{String}				group_key	Llave del grupo
+    /// @param	{Struct.PartyEntity}	PartyEntity	Entidad a agregar
     /// @return {Bool}
-    static add  =   function(_key, _entity, _addNumber=false)
+    static Add = function(_key, _entity, _addNumber=false)
     {
-        static NumberKeys  = [" A", " B", " C", " D", " E", " F"];
-        static ForQuantity = function(key) {quantity[$ key+"index"] = 0; }
+		// Letras para diferenciar entidades identicas.
+        static NumberKeys = [" A", " B", " C", " D", " E", " F", "G", "H", "I", "J", "K"];
+		/// @param	{String} key
+        static ForQuantity = function(key) 
+		{
+			quantity[$ key+"index"] = 0;
+		}
+		
         var n;
         if (!struct_exists(groups, _key) ) groups[$ _key] = [];
-        var _arr = groupGet(_key);
-        // Añadir
+        var _arr = GroupGet(_key);
+        // Añadir.
         array_push(_arr, _entity);
-        var n=array_length(_arr); // Obtener longitud
-        // Agregar igualmente en every
+		// Obtener longitud.
+        var _size = array_length(_arr);
+		
+        // Agregar igualmente en every.
         if (!array_contains(groups.every, _entity) ) array_push(groups.every, _entity);
-        // Obtener indice
-        _entity.battleIndex = n;
+		// Obtener indice.
+        _entity.battleIndex = _size;
         _entity.battleGroup = _key;
         
         // Colocar "numeros" a los que son iguales
-        if (_addNumber) {
-            if (!struct_exists(quantity, _entity.key) ) {
+        if (_addNumber)
+		{
+            if (!struct_exists(quantity, _entity.key) )
+			{
                 quantity[$ _entity.key] = 0;
                 quantity[$ _entity.key+"index"] = 0;
-            } 
-            else {
+            }
+            else
+			{
                 quantity[$ _entity.key]++;
             }
             
-            if (quantity[$ _entity.key] > 0) {
-                var i=0; repeat(array_length(groups.every) ) {
-                    var _aren =  groups.every[i];
+            if (quantity[$ _entity.key] > 0)
+			{
+                var i=0; repeat(array_length(groups.every) )
+				{
+                    var _aren = groups.every[i];
                     var _index = quantity[$ _aren.key+"index"];
-                    if (quantity[$ _aren.key] > 0) { 
+                    if (quantity[$ _aren.key] > 0)
+					{ 
                         _aren.numberKey = NumberKeys[_index];
                         // No salir del limite
-                        if (_index < quantity[$ _aren.key] ) {
+                        if (_index < quantity[$ _aren.key] )
+						{
                             quantity[$ _aren.key+"index"]++;
                         }
                     }
@@ -97,6 +122,8 @@ function WateManager(_key) constructor
                     i++;
                 }
             }
+			
+			// Limpiar quantity.
             array_foreach(struct_get_names(quantity), ForQuantity);
         }
         
@@ -107,15 +134,22 @@ function WateManager(_key) constructor
     /// @param {string} key
     /// @param {real}   index
     /// @param {bool}   [includeEvery]
-    static remove = function(_key, _index, _include=false)
+    static Remove = function(_key, _index, _include=false)
     {
-        var _group =  groupGet(_key);
+        var _group =  GroupGet(_key);
         var _entity = _group[_index];
         array_delete(_group, _index, 1);
         // Eliminar del grupo de todos.
-        if (_include) {
-            var _every =  groups.every;
-            var _eindex = array_find_index(_every, method({_entity}, function(v) {return _entity == v; }) );
+        if (_include)
+		{
+            var _every = groups.every;
+            // Buscar entidad.
+			var _eindex = array_find_index(_every, method({_entity}, function(v) 
+			{
+				return (_entity == v);
+			}) );
+			
+			// Eliminar.
             array_delete(_every, _eindex, 1);
         }
         
@@ -126,109 +160,134 @@ function WateManager(_key) constructor
     
     #region GROUPS
     /// @desc Crear grupo
-    /// @param {string} key Llave del grupo
-    static groupCreate = function(_key)
+    /// @param	{String} group_key	Llave del grupo
+    static GroupCreate = function(_key)
     {
         if (!struct_exists(groups, _key) ) {groups[$ _key] = []; }
         return self;
     }
     
-    /// @param {string} key Llave del grupo o hash.
-    static groupGet =  function(_key)
+    /// @param	{String} [group_key]	Llave del grupo o hash.
+    static GroupGet = function(_key)
     {
         static HashEvery = variable_get_hash("every");
-        _key ??= HashEvery;
+        // Si no se define entonces se utiliza el hash de every.
+		_key ??= HashEvery;
+		// Para Hash.
         if (is_numeric(_key) ) return (struct_get_from_hash(groups, _key) );
+		
         return (groups[$ _key] );
     }
     
     /// @desc Reorganiza un grupo utilizando una función
-    /// @param {string}   key        llave del grupo.
-    /// @param {function} function   funcion para organizar elementos.
-    /// @param {bool}     [original] crear un grupo nuevo con el orden original.
-    static groupSort = function(_key, _fun, _make=false) 
+    /// @param	{String}	group_key	Llave del grupo.
+    /// @param	{Function}	function	Funcion para organizar elementos.
+    /// @param	{Bool}		[original]	Crear un grupo nuevo con el orden original.
+    static GroupSort = function(_key, _fun, _make=false) 
     {
         static MakeNew = function(v) {return (v); }; 
-        var _group = groupGet(_key);
-        // Crear un grupo nuevo sin un orden
-        if (_make) {
+        var _group = GroupGet(_key);
+        // Crear un grupo nuevo sin un orden.
+        if (_make)
+		{
             var _nkey = _key+".not";
             if (!struct_exists(groups, _nkey) ) {groups[$ _nkey] = array_map(_group, MakeNew); }
         }
+		// Organizar.
         array_sort(_group, _fun);
+		
         return self;
     }
     
     /// @desc Devuelve una copia de un grupo.
-    static groupCopy = function(_key="every")
+	/// @param	{String}	group_key	Llave del grupo.
+    static GroupCopy = function(_key="every")
     {
         static MakeCopy = function(v) {return v; };
-        var _group = groupGet(_key);
+        var _group = GroupGet(_key);
+		
         return (array_map(_group, MakeCopy) );
     }
     
     #endregion
     
     #region TURNS
-    /// @desc Crea el orden de entidades utilizando un filtro
-    static turnOrganize = function(_key="every", _filter)
+    /// @desc Crea el orden de entidades utilizando un filtro.
+	/// @param	{String}	group_key	Llave del grupo.
+	/// @param	{Function}	filter		Funcion para organizar elementos.
+    static TurnOrganize = function(_key="every", _filter)
     {
-        var _entities =     groupGet(_key);
+        var _entities = GroupGet(_key);
         var _entitiesSize = array_length(_entities);
         
-        // Crear turnos
-        turnOrder =    [];
+        // Crear turnos.
+        turnOrder = [];
         turnOrderKey = [];
-        _filter(_entities);
+		
+        return (_filter(_entities) );
     }
     
     /// @desc Avanza un turno.
-    static turnAdvance  = function(_quantity=1)
+	/// @param	{Real}	[aumento]	Default 1.
+    static TurnAdvance = function(_quantity=1)
     {
-        turn = clip(turn+_quantity, 1, array_length(turnOrder) );
-        turnGlobal++;
+		turn += _quantity;
+		// Al llegar al maximo devolver al minimo.
+		if (turn > array_length(turnOrder) ) turn = 1;
+        // Aumentar todos los turnos pasados.
+		turnGlobal++;
+		
         return self;
     }
     
     /// @desc Evento de inicio de turno
-    /// @param {real}     turn     
-    /// @param {function} function function(turn, groups)
-    static turnAddEvent = function(_turn, _fn)
+    /// @param	{Real}		turn     
+    /// @param	{Function}	function function(turnGlobal, groups)
+    static TurnAddEvent = function(_turn, _fn)
     {
-        // Añade una función al array
+        // Añade una función al array.
         array_insert(turnCallback, _turn, _fn);
+		
         return self;
     }
     
     /// @desc Ejecuta un evento en el turno global actual.
-    static turnExecuteEvent = function()
+    static TurnExecuteEvent = function()
     {
-        if (turnGlobal < array_length(turnCallback)) {
+        if (turnGlobal < array_length(turnCallback) )
+		{
             var _fn = turnCallback[turnGlobal];
-            if (_fn != 0 && is_callable(_fn) ) {return _fn(turnGlobal, groups); }
+            if (_fn != 0 && is_callable(_fn) ) 
+			{
+				return (_fn(turnGlobal, groups) ); 
+			}
         }
+		
         return undefined;
     }
     
-    static turnRemoveEvent = function(_index)
+	/// @param	{Real} index
+    static TurnRemoveEvent = function(_index)
     {
-        _index ??= turnGlobal;
-        array_set(turnCallback, _index, 0);
+        array_set(turnCallback, _index ?? turnGlobal, 0);
+		return self;
     }
     
-    /// @param {real}               turn
-    /// @param {Struct.PartyEntity} entity
-    static turnForcedAdd = function(_turn, _entity)
+    /// @param	{Real}					turn
+    /// @param	{Struct.PartyEntity}	PartyEntity
+    static TurnForcedAdd = function(_turn, _entity)
     {
         array_insert(turnForced, _turn, _entity);
-        return self;
+		
+		return self;
     }
     
     /// @desc Obtiene la entidad forzada que corresponde con el turno actual.
     /// @return {Struct.PartyEntity}
-    static turnForcedGet  = function()
+    static TurnForcedGet  = function()
     {
-        if (turnGlobal < array_length(turnForced) ) {
+        if (turnGlobal < array_length(turnForced) )
+		{
             var _entity = turnForced[turnGlobal];
             if (_entity != 0) return _entity;
         }
@@ -239,47 +298,49 @@ function WateManager(_key) constructor
     #endregion
     
     #region LOOTS
-    /// @param {string} key          Pocket item key
-    /// @param {any}    quantity     Cantidad
-    /// @param {real}   probability  Probabilidad
-    static Loot = function(_key, _quantity, _probability) constructor 
+	/// @ignore
+    /// @param	{String}	pocket_key	Pocket item key.
+    /// @param	{Any}		quantity	Cantidad.
+    /// @param	{Real}		probability	Probabilidad.
+    static AtomLoot = function(_key, _quantity, _probability) constructor 
     {
         key = _key;
-        quanity     =   _value;
-        probability =   _probability;
+        quanity = _quantity;
+        probability = _probability;
     }
     
     /// @desc Agrega loot para entregar al finalizar el combate
-    /// @param {string} key          Pocket item key
-    /// @param {any}    quantity     Cantidad de este objeto
-    /// @param {real}   probability  Probabilidad de entregar este elemento
-    static lootAdd = function(_itemKey, _quantity, _probability)
+    /// @param	{String}	key			Pocket item key.
+    /// @param	{Any}		quantity	Cantidad de este objeto.
+    /// @param	{Real}		probability	Probabilidad de entregar este elemento.
+    static LootAdd = function(_itemKey, _quantity, _probability)
     {
-        var _loot = new Loot(_itemKey, _quantity, _probability);
+        var _loot = new AtomLoot(_itemKey, _quantity, _probability);
         array_push(lootTable, _loot);
         return self;
     }
     
     /// @desc Elimina un elemento del loot que se entregará
-    /// @param {real} [index]=0
-    static removeLoot = function(_index=0)
+    /// @param	{Real} [index]=0
+    static LootRemove = function(_index=0)
     {
         array_delete(lootTable, _index, 1);
         return self;
     }
     
-    
     #endregion
     
     /// @desc Obtiene la nueva entidad actual utilizando "turnOrder"
-    static updateActual = function()
+    static UpdateCurrent = function()
     {
-        if (!entityForce) {
-            var _index    = turn - 1;
-            entityCurrent = turnOrder[_index];
+		// Si no hay una entidad forzada.
+        if (!entityForce)
+		{
+            entityCurrent = turnOrder[turn - 1];
         }
-        // Si hay una entidad forzada
-        else {
+        // Si hay una entidad forzada.
+        else
+		{
             entityCurrent = turnOrder[entityForceIndex];
         }
         
@@ -287,24 +348,28 @@ function WateManager(_key) constructor
     }
     
     /// @desc Devuelve la entidad actual
-    static getCurrent = function()
+	/// @return {Struct.PartyEntity}
+    static GetCurrent = function()
     {
         return (entityCurrent);
     }
     
-    static setEventCompleted = function(_fn)
+	/// @param	{Function}	complete_event	function() {}
+    static SetEventComplete = function(_fn)
     {
-        fnComplete = _fn;
+        eComplete = _fn;
         return self;
     }
     
-    static executeCompleted = function()
+	/// @desc Ejecuta el evento al completar una batalla.
+    static ExecuteCompleted = function()
     {
-        if (is_callable(fnComplete) ) return fnCompleted();
+        if (is_callable(fnComplete) ) return eComplete();
         return undefined;
     }
     
-    static print = function()
+	/// @ignore
+    static __manager_print = function()
     {
         var _every = groups.every;
         var i=0; repeat(array_length(groups.every) )
@@ -313,13 +378,17 @@ function WateManager(_key) constructor
             show_debug_message("");
             show_debug_message($"M_Wate (every): {_entity.key} | {_entity.level}, stats: ");
             // Print estadisticas.
-            _entity.printStats();
+            _entity.__mall_entity_trace_stats();
+			// Print controls.
+            _entity.__mall_entity_trace_controls();
             
-            i++;
+			i++;
         }
+		
         // Print el orden de turnos.
         show_debug_message($"M_Wate: order {turnOrderKey}");
     }
     
-    Wate.manager = self;
+	// Establecerse así mismo como el manager más actual.
+	static_get(Wate).manager = self;
 }

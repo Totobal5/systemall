@@ -1,11 +1,13 @@
 {
-  "resourceType": "GMScript",
-  "resourceVersion": "1.0",
-  "name": "pocket_Item",
-  "isCompatibility": false,
-  "isDnD": false,
-  "parent": {
-    "name": "Pocket",
-    "path": "folders/Systemall/Pocket.yy",
+  "$GMScript":"v1",
+  "%Name":"pocket_Item",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"pocket_Item",
+  "parent":{
+    "name":"Pocket",
+    "path":"folders/Systemall/Pocket.yy",
   },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
 }
