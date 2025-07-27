@@ -1,0 +1,39 @@
+{
+	"type": "entities",
+    "JON": {
+        "display_name_key": "UI.NAMES.JON",
+        "gender": "M",
+        "portrait_sprite": "spUIPortraitJon",
+        "battle_object": "oCoJon",
+        
+        "stats": ["EN", "EPM", "FUERZA", "DEFENSA", "FESPECIAL", "DESPECIAL", "VELOCIDAD", "EXP", "CRITICO"],
+        "slots": ["SLOT_ARMA", "SLOT_CUERPO", "SLOT_ACCESORIO1", "SLOT_ACCESORIO2"],
+        "states": ["STATE_VIVO", "STATE_VENENO", "STATE_QUEMADO"],
+        
+        "commands": [
+            { "category": "default", "key": "DARK_COMMAND_DATTACK" },
+            { "category": "CAST", "key": "DARK_COMMAND_FORED" }
+        ],
+        
+        "base_stats_values": {
+			"EN":		50,
+            "FUERZA":	16,
+            "DEFENSA":	17
+        }
+    },
+    "SLIME": {
+        "display_name_key": "UI.NAMES.SLIME",
+        "battle_object": "oCoSlime",
+        "stats": ["EN", "FUERZA", "DEFENSA", "VELOCIDAD"],
+        "slots": [],
+        "states": ["STATE_VIVO"],
+        "commands": [
+            { "category": "default", "key": "DARK_COMMAND_DATTACK" }
+        ],
+        "base_stats_values": {
+			"EN":		50,
+            "FUERZA":	5,
+            "DEFENSA":	20
+        }
+    }
+}

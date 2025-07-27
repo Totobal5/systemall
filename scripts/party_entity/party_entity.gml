@@ -1,3 +1,62 @@
+/// @desc Representa la instancia de una estadística para una entidad.
+function EntityStatInstance(_template) constructor
+{
+    template = _template; // Referencia a la plantilla MallStat
+    
+    // Valores de estado
+    level = template.base_level;
+    base_value = template.base_value;
+    
+    // Valores calculados
+    peak_value = 0;      // Valor máximo con bonificaciones de nivel
+    equipment_value = 0; // Valor con equipo
+    control_value = 0;   // Valor final con estados alterados
+    current_value = 0;   // Valor actual (ej: vida actual)
+    
+    /// @desc Recalcula los valores de la estadística basado en el nivel de la entidad.
+    static Recalculate = function(_entity)
+    {
+        var _level_up_event = Systemall.__functions[$ template.event_on_level_up];
+        if (is_callable(_level_up_event))
+        {
+            // La función del evento devuelve el nuevo valor base para el nivel actual
+            peak_value = _level_up_event(_entity, self);
+        }
+        else
+        {
+            peak_value = base_value; // Si no hay evento, usa el valor base
+        }
+        
+        // Aplicar bonificaciones de equipo y estados (se calculará en PartyEntity.Update)
+        // Por ahora, inicializamos los valores.
+        equipment_value = peak_value;
+        control_value = equipment_value;
+        
+        // Clamp para asegurar que no exceda los límites
+        control_value = clamp(control_value, template.min_value, template.max_value);
+        
+        // Restaurar vida/maná si es necesario
+        if (template.restore_on_equip)
+        {
+            current_value = control_value;
+        }
+        else
+        {
+            current_value = min(current_value, control_value);
+        }
+    }
+}
+
+/// @desc Representa la instancia de un slot de equipo para una entidad.
+function EntitySlotInstance(_template) constructor
+{
+    template = _template; // Referencia a la plantilla MallSlot
+    
+    equipped_item = undefined;
+    is_active = !template.is_disabled;
+}
+
+
 // Feather ignore all
 /// @param	{String} entity_key
 function PartyEntity(_key) : Mall(_key) constructor
@@ -1857,32 +1916,44 @@ function PartyEntity(_key) : Mall(_key) constructor
 	#endregion
 }
 
-/// @desc Crea un metodo de creacion
-/// @param	{String} entity_key
-/// @param	{Function} entity_constructor
-function party_create_entity(_key, _constructor)
+/// @desc Crea una plantilla de entidad desde data y la añade a la base de datos.
+function party_entity_template_create(_key, _data)
 {
-    static entities = Systemall.entities;
-    if (!struct_exists(entities, _key) )
+    if (!struct_exists(Systemall.__entities, _template_key))
     {
-        entities[$ _key] = _constructor;
+        show_debug_message($"[Systemall] Advertencia: El entity template '{_key}' ya existe. Se omitirá la duplicada.", true);
+        return undefined;
     }
+	
+    // Guardamos el struct de datos directamente como plantilla.
+	Systemall.__entities[$ _key] = _data;
+    array_push(Systemall.__entities_keys, _key);
 }
 
-/// @desc Obtiene el constructor de esta entidad
-/// @param	{String} entity_key
-/// @return {Function}
-function party_get_entity(_key)
+function party_entity_template_exists(_key) 
 {
-    return (Systemall.entities[$ _key] );
+	return (struct_exists(Systemall.__entities, _key) ); 
 }
 
-/// @desc Crea una entidad a partir de la base de datos.
-/// @param	{String} entity_key
-/// @param	{Real} [level]
+/// @desc Crea una INSTANCIA de una entidad a partir de una plantilla.
+/// @param {String}	template_key La llave de la plantilla (ej: "JON", "SLIME").
+/// @param {Real}	[level]=1 El nivel inicial de la instancia.
 /// @return {Struct.PartyEntity}
-function party_entity_create(_key, _level=1)
+function party_entity_create_instance(_template_key, _level=1)
 {
-    var _entity = party_get_entity(_key);
-    return (new _entity(_level) );
+    if (party_entity_template_exists(_template_key) )
+    {
+        show_error($"[Systemall] Intento de crear una instancia de una plantilla no existente: '{_template_key}'", true);
+        return undefined;
+    }
+    
+    // Crear un ID único para la instancia (esto es una simplificación, se podría usar un contador global)
+    var _instance_id = $"{_template_key}_{get_timer()}"; 
+    
+    var _entity = new PartyEntity(_template_key, _instance_id);
+    _entity.FromTemplate();
+    _entity.level = _level;
+    _entity.RecalculateStats();
+    
+    return _entity;
 }

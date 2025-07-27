@@ -1,0 +1,19 @@
+{
+    "type": "Slots",
+    "SLOT_ARMA": {
+        "max_items": 1,
+        "event_on_attack": "EVT_SLOT_ARMA_OnAttack" 
+    },
+    "SLOT_CUERPO": {
+        "max_items": 1,
+        "event_on_defend": "EVT_SLOT_CUERPO_OnDefend"
+    },
+    "SLOT_ACCESORIO1": {
+        "max_items": 1
+    },
+    "SLOT_ACCESORIO2": {
+        "max_items": 1,
+        "is_disabled": true,
+        "depends_on_slot": "SLOT_ACCESORIO1"
+    }
+}

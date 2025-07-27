@@ -1,0 +1,32 @@
+{
+	"type": "stats",
+    "EN": {
+        "num_type": "real",
+        "allow_multiple_effects": false,
+        "max_effects": -1,
+        
+        "base_value": 100,
+        "min_value": 0,
+        "max_value": 9999,
+        
+        "base_level": 1,
+        "min_level": 1,
+        "max_level": 100,
+        
+        "is_standalone_level": false,
+        
+        "iterator": {
+            "duration": 5,
+            "repeats": -1
+        },
+        
+        "event_on_level_up": "EVT_EN_OnLevelUp",
+        "event_on_equip": "EVT_STAT_DefaultOnEquip"
+    },
+    "FUERZA": {
+        "num_type": "real",
+        "base_value": 10,
+        "max_value": 999,
+        "event_on_level_up": "EVT_FUERZA_OnLevelUp"
+    }
+}

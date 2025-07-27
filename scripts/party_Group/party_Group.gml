@@ -1,237 +1,239 @@
 // Feather disable once GM1045
 
-/// @param {String} groupKey
-function PartyGroup(_key) constructor
+/// @desc Define una colección de entidades, como el equipo del jugador o un grupo de enemigos.
+/// @param {String} key
+function PartyGroup(_key) : Mall(_key) constructor
 {
-    // Variables de este grupo
-    key = _key;
-	vars = {};
+    // --- Propiedades ---
+    limit = -1;      // Límite de entidades en este grupo. -1 para infinito.
+    entities = [];   // Array que contiene las instancias de PartyEntity.
 	
-    size = 0;
-    limit = -1;
-    entities = [];
+    #region MÉTODOS DE MANIPULACIÓN
     
-    #region METHODS
-    /// @ignore
-    static Update = function()
-    {
-        var _size = array_length(entities);
-        var i=0; repeat(_size)
-        {
-            var _entity = entities[i];
-            _entity.index = i;
-            i++;
-        }
-        
-        return (_size);
-    }
-    
-    /// @desc Agrega una entidad al grupo indicando el indice en donde insertarlo
-    /// @param	{Struct.PartyEntity} PartyEntity
-    /// @param	{Real} [index]=0
-    /// @return {Bool}
-    static Set = function(entity, index=0)
-    {
-        size = array_length(entities);
-        if (limit == -1 || size < limit)
-		{
-            entity.group = key;
-            array_insert (entities, index, entity);
-            Update();
-            
-            return true;
-        }
-        
-        return false;
-    }
-    
-    /// @desc Agrega una entidad a este grupo colocandola al final
-    /// @param	{Struct.PartyEntity} PartyEntity
+    /// @desc Añade una entidad al final del grupo si hay espacio.
+    /// @param {Struct.PartyEntity} entity La entidad a añadir.
     /// @return {Bool}
     static Add = function(_entity)
     {
-        size = array_length(entities);
-        if (limit == -1 || size < limit) 
+        var _size = array_length(entities);
+        if (limit == -1 || _size < limit) 
         {
             array_push(entities, _entity);
-            _entity.group = key;
-            _entity.index = size - 1;
-            
-            // Actualizar posicion de todos las entidades
-            Update();
-            
+            _entity.group_key = key; // Asignar la llave del grupo a la entidad
             return true;
         }
-        
         return false;
     }
     
-    // @desc Devuelve la entidad que se encuentra en el indice
-    // @param	{Real} [index]=0
-    static Get = function(_index=0)
+    /// @desc Inserta una entidad en un índice específico del grupo.
+    /// @param {Struct.PartyEntity} entity La entidad a añadir.
+    /// @param {Real} [index]=0 El índice donde insertar.
+    /// @return {Bool}
+    static Set = function(_entity, _index=0)
     {
-        return (entities[_index] );
+        var _size = array_length(entities);
+        if (limit == -1 || _size < limit)
+		{
+            _entity.group_key = key;
+            array_insert(entities, _index, _entity);
+            return true;
+        }
+        return false;
     }
     
-    /// @desc Elimina y devuelve una entidad del grupo
-    /// @param	{Real} [index]=0
-	/// @return {Struct.PartyEntity}
+    /// @desc Elimina y devuelve una entidad del grupo por su índice.
+    /// @param {Real} [index]=0
+	/// @return {Struct.PartyEntity} La entidad eliminada o undefined.
     static Remove = function(_index=0)
     {
-        // Guardar entidad en el lugar
+        if (_index < 0 || _index >= array_length(entities)) return undefined;
+        
         var _entity = entities[_index];
+        array_delete(entities, _index, 1);
         
-        array_delete( entities, _index, 1);
-        // Actualizar tamaño
-        size = Update();
-        
-        // Resetear valores de la entidad eliminada.
-        _entity.group = "";
-        _entity.index = -1;
-        
-        return (_entity);
+        _entity.group_key = ""; // Limpiar la referencia al grupo
+        return _entity;
     }
     
-    /// @desc Busca una entidad y devuelve su indice. -1 si no existe.
-    /// @param	{Struct.PartyEntity} PartyEntity
-    static Find = function(_entity)
+    /// @desc Busca una entidad por su instancia y la elimina del grupo.
+    /// @param {Struct.PartyEntity} entity La entidad a eliminar.
+    /// @return {Struct.PartyEntity} La entidad eliminada o undefined.
+    static RemoveByInstance = function(_entity)
     {
-        static FFind = function(_entity)
+        var _index = array_get_index(entities, _entity);
+        if (_index > -1)
         {
-            return (entity.key == _entity.key); 
+            return self.Remove(_index);
         }
-        var _m = method({entity: _entity}, FFind);
-        return (array_find_index(entities, _m) );
+        return undefined;
     }
     
-    /// @desc Limpia el gropo de entidades.
+    /// @desc Limpia todas las entidades del grupo.
     static Clean = function()
     {
-        // Limpiar array.
         entities = [];
-        // Actualizar tamaño.
-        size = array_length(entities);
-        
         return self;
     }
     
-    /// @desc Regresa el array de entidades.
+    #endregion
+    
+    #region MÉTODOS DE ACCESO
+    
+    /// @desc Devuelve la entidad que se encuentra en el índice.
+    /// @param {Real} [index]=0
+    static Get = function(_index=0)
+    {
+        if (_index < 0 || _index >= array_length(entities)) return undefined;
+        return entities[_index];
+    }
+    
+    /// @desc Devuelve el array completo de entidades.
     /// @return {Array<Struct.PartyEntity>}
     static GetEntities = function() 
     {
         return entities;
     }
     
-    /// @desc Regresa un save struct
-	/// @param	{Bool} [struct] devolver un struct o un JSON.
-	/// @return {Struct, String}
-    static Export = function(_struct=false)
+    /// @desc Devuelve el número de entidades en el grupo.
+    /// @return {Real}
+    static Size = function()
     {
-		/// @param	{Struct.PartyEntity} PartyEntity
-        static FExport = function(_entity) 
-        {
-            array_push(order, _entity.Export() ); 
-        }
-		
-        var _this = self;
-        with ({}) 
-        {
-			default:
-	            version = __MALL_VERSION;
-				
-	            key = _this.key;
-	            limit = _this.limit;
-	            order = _this.order;
-	            // Exportar cada entidad.
-	            array_foreach(_this.entities, method(self, FExport) );
-				
-				return (_struct) ? self : json_stringify(self, true);
-			break;
-        }
+        return array_length(entities);
     }
     
-    /// @param	{Struct, String} json
-    static Import = function(_json) 
+    #endregion
+    
+    #region CONFIGURACIÓN Y GUARDADO
+    
+    /// @desc Configura el grupo a partir de un struct de datos.
+    /// @param {Struct} data Struct con los datos (ej: { limit: 4 }).
+    static FromData = function(_data)
     {
-        static FImport = function(_json) 
-        {
-            // Crear entidad nueva.
-            var _party = party_create_entity(_json.key, 1);
-            // Importar valores.
-            _party.Import(_json);
-            // Añadir al party que lo carga.
-            Set(_party, _party.index);
-        }
-        
-		// Si se pasa un string (JSON).
-        if (is_string(_json) ) _json = json_parse(_json);
-        // Cargar llave y limite.
-        key = _json.key;
-        limit = _json.limit;
+        limit = _data.limit ?? -1;
+        return self;
+    }
+    
+    /// @desc Exporta el estado del grupo a un struct para guardarlo.
+    /// @return {Struct}
+    static Export = function()
+    {
+        var _this = self;
+		var _export_data = method(_this, Mall.Export)(); // Llama al export del padre
+        with (_export_data)
+		{
+			limit = _this.limit;
+			entity_keys = [];
+			
+	        // Guardar solo las llaves de las entidades, no las entidades completas
+	        for (var i = 0; i < array_length(_this.entities); i++)
+	        {
+	            array_push(entity_keys, _this.entities[i].key);
+	        }		
 		
-        // Cargar datos.
-        array_foreach(_json.order, method(self, FImport) );
+			return self;
+		}
+    }
+    
+    /// @desc Importa y restaura el estado del grupo desde un struct.
+    /// @param {Struct} import_data El struct con los datos guardados.
+    static Import = function(_import_data)
+    {
+        method(self, Mall.Import)(_import_data); // Llama al import del padre
+        
+        limit = _import_data.limit;
+		
+		// Limpiar el grupo antes de llenarlo
+        Clean();
+        
+        // Añadir las entidades al grupo buscándolas por su llave.
+        // Asume que las entidades ya han sido creadas y están disponibles.
+        var _entity_keys = _import_data.entity_keys;
+        for (var i = 0; i < array_length(_entity_keys); i++)
+        {
+            var _entity_key = _entity_keys[i];
+			// Necesitarás esta función
+            var _entity_instance = party_get_entity(_entity_key);
+			
+            if (!is_undefined(_entity_instance))
+            {
+                self.Add(_entity_instance);
+            }
+        }
     }
     
     #endregion
 }
 
-/// @desc Crea una party en donde se agregan entidades de party
-/// @param {Struct.PartyGroup} PartyGroup
-function party_create_group(_group)
+// -----------------------------------------------------------------------------
+// API PÚBLICA PARA MANEJAR GRUPOS
+// -----------------------------------------------------------------------------
+
+/// @desc Crea una plantilla de grupo a partir de datos y la añade a la base de datos.
+/// @param {String} key La llave del grupo (ej: "HEROES").
+/// @param {Struct} data El struct de datos leído del JSON.
+function party_group_create_from_data(_key, _data)
 {
-    // Cache
-    if (!struct_exists(Systemall.groups, _group.key) )
+    if (party_exists_group(_key))
+    {
+        show_debug_message($"[Systemall] Advertencia: El grupo '{_key}' ya existe. Se omitirá el duplicado.");
+        return;
+    }
+    
+    var _group = (new PartyGroup(_key)).FromData(_data);
+    Systemall.__groups[$ _key] = _group;
+    array_push(Systemall.__groups_keys, _key);
+}
+
+/// @desc Crea un grupo de party en tiempo de ejecución.
+/// @param {Struct.PartyGroup} group_struct La instancia del grupo a crear.
+function party_create_group(_group_struct)
+{
+    var _key = _group_struct.key;
+    if (!party_exists_group(_key))
 	{
-        Systemall.groups[$ _group.key] = _group;
-        
-        #region TRACE
-        if (__MALL_PARTY_TRACE) {
-        show_debug_message($"M_Party: grupo {_group.key} creado");
-        }
-        #endregion
+        Systemall.__groups[$ _key] = _group_struct;
+        array_push(Systemall.__groups_keys, _key);
     }
 }
 
-/// @desc Devuelve un grupo de party
-/// @param {string} group_key
+/// @desc Devuelve un grupo de party por su llave.
+/// @param {String} key
 /// @return {Struct.PartyGroup}
 function party_get_group(_key)
 {
-    return (Systemall.groups[$ _key] );
+    if (party_exists_group(_key)) {
+        return Systemall.__groups[$ _key];
+    }
+    return undefined;
 }
 
-/// @param {String} group_key
+/// @desc Comprueba si un grupo existe en la base de datos.
+/// @param {String} key
 function party_exists_group(_key)
 {
-    return (variable_struct_exists(Systemall.groups, _key) );
+    return variable_struct_exists(Systemall.__groups, _key);
 }
 
-/// @desc Intercambia las entidades de un grupo(A) a otro grupo(B)
-/// @param {string} groupA
-/// @param {string} groupB
-function party_swap_group(_keyA, _keyB)
+/// @desc Intercambia todas las entidades entre dos grupos.
+/// @param {String} keyA Llave del primer grupo.
+/// @param {String} keyB Llave del segundo grupo.
+function party_swap_groups(_keyA, _keyB)
 {
-    static Update = function(v) 
-    {
-        v.group = key; 
-    }
-    
-    // Obtener grupos
     var _gA = party_get_group(_keyA);
     var _gB = party_get_group(_keyB);
     
-    // Obtener lista de entidades de cada grupo
-    var _entitiesA = _gA.getEntities();
-    var _entitiesB = _gB.getEntities();
+    if (is_undefined(_gA) || is_undefined(_gB)) return;
     
-    // Intercambiar
+    var _entitiesA = _gA.entities;
+    var _entitiesB = _gB.entities;
+    
+    // Intercambiar los arrays de entidades
     _gA.entities = _entitiesB;
     _gB.entities = _entitiesA;
     
-    // Actualizar llave
-    with (_gA) array_foreach(entities, Update);
-    with (_gB) array_foreach(entities, Update);
+    // Actualizar la propiedad 'group_key' en cada entidad
+    for (var i = 0; i < array_length(_gA.entities); i++) { _gA.entities[i].group_key = _gA.key; }
+    for (var i = 0; i < array_length(_gB.entities); i++) { _gB.entities[i].group_key = _gB.key; }
 }
 
 // ----------

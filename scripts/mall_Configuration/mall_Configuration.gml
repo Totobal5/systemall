@@ -1,28 +1,8 @@
-#macro __MALL_VERSION       "v2.8"
-#macro __MALL_MY_VERSION    __MALL_VERSION+"::1.0"
-#macro __MALL_TRACE         true
-#macro __MALL_ERROR         true
-#macro __MALL_SAFETY        true
-
-#region STATS
-#macro __MALL_STAT_ROUND        round
-#macro __MALL_STAT_MAX          9999
-#macro __MALL_STAT_MIN          0
-
-#macro __MALL_STAT_LEVEL_MIN    0
-#macro __MALL_STAT_LEVEL_MAX    100
-
-enum STAT_NUMTARG 
-{
-    CURRENT, 
-    PEAK, 
-    EQUIPMENT, 
-    CONTROL, 
-    LASCURRENT, 
-    LASPEAK
-}
-
-#endregion
+#macro __MALL_VERSION		"v2.8"
+#macro __MALL_VERSION_MINE	__MALL_VERSION+"::1.0"
+#macro __MALL_TRACE			true
+#macro __MALL_ERROR			true
+#macro __MALL_SAFETY		true
 
 #region PARTY
 // Indicar procesos realizados
@@ -72,28 +52,67 @@ enum MALL_NUMVAL    {VALUE, TYPE}
 /// @desc Donde se guardan todos los datos que se utilizarán por Systemall.
 function Systemall()
 {
-    // -- Componentes
-    static stats     = {};
-    static statsKeys = [];
-    
-    // -- Core
-    static dark =     {};
-    static groups =   {};
-    static entities = {};
-    
-    static items = {};
-    static bags  = {};
-    static types = {};
-    
-    static wate =       {};
-    static gangs =      {};
-    static messages =   [];
-    static mcurrent =   undefined;
-}
-// Generar la base de datos (estaticos)
-Systemall(); 
-var _f = new Mall()
+	/// @ignore Struct con todos los archivos cargados.
+	static __master = {};
+	/// @ignore Struct con todas las funciones accesibles por Systemall.
+	static __functions = {};
 
+	// -- Componentes --
+	/// @ignore Base de datos donde se guardan todos los constructors de estadisticas del sistema.
+	static __stats = {};
+	static __stats_keys = [];
+
+	/// @ignore Base de datos donde se guardan los "Estados" del sistema.
+	static __states = {}
+	static __states_keys = [];
+	
+	/// @ignore Base de datos donde se guardan todos los constructors de slots del sistema.
+	static __slots = {};
+	static __slots_keys = [];
+	
+	/// @ignore Base de datos donde se guardan todos los items del sistema.
+	static __items = {};
+	static __items_keys = [];
+	
+	/// @ignore Base de datos donde se guardan todas las mochilas del sistema.
+	static __bags = {};
+	static __bags_keys = [];
+	
+	/// @ignore Base de datos donde se guardan todos los grupos del sistema.
+	static __groups = {};
+	static __groups_keys = [];
+	
+	/// @ignore Base de datos donde se guardan todas las entidades del sistema.
+	static __entities = {};
+	static __entities_keys = [];	
+	
+	/// @ignore Base de datos donde se guardan todos los comandos y efectos del sistema.
+	static __dark = {};
+	static __dark_keys = [];	
+	
+	/// @ignore Base de datos donde se guardan todos los "Tipos" del sistema.
+    static __types = {};
+	static __types_keys = [];
+	
+	/// @ignore Base de datos donde se guardan todos los "Grupos" de batalla del sistema (Para enfrentamientos).
+    static __wate = {};
+	static __wate_keys = [];
+	
+	/// @ignore Sistema de Broadcast y Mensajes para el sistema.
+    static __broadcast = {};
+	static __messages = [];
+}
+
+/// @desc	Carga un archivo maestro que indica los lugares de otros archivos separados por el subsistema al que pertenecen.
+///			De esta manera se vería de algo así {Stats: [.json...], Party: [.json], Pocket: [.json], Dark: [.json]}
+function mall_system_load(_json)
+{
+	
+}
+
+// Generar statics
+script_execute(Systemall);
+script_execute(Mall);
 
 // Iniciar comandos y funciones
 dark_database();

@@ -1,0 +1,9 @@
+{
+	"type": "group",
+	"HEROES_1": {
+		"limit": 4
+	},
+	"HEROES_2": {
+		"limit": 4
+	}
+}

@@ -1,55 +1,33 @@
+// --- ENUM DE ESTADO ---
+// Para que el retorno de Tick() sea más legible.
+enum MALL_ITERATOR_STATE 
+{
+    INACTIVE,   // El iterador no está activo.
+    WORKING,    // El iterador está a mitad de un ciclo.
+    CYCLE_END,  // Se ha completado un ciclo (y puede que se repita o no).
+    COMPLETED   // Se han completado todos los ciclos y repeticiones.
+}
+
 /// @desc Elemento basico de Mall
 /// @param {String} key
 /// @ignore
 function Mall(_key="") constructor 
 {
-    /// @ignore
-    is = instanceof(self);
-    /// @ignore Llave con el cual se guardo en la base de datos
-    key = _key;
-    /// @ignore Llave para usar en display
-    dKey = "";
-    /// @ignore Indice en donde esta (si esta en algun array)
+	/// @ignore Referencia a su propio tipo.
+	is = instanceof(self);
+	
+	// LLave base de datos.
+	key = _key;
+	// Display key.
+	dkey = "";
+	// Indice en donde esta (si esta en algun array)
     index = -1;
-    /// @ignore Variables unicas
-    vars = {};
-    
-    /// @desc Establece la llave propia.
-    /// @param {String} key
-    /// @param {String} [display_key]
-    static SetKey = function(_key, _display)
-    {
-        key =	_key	 ?? key;
-        dKey =	_display ?? dKey;
-        return self;
-    };
-    
-	/// @desc Establece la llave de display.
-    /// @param {String} display_key
-    static SetDKey = function(_key)
-    {
-        dKey = _key;
-        return self;
-    };
 	
-    /// @desc Devuelve la llave propia.
-    /// @return {String}
-    static GetKey = function()
-    {
-        return (key);
-    };
-	
-    /// @desc Regresa la llave de display, si no fue establecido regresa la llave propia.
-    /// @return {String}
-    static GetDKey = function()
-    {
-        return (dKey == "") ? key : dKey;
-    };
+	#region API
 	
     /// @desc Como guardar este componente.
-	/// @param {Bool}	[as_struct]	false
     /// @return {Struct}
-    static Export = function(_struct=false)
+    static Export = function()
     {
         var _this = self;
         with ({})
@@ -59,303 +37,236 @@ function Mall(_key="") constructor
             key =       _this.key;
             index =     _this.index;
             
-            return (!_struct) ? json_stringify(self, true) : self;
+            return self;
         }
     };
     
     /// @desc Como cargar este componente
 	/// @param {Struct}	import_struct
-    static Import = function(_l)
+    static Import = function(_import)
     {
         switch (__MALL_MY_VERSION) 
         {
             default:
-                is =    _l.is;
-                key =   _l.key;
-                index = _l.index;
+                is =    _import.is;
+                key =   _import.key;
+                index = _import.index;
             break;
         }
     };
-    
-    /// @desc Pasar numtype a string
-    /// @param {Enum.MALL_NUMTYPE} numtype
-    static StringNumtype = function(_numtype)
-    {
-        switch (_numtype)
-        {
-            case MALL_NUMTYPE.REAL:     return   "";
-            case MALL_NUMTYPE.PERCENT:  return  "%";
-        }
-    };
-    
-    /// @desc Para no crear demasiadas funciones
-	/// @ignore
-    static __dummy = function() 
-    {
-    };
+	
+	#endregion
 }
 
-/// @desc Iterador usado en varios componentes mall
-/// @ignore
-function MallIterator() constructor
+/// @desc Iterador simplificado para controlar duraciones y repeticiones.
+function MallIterator() : Mall() constructor
 {
-	/// @ignore
-	enum MALL_ITERATOR
-	{
-		DEACTIVATED,
-		WORKING,
-		TO_RESET,
-		REINITIATED
-	}
-	
-	/// @ignore
-    is = instanceof(self);
-	/// @ignore
+    // --- ESTADO ---
     active = false;
-    /// @ignore true: toMin, false: toMax
-    type = true;
-    
-    /// @ignore Cuenta
-    count = 0;
-	/// @ignore
-    countLimits = 1;
 	
-    // Resets
-    /// @ignore Si tiene un reset o no
-    reset = false;
-    /// @ignore Veces que se ha reseteado
-    resetCount = 0;
-    /// @ignore Limite de resets
-    resetLimits = 1;
-    /// @ignore
-    resetNumber = 0;
-	/// @ignore
-    resetMax = -1;
-	
-    /// @ignore Se ha llamado 1 vez
-    firstCall = false;
+	// Cuántos ticks dura un ciclo.
+    duration = 1;
+	// Ticks transcurridos en el ciclo actual.
+    ticks_elapsed = 0;
     
-    /// @param {bool} [type] true: to min, false: to max
-    static Activate = function(_type) 
-    {
-        active =	true;
-        type =		_type ?? type;
-		return self;
-    }
+	// Cuántas veces se repite. 0 = se ejecuta una vez y no se repite.
+    repeats = 0;
+	// Cuántas repeticiones se han completado.
+    repeats_done = 0;
+    	
+    // --- API ---
     
-    /// @desc Establece los valores del iterador. Al completar llevara algun valor a su minimo o maximo (depende del type)
-    /// @param {bool} type			true: to min, false: to max
-    /// @param {real} count_max		Cuanta veces iterar
-    /// @param {bool} [repeat]=		true Si repite luego de completarse
-    /// @param {real} [repeat_max]=	-1 Cuentas veces se repetira
-    static Configure = function(_type, _countMax, _reset, _resetLim = -1)
+    /// @desc Configura y activa el iterador a partir de un struct.
+    /// @param {Struct} config_struct Ejemplo: { duration: 5, repeats: 2 }
+    static Configure = function(_duration=1, _repeats=0)
     {
-        Activate(_type);
+        active = true;
         
-        count =			0;
-        countLimit =	_countMax;
+        duration =	_duration;
+        repeats =	_repeats;
         
-        reset =			_reset;
-        resetCount =	0;
-        resetLimit =	_resetLim;
+        // Reiniciar contadores
+        ticks_elapsed = 0;
+        repeats_done = 0;
+        
+        // Permitir duraciones/repeticiones infinitas
+        if (duration <= 0) duration = infinity;
+        if (repeats < 0) repeats = infinity;
         
         return self;
     }
     
-    /// @desc DEACTIVATED se ha desactivado, WORKING aun no llega al limite de cuenta, TO_RESET esta iterando para reiniciar, REINITIATED se ha reiniciado
-    /// @returns {Enum.MALL_ITERATOR} Description
-    static Iterate = function()
+    /// @desc Avanza el iterador un paso y devuelve su estado actual.
+    /// @returns {Enum.MALL_ITERATOR_STATE}
+    static Tick = function()
     {
-        // Si ya se cumplio el ciclo.
-        if (active) 
-        {
-			// Devolver que esta trabajando solo si es infinito o aun le faltan cuentas por completar.
-			if (countLimit == infinity || count++ > countLimits) 
-			{
-				return (MALL_ITERATOR.WORKING);
-			}
-			else
-			{
-				return (Restart() );	
-			}
-        }
+        if (!active) return MALL_ITERATOR_STATE.INACTIVE;
         
-        return (MALL_ITERATOR.DEACTIVATED);
-    };
-    
-    /// @desc Reinicia el iterador si puede, si no lo desactiva
-    /// @returns {Real} Description
-    static Restart = function()
-    {
-        // Se el iterador reinicia.
-        if (reset)
+        ticks_elapsed++;
+        
+        // Comprobar si el ciclo actual ha terminado.
+        if (ticks_elapsed >= duration)
         {
-            // Cuenta para el reinicio.
-            if (resetCount < resetLimits) 
+            // El ciclo terminó. Comprobar si debe repetirse.
+            if (repeats_done < repeats)
             {
-                resetCount = resetCount + 1;
-                return (MALL_ITERATOR.TO_RESET);
+                // Sí, se repite.
+                repeats_done++;
+				// Reiniciar para el siguiente ciclo.
+                ticks_elapsed = 0;
+				// Informar que un ciclo terminó (y se reinició).
+                return MALL_ITERATOR_STATE.CYCLE_END;
             }
             else
             {
-				// Cuenta.
-                count = 0;
-                resetCount = 0;
-                // Reinicio infinito.
-                if (resetMax == infinity) return (MALL_ITERATOR.REINITIATED);
-				
-                // Veces que puede reiniciar.
-                if (resetNumber > resetMax) 
-                {
-                    active = false; 
-                } 
-                else 
-                {
-                    resetNumber = resetNumber + 1; 
-                }
-				
-                return (MALL_ITERATOR.REINITIATED);
+                // No quedan más repeticiones. Se desactiva.
+                active = false;
+				// Informar que ha terminado por completo.
+                return MALL_ITERATOR_STATE.COMPLETED;
             }
         }
-		
-        // Desactivar.
-        active = false;
-        count = 0;
-		
-        return (MALL_ITERATOR.DEACTIVATED);
+        
+        // Si no ha terminado el ciclo, sigue trabajando.
+        return MALL_ITERATOR_STATE.WORKING;
     }
     
-    /// @desc Devuelve si es toMin (true) o toMax (false)
-    /// @returns {bool} Description
-    static GetType = function()
-    {
-        return (type);
-    };
-    
-    /// @desc Devuelve si esta activo
-    /// @returns {bool} Description
+    /// @desc Devuelve si el iterador está actualmente activo.
+    /// @returns {Bool}
     static IsActive = function()
     {
-        return (active);
-    };
-    
-    /// @desc Guardar iterador.
-	/// @param {Bool}	[as_struct]	false
-    static Export = function(_struct=false) 
-    {
-        var _this = self;
-        with ({})
-        {
-            version =		__MALL_VERSION;
-            is =			_this.is;
-            active =		_this.active;
-            type =			_this.type;
-            count =			_this.count;
-            countLimit =	_this.countLimit;
-            
-            reset =			_this.reset;
-            resetCount =	_this.resetCount;
-            resetLimits =	_this.resetLimits;
-            
-            resetNumber =	_this.resetNumber;
-            resetMax =		_this.resetMax;
-            
-            firstCall =		_this.firstCall;
-            
-            return (!_struct) ? json_stringify(self, true) : self;
-        }
+        return active;
     }
     
-    /// @desc Cargar iterador.
-    /// @param {Struct}	import_struct
-    static Import = function(_json)
+    /// @desc Devuelve el progreso del ciclo actual como un valor de 0 a 1.
+    /// @returns {Real}
+    static GetProgress = function()
     {
-        // Asegurarse de que sean el mismo
-        if (_json.is != is) exit;
-        switch (__MALL_MY_VERSION)
-        {
-            default:
-                active =		_json.active;
-                type =			_json.type;
-                count =			_json.count;
-                countLimit =	_json.countLimit;
-                
-                reset =			_json.reset;
-                resetCount =	_json.resetCount;
-                resetLimit =	_json.resetLimit;
-                
-                resetNumber =	_json.resetNumber;
-                resetMax =		_json.resetMax;
-                
-                firstCall =		_json.firstCall;
-            break;
-            
-        }
-		
-		return self;
+        if (duration == infinity) return 0;
+        return ticks_elapsed / duration;
     }
     
-    /// @return {Struct.MallIterator}
-    static Copy = function() 
+    /// @desc Crea una copia de la configuración del iterador (no de su estado actual).
+    /// @returns {Struct.MallIterator}
+    static Copy = function()
     {
-        var _this = self;
-        with (new MallIterator() ) 
-        {
-            active =		_this.active;
-            // true: toMin, false: toMax
-            type =			_this.type;
-            // Cuenta
-            countLimits =	_this.countLimits;
-            // Resets
-            // Si tiene un reset o no
-            reset =         _this.reset;
-            // Limite de resets
-            resetLimits =   _this.resetLimits;
-            resetMax =      _this.resetMax;
+        return (new MallIterator() ).Configure(duration, repeats);
+    }
+    
+    // --- GUARDADO Y CARGA ---
+    
+    /// @desc
+    static Export = function()
+    {
+		var _this = self;
+		// Llama al export del padre
+		with (method(_this, Mall.Export) () )
+		{
+			active =			_this.active;
+			duration =			_this.duration;
+			ticks_elapsed =		_this.ticks_elapsed;
+			repeats =			_this.repeats;
+			repeats_done =		_this.repeats_done;
 			
-            return self;
-        }
+			return self;
+		}
+    }
+    
+    /// @desc
+    static Import = function(_import)
+    {
+        // Llama al import del padre
+        method(self, Mall.Import) (_import);
+        
+        // Carga las variables del iterador
+        active =			_import.active;
+        duration =			_import.duration;
+        ticks_elapsed =		_import.ticks_elapsed;
+        repeats =			_import.repeats;
+        repeats_done =		_import.repeats_done;
     }
 }
 
-/// @desc Se puede modificar a la necesidad del desarrollador. Este es un ejemplo tipico.
-/// @ignore
-function MallResult(_array=false) constructor
+/// @desc Contenedor de resultados de una acción. Las propiedades internas son siempre arrays.
+function MallResult() constructor
 {
-	/// @is {Bool} Si utiliza array´s.
-	useArray = false;
-	/// @is {Real} El tamaño del array.
-	size = 0;
-	// Si no es un array.
-	if (!useArray)
-	{
-		/// Si se logró.
-	    success = true;
-	    /// Si se derroto al target.
-	    defeated = false;
-		/// Valores.
-	    value = 0;
-		/// Daño realizado.
-	    damage = 0;
-		/// Cuanto se consumio de algo.
-	    consumed = 0;
-		/// Cuanto se uso de algo.
-	    used = 0;
-	}
-	// Si es un array.
-	else
-	{
-		/// Si se logró.
-	    success = true;
-	    /// Si se derroto al target.
-	    defeated = [false];
-		/// Valores.
-	    value = [0];
-		/// Daño realizado.
-	    damage = [0];
-		/// Cuanto se consumio de algo.
-	    consumed = [0];
-		/// Cuanto se uso de algo.
-	    used = [0];
-	}
+    // --- PROPIEDADES ---
+    // El éxito general de la operación. Puede fallar si, por ejemplo, no hay EPM suficiente.
+	success = true;
+	
+    // Arrays para almacenar los resultados de cada objetivo afectado por la acción.
+	defeated = [];
+	value = [];
+	damage = [];
+	consumed = [];
+	used = [];
+	
+    // --- API ---
+    
+    /// @desc Añade un nuevo set de resultados para un objetivo.
+    /// @param {Bool} defeated  Si el objetivo fue derrotado.
+    /// @param {Real} value     Un valor genérico (ej: curación).
+    /// @param {Real} damage    El daño infligido.
+    /// @param {Real} consumed  El recurso consumido (ej: EPM).
+    /// @param {Real} used      El item usado (ej: cantidad de pociones).
+    static Push = function(_defeated, _value, _damage, _consumed, _used)
+    {
+        array_push(defeated, _defeated);
+        array_push(value, _value);
+        array_push(damage, _damage);
+        array_push(consumed, _consumed);
+        array_push(used, _used);
+        return self;
+    }
+    
+    /// @desc Devuelve el número de objetivos que fueron afectados.
+    /// @returns {Real}
+    static Size = function()
+    {
+        return array_length(damage);
+    }
+    
+    /// @desc Devuelve el daño total infligido a todos los objetivos.
+    /// @returns {Real}
+    static GetTotalDamage = function()
+    {
+        var _total = 0, _damage_size = Size();
+        for (var i = 0; i < _damage_size; i++)  { _total += damage[i]; }
+        
+		return _total;
+    }
+    
+    /// @desc Devuelve el valor total (ej: curación total) de todos los objetivos.
+    /// @returns {Real}
+    static GetTotalValue = function()
+    {
+        var _total = 0, _damage_size = Size();
+        for (var i = 0; i < _damage_size; i++) { _total += value[i]; }
+		
+		return _total;
+    }
+    
+    /// @desc Devuelve el daño infligido a un objetivo en un índice específico.
+    /// @param {Real} [index] El índice del objetivo (por defecto, el primero).
+    /// @returns {Real}
+    static GetDamage = function(_index = 0)
+    {
+        if (_index < Size() ) return damage[_index];
+        return 0;
+    }
+    
+    /// @desc Devuelve el valor de un objetivo en un índice específico.
+    /// @param {Real} [index] El índice del objetivo (por defecto, el primero).
+    /// @returns {Real}
+    static GetValue = function(_index = 0)
+    {
+        if (_index < Size() ) return value[_index];
+        return 0;
+    }
+    
+    /// @desc Comprueba si algún objetivo fue derrotado.
+    /// @returns {Bool}
+    static WasAnyDefeated = function()
+    {
+		return (array_any(defeated, function(_value) { return _value } ) );
+    }
 }

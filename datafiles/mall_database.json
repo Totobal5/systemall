@@ -1,0 +1,21 @@
+{
+    "Components": [
+        "components/stats.json",
+		"components/states.json",
+		"components/slots.json"
+    ],
+    "Party": [
+        "party/heroes.json",
+        "party/enemigos_comunes.json",
+        "party/jefes.json"
+    ],
+    "Pocket": [
+        "pocket/items_consumibles.json",
+        "pocket/items_armaduras.json",
+        "pocket/items_armas.json"
+    ],
+    "Dark": [
+        "dark/comandos.json",
+        "dark/efectos.json"
+    ]
+}
