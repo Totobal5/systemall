@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"pocket_Shop",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"pocket_Shop",
+  "parent":{
+    "name":"Pocket",
+    "path":"folders/Systemall/Pocket.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

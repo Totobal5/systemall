@@ -5,8 +5,10 @@
 function PartyGroup(_key) : Mall(_key) constructor
 {
     // --- Propiedades ---
-    limit = -1;      // Límite de entidades en este grupo. -1 para infinito.
-    entities = [];   // Array que contiene las instancias de PartyEntity.
+    limit = -1;				// Límite de entidades en este grupo. -1 para infinito.
+    entities = [];			// Array que contiene las instancias de PartyEntity.
+	defeated_entities = [];	// Lista para guardar entidades derrotadas
+	
 	is_persistent = false; // Si el estado de este grupo se debe guardar.
 	
     #region MÉTODOS DE MANIPULACIÓN
@@ -69,13 +71,32 @@ function PartyGroup(_key) : Mall(_key) constructor
         return undefined;
     }
     
-    /// @desc Limpia todas las entidades del grupo.
+    /// @desc Limpia todas las entidades del grupo (activas y derrotadas).
     static Clean = function()
     {
+        for (var i = 0; i < array_length(entities); i++) {
+            entities[i].group_key = "";
+        }
         entities = [];
+        defeated_entities = [];
         return self;
     }
-    
+	
+    /// @desc Mueve una entidad de la lista de activos a la de derrotados.
+    /// @param {Struct.PartyEntity} entity La instancia a mover.
+    /// @return {Bool} Devuelve true si la entidad fue encontrada y movida.
+    static MarkAsDefeated = function(_entity)
+    {
+        var _index = array_get_index(entities, _entity);
+        if (_index > -1)
+        {
+            array_delete(entities, _index, 1);
+            array_push(defeated_entities, _entity);
+            return true;
+        }
+        return false;
+    }
+ 
     #endregion
     
     #region MÉTODOS DE ACCESO
@@ -101,7 +122,13 @@ function PartyGroup(_key) : Mall(_key) constructor
     {
         return array_length(entities);
     }
-    
+
+    /// @desc Devuelve el array de entidades derrotadas en este grupo.
+    static GetDefeated = function()
+    {
+        return defeated_entities;
+    }
+   
     #endregion
     
     #region CONFIGURACIÓN Y GUARDADO

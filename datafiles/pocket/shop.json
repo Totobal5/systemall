@@ -1,0 +1,20 @@
+{
+    "type": "Shops",
+    "SHOP_TOWN_GENERAL": {
+        "buy_multiplier": 1.0,
+        "sell_multiplier": 0.5,
+        "inventory": [
+            "ITEM_POCION",
+            "ITEM_ANTIDOTO"
+        ]
+    },
+    "SHOP_SECRET_BLACKSMITH": {
+        "condition_event": "EVT_Check_Guild_Rank_High",
+        "buy_multiplier": 2.0,
+        "sell_multiplier": 0.8,
+        "inventory": [
+            "ITEM_ESPADA_HIERRO",
+            "ITEM_ARMADURA_ACERO"
+        ]
+    }
+}

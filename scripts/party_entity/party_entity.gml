@@ -378,8 +378,10 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	__is_updating_all_states = false;
 
 	// --- Propiedades de Combate ---
-	exp_drop = 0;
-	drops = [];
+	exp_value = 0;				// 
+	loot_table_key = "";		// 
+	bonus_drops = [];
+	
 	ai_instance = undefined;	// Instancia del cerebro de la IA 
 	faction = "NEUTRAL";		// Facción de la entidad
 	aggro = 0;					// Nivel de amenaza
@@ -664,11 +666,11 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 		__LoadAI(_template);
 		
 		// --- Cargar drops y exp ---
-		exp_drop =	_template[$ "exp_drop"]	?? exp_drop;
-		drops =		_template[$ "drops"]	?? drops;
-		faction =	_template[$ "faction"]	?? faction;
-		learnset =	_template[$ "learnset"]	?? learnset;
-		flags =		_template[$ "flags"]	?? flags;
+		exp_value =			_template[$ "exp_value"]		?? exp_value;
+		loot_table_key =	_template[$ "loot_table_key"]	?? loot_table_key;
+		faction =			_template[$ "faction"]			?? faction;
+		learnset =			_template[$ "learnset"]			?? learnset;
+		flags =				_template[$ "flags"]			?? flags;
 		
 		// Recalcular stats después de que todo esté cargado y equipado.
         RecalculateStats();
@@ -1179,46 +1181,42 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	static GetDrops = function()
 	{
 		var _result = {
-			exps: 0,
+			exps: exp_value,
 			items: []
 		};
 		
-		// Calcular EXP
-		if (is_array(exp_drop) ) 
+		var _all_drops = [];
+		array_copy(_all_drops, 0, bonus_drops, 0, array_length(bonus_drops) );
+		
+		// Obtener drops de la tabla de botín
+		var _loot_table = mall_get_loottable(loot_table_key);
+		if (!is_undefined(_loot_table) && variable_struct_exists(_loot_table, "items") ) 
 		{
-			// Si es un rango [min, max]
-			_result.exps = irandom_range(exp_drop[0], exp_drop[1] );
-		} 
-		else 
-		{
-			// Si es un valor fijo
-			_result.exps = exp_drop;
+			var _table_items = _loot_table.items;
+			array_copy(_all_drops, array_length(_all_drops), _table_items, 0, array_length(_table_items));
 		}
 		
 		// Calcular Drops de Items
-		for (var i = 0; i < array_length(drops); i++) 
+		for (var i = 0; i < array_length(_all_drops); i++) 
 		{
-			var _drop_data = drops[i];
+			var _drop_data = _all_drops[i];
 			var _chance = _drop_data.chance ?? 100;
 			
-			// Tirada de probabilidad
-			if (random(100) < _chance) 
+			if (random(100) < _chance)
 			{
 				var _quantity = 0;
 				var _quantity_data = _drop_data.quantity ?? 1;
 				
 				if (is_array(_quantity_data) ) 
 				{
-					// Cantidad en rango [min, max]
 					_quantity = irandom_range(_quantity_data[0], _quantity_data[1]);
 				} 
 				else 
 				{
-					// Cantidad fija
 					_quantity = _quantity_data;
 				}
 				
-				if (_quantity > 0) 
+				if (_quantity > 0)
 				{
 					array_push(_result.items, {
 						key:		_drop_data.key,
@@ -1237,15 +1235,15 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @param {Real} [chance]=100 La probabilidad (0-100) de que el objeto se suelte.
 	static AddDrop = function(_key, _quantity, _chance = 100)
 	{
-		array_push(drops, {
-			key:		_key,
-			quantity:	_quantity,
-			chance:		_chance
+		array_push(bonus_drops, {
+			key: _key,
+			quantity: _quantity,
+			chance: _chance
 		});
 		
 		return self;
 	}
-
+	
 	/// @desc Se ejecuta al inicio del turno de la entidad en combate.
 	static OnTurnStart = function()
 	{

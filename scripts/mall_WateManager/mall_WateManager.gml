@@ -219,29 +219,78 @@ function WateManager(_encounter_key, _player_group) constructor
         }
     }
 	
-    /// @desc (Privado) Finaliza la batalla.
+    /// @desc (Privado) Finaliza la batalla y calcula las recompensas.
     /// @param {Bool} player_won True si el jugador ganó.
     /// @ignore
     static __EndBattle = function(_player_won)
     {
         is_battle_active = false;
+        
         if (_player_won) 
 		{
-            mall_broadcast_post("BATTLE_VICTORY", { encounter: self });
-            if (is_callable(event_on_end) ) event_on_end(self);
+            var _rewards = __CalculateRewards();
+            mall_broadcast_post("BATTLE_VICTORY", { encounter: self, rewards: _rewards });
+            
+			if (is_callable(event_on_end) ) event_on_end(self, _rewards);
         } 
 		else 
 		{
             mall_broadcast_post("BATTLE_DEFEAT", { encounter: self });
         }
         
-        // Limpiar instancias de enemigos, etc.
-        // ...
-        
-		// Liberar el gestor
         Wate.manager = undefined;
     }
     
+    /// @desc (Privado) Calcula la EXP y el botín de todos los enemigos derrotados.
+    /// @ignore
+    static __CalculateRewards = function()
+    {
+        var _final_rewards = { exps: 0, gold: 0, items: {} };
+        
+        // Iterar sobre todos los grupos de enemigos que participaron en la batalla
+        for (var i = 0; i < array_length(enemy_groups); i++) 
+		{
+            var _group = enemy_groups[i];
+            // Ahora esta función es válida y devuelve los enemigos derrotados de esa oleada
+            var _defeated_entities = _group.GetDefeated();
+            
+            for (var j = 0; j < array_length(_defeated_entities); j++)
+			{
+                var _entity = _defeated_entities[j];
+                
+                // Obtener los drops de la entidad
+                var _drops = _entity.GetDrops();
+                
+                // Sumar EXP
+                _final_rewards.exps += _drops.exps;
+                
+                // Procesar tabla de botín para el oro
+                var _loot_table = mall_get_loottable(_entity.loot_table_key);
+                if (!is_undefined(_loot_table) ) 
+				{
+                    var _gold = _loot_table.gold_drop ?? [0,0];
+                    _final_rewards.gold += irandom_range(_gold[0], _gold[1]);
+                }
+                
+                // Consolidar items
+                for (var k = 0; k < array_length(_drops.items); k++) 
+				{
+                    var _drop_item = _drops.items[k];
+                    if (struct_exists(_final_rewards.items, _drop_item.key) ) 
+					{
+                        _final_rewards.items[$ _drop_item.key] += _drop_item.quantity;
+                    } 
+					else 
+					{
+                        _final_rewards.items[$ _drop_item.key] = _drop_item.quantity;
+                    }
+                }
+            }
+        }
+		
+        return _final_rewards;
+    }
+	
     #endregion
     
     #region CICLO DE COMBATE

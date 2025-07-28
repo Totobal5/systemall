@@ -81,6 +81,10 @@ function Systemall()
 	static __bags_keys = [];
 	static __persistent_bags = [];	
 	
+	/// @ignore Base de datos donde se guardan las tiendas.
+	static __shops = {};
+	static __shops_keys = [];
+	
 	/// @ignore Base de datos donde se guardan todos los grupos del sistema.
 	static __groups = {};
 	static __groups_keys = [];
@@ -88,10 +92,13 @@ function Systemall()
 	/// @ignore El grupo principal del jugador.
     static __player_group = undefined;
 
-	
 	/// @ignore Base de datos donde se guardan todas las entidades del sistema.
 	static __entities = {};
 	static __entities_keys = [];	
+	
+	/// @ignore Base de datos para las loottable.
+	static __loot_tables = {};
+	static __loot_tables_keys = [];
 	
 	/// @ignore Base de datos donde se guardan todos los comandos y efectos del sistema.
 	static __dark = {};
@@ -416,6 +423,8 @@ function mall_load_system(_filename)
         return false;
     }
 }
+
+
 
 
 // Generar statics
