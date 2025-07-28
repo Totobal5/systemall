@@ -1,18 +1,21 @@
 {
     "type": "States",
+    "STATE_PETRIFICADO": {
+        "state_type": "AILMENT",
+        "priority": 10,
+        "restricts_action": true,
+        "prevents_states": ["STATE_VENENO", "STATE_QUEMADO"]
+    },
     "STATE_VENENO": {
-        "allow_multiple": false,
-        "iterator": {
-            "duration": 5,
-            "repeats": -1
-        },
+        "state_type": "AILMENT",
+        "priority": 1,
+        "iterator": { "duration": 5, "repeats": -1 },
         "event_on_turn_end": "EVT_STATE_VENENO_OnTurnEnd"
     },
-    "STATE_BENDECIDO": {
-        "allow_multiple": false,
-        "iterator": {
-            "duration": 3
-        },
-        "event_on_turn_start": "EVT_STATE_BENDECIDO_OnTurnStart"
+    "STATE_ANTIDOTO": {
+        "state_type": "BUFF",
+        "priority": 100,
+        "iterator": { "duration": 1 },
+        "clears_states": ["STATE_VENENO"]
     }
 }

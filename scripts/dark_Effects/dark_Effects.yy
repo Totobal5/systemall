@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"dark_Effects",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"dark_Effects",
+  "parent":{
+    "name":"Dark",
+    "path":"folders/Systemall/Dark.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

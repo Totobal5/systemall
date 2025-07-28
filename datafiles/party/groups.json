@@ -1,9 +1,12 @@
 {
-	"type": "group",
-	"HEROES_1": {
-		"limit": 4
-	},
-	"HEROES_2": {
-		"limit": 4
-	}
+    "type": "Groups",
+    "HEROES": {
+        "limit": 4
+    },
+    "RESERVA": {
+        "limit": 8
+    },
+    "NOUSE": {
+        "limit": -1 // Sin límite
+    }
 }

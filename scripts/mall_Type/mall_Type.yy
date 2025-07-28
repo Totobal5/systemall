@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"dark_Functions",
+  "%Name":"mall_Type",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"dark_Functions",
+  "name":"mall_Type",
   "parent":{
-    "name":"Dark",
-    "path":"folders/Systemall/Dark.yy",
+    "name":"Components",
+    "path":"folders/Systemall/Components.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

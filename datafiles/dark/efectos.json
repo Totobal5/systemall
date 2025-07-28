@@ -1,0 +1,25 @@
+{
+    "type": "Effects",
+    "EFFECT_POISON_DAMAGE": {
+        "state_key": "STATE_VENENO",
+        "value": 15,
+        "num_type": "real",
+        "turn_type": "end",
+        "iterator_end_config": {
+            "duration": 1,
+            "repeats": -1
+        },
+        "event_on_turn_end": "EVT_EFFECT_DealDamage"
+    },
+    "EFFECT_REGEN": {
+        "state_key": "STATE_REGEN",
+        "value": 10,
+        "num_type": "percent",
+        "turn_type": "start",
+        "iterator_start_config": {
+            "duration": 1,
+            "repeats": 4
+        },
+        "event_on_turn_start": "EVT_EFFECT_HealHP"
+    }
+}

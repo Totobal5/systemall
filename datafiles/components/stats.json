@@ -23,10 +23,16 @@
         "event_on_level_up": "EVT_EN_OnLevelUp",
         "event_on_equip": "EVT_STAT_DefaultOnEquip"
     },
+	
     "FUERZA": {
         "num_type": "real",
-        "base_value": 10,
         "max_value": 999,
         "event_on_level_up": "EVT_FUERZA_OnLevelUp"
-    }
+    },
+	
+    "DEFENSA": {
+        "num_type": "real",
+        "max_value": 999,
+        "event_on_level_up": "EVT_FUERZA_OnLevelUp"
+    }	
 }

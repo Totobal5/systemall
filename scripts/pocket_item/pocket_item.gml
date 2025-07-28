@@ -1,169 +1,148 @@
-// Feather disable all
+/// @desc Define la plantilla de un objeto del inventario.
 /// @param {String} key
-/// @param {String} [itemType]
-/// @param {Real} [buy]
-/// @param {Real} [sell]
-/// @return {Struct.PocketItem}
-function PocketItem(_key, _type, _buy=0, _sell=0) : DarkCommand(_key) constructor 
+function PocketItem(_key) : MallEvents(_key) constructor
 {
-    // Tipico
-    onSelf    = true;
-    onAllies  = true;
-    onEnemies = false;
+    // --- Propiedades del Item ---
+    item_type = "UNDEFINED";
     
-    // Tipo de objeto
-    type = _type;
+    // Capacidades de objetivo
+    can_target_self = false;
+    can_target_ally = true;
+    can_target_enemy = false;
     
-    create();
+    // Valores de comercio
+    buy_value = 0;
+    sell_value = 0;
+    can_sell = true;
+    can_buy = true;
     
-    // Valores de compra
-    buy  =  _buy; // Valor al que se compra
-    sell = _sell; // Valor al que se vende
-    canSell = true; // Si puede vender
-    canBuy  = true;	// Si puede compra
-    
-    /// @ignore Donde se guardan sus estadisticas [value, type]
-    stats =     {};
-    statsKeys = [];
-    
-    // -- Funciones
-    #region METHODS
-    
-    static canDesequip = function(entity) 
+    // Estadísticas que el objeto otorga [valor, tipo]
+    stats = {};
+	
+	// Comprobar si se puede equipar en un slot.
+	/// @param self
+	/// @param entity
+	event_can_equip = "";
+	
+	// Comprobar si se puede desequipar de un slot.
+	/// @param self
+	/// @param entity	
+    event_can_desequip = "";
+	
+	event_on_buy =	"";
+	event_on_sell = "";
+	
+	event_on_world_step = "";
+	event_on_world_enter = "";
+	event_on_world_exit = "";
+	
+	event_on_attack = "";
+	event_on_defense = "";
+	
+    /// @desc Configura el item a partir de un struct de datos.
+    static FromData = function(_data)
     {
-        return true;
-    };
-    
-    /// @desc Establece un evento a ejecutar cuando se compra
-    static buyAction  = function() {};
-    /// @desc Establece un evento a ejecutar cuando se vende
-    static sellAction = function() {};
-    
-    /// @desc Establece un evento a ejecutar cuando se encuentra en el mundo
-    static worldStep  = function() {};
-    /// @desc Establece un evento a ejecutar cuando se entra al mundo
-    static worldEnter = function() {};
-    /// @desc Establece un evento a ejecutar cuando se sale del mundo
-    static worldExit  = function() {};
-    
-    static inAttackS = function() {};
-    static inAttackE = function() {};
-    
-    static inDefenceS = function() {};
-    static inDefenceE = function() {};
-    
-    static send = function(_store="") 
-    {
-    	var this = self;
-    	return {
-    		buy : this.buy, 
-    		sell: this.sell
-    	}; 
-    }
-    
-    // -- Internal
-    
-    /// @desc Pone valores a las estadisticas
-    /// @param  {String}            statKey
-    /// @param  {Real}              value
-    /// @param  {Enum.MALL_NUMTYPE} [type]
-    /// @return {Struct.PocketItem}
-    static setStat = function(_statKey, _value, _numType=MALL_NUMTYPE.REAL) 
-    {
-        static DataStats = Systemall.stats;
-        var i=0; repeat(argument_count div 3) {
-            var _key = argument[i];
-            #region SAFETY
-            if (__MALL_SAFETY) {
-            if (!struct_exists(DataStats, _key) ) {
-            show_debug_message($"MallRPG Pocket {key}: Stat {_key} no existe");	
-            }}
-            
-            #endregion
-            
-            // Establecer valor en las estadisticas
-            var _v = argument[i + 1];                      // Valor
-            var _t = argument[i + 2] ?? MALL_NUMTYPE.REAL; // Tipo
-            stats[$ _key] = [_v, _t];
-            array_push(statsKeys, _key);
-            i = i + 3;
+        item_type = string_upper(_data[$ "item_type"] ?? "UNDEFINED");
+        
+        // Se lee el array "target_types" del JSON. Si no existe, por defecto es ["ally"].
+        var _targets = _data[$ "target_types"] ?? ["ally"];
+        if (is_array(_targets))
+        {
+            // Se itera sobre el array y se activa cada booleano correspondiente.
+            for (var i = 0; i < array_length(_targets); i++)
+            {
+                switch (_targets[i])
+                {
+                    case "self":	can_target_self = true; break;
+                    case "ally":	can_target_ally = true; break;
+                    case "enemy":	can_target_enemy = true; break;
+                }
+            }
         }
         
-        return self;
-    };
-    
-    /// @param  {String} statKey
-    /// @return {Array<real>}
-    static getStat  = function(_statKey)
-    {
-        return (stats[$ _statKey] );
-    };
-    
-    /// @desc Permite devolver las estadisticas de este objeto normal
-    static getStats = function() 
-    {
-        return stats;
-    };
-    
-    static getStatsKeys = function()
-    {
-        return (statsKeys);
-    };
-    
-    /// @param  {Real}  buyValue
-    /// @param  {Real}  sellValue
-    /// @param  {Bool}  [canBuy]=true
-    /// @param  {Bool}  [canSell]=true
-    /// @return {Struct.PocketItem}
-    static setTrade = function(_buy, _sell, _canBuy=true, _canSell=true) 
-    {
-        buy  =  _buy;
-        sell = _sell;
+		// Economia
+        buy_value =		_data[$ "buy_value"]	?? 0;
+        sell_value =	_data[$ "sell_value"]	?? 0;
+        can_sell =		_data[$ "can_sell"]		?? true;
+        can_buy =		_data[$ "can_buy"]		?? true;
         
-        canBuy  =  _canBuy;
-        canSell = _canSell;
+        // Cargar estadísticas
+        if (variable_struct_exists(_data, "stats") )
+        {
+            var _stat_keys = variable_struct_get_names(_data.stats);
+            for (var i = 0; i < array_length(_stat_keys); i++)
+            {
+                var _stat_key = _stat_keys[i];
+                var _stat_array = _data.stats[$ _stat_key];
+                var _value = _stat_array[0];
+                var _type = (_stat_array[1] == "percent") ? MALL_NUMTYPE.PERCENT : MALL_NUMTYPE.REAL;
+                stats[$ _stat_key] = [_value, _type];
+            }
+        }
         
+		// Cargar funciones.
+		__LoadFunctions();
+		
         return self;
-    };
-    
-    /// @ignore
-    static create = function()
-    {
-        // Obtener todos los itemtypes
-        static Types = Systemall.types;
-        if (!struct_exists(Types, type) ) Types[$ type] = {};
-        Types[$ type][$ key] = is;
     }
+
+	/// @ignore
+	static __LoadFunctions = function()
+	{
+        // Cargar eventos (heredados de MallEvents)
+	    event_on_start =		mall_get_function(event_on_start);
+	    event_on_end =			mall_get_function(event_on_end);
+	    event_on_update =		mall_get_function(event_on_update);
     
-    /// @ignore
-    static getItem = function(_key)
-    {
+	    // Eventos de Turno
+	    event_on_turn_update =	mall_get_function(event_on_turn_update);
+	    event_on_turn_start =	mall_get_function(event_on_turn_start);
+	    event_on_turn_end =		mall_get_function(event_on_turn_end);
     
-    }
-    
-    #endregion
+	    // Eventos de Equipamiento
+		event_on_equip =		mall_get_function(event_on_equip);
+		event_on_desequip =		mall_get_function(event_on_desequip);
+		
+		event_can_equip =		__mall_get_function_check_true(event_can_equip);
+	    event_can_desequip =	__mall_get_function_check_true(event_can_desequip);
+	
+		event_on_buy =			mall_get_function(event_on_buy);
+		event_on_sell =			mall_get_function(event_on_sell);
+	
+		event_on_world_step =	mall_get_function(event_on_world_step);
+		event_on_world_enter =	mall_get_function(event_on_world_enter);
+		event_on_world_exit =	mall_get_function(event_on_world_exit);
+	
+		event_on_attack =		mall_get_function(event_on_attack);
+		event_on_defense =		mall_get_function(event_on_defense);
+	}
 }
 
-/// @desc Agrega un objeto al sistema
-/// @param {Struct.PocketItem} item
-function pocket_item_create(_item)
+/// @desc Crea una plantilla de item desde data y la añade a la base de datos.
+function pocket_create_item_from_data(_key, _data)
 {
-    if (!struct_exists(Systemall.items, _item.key) ) 
-    {
-        Systemall.items[$ _item.key] = _item;
-    }
+    if (pocket_item_exists(_key) ) 
+	{
+		show_debug_message($"[Systemall] Advertencia: El objeto '{_key}' ya existe. Se omitirá el duplicado.");
+		return;
+	}
+
+    var _item = (new PocketItem(_key)).FromData(_data);
+    Systemall.__items[$ _key] = _item;
+    array_push(Systemall.__items_keys, _key);
+    
+    // Registrar el item en su categoría de tipo
+    mall_create_type(_item.item_type, _key);
 }
 
-/// @desc Regresa el objeto de la base de datos
-/// @param  {String} key
-/// @return {Struct.PocketItem}
-function pocket_item_get(_key)
-{
-    return (Systemall.items[$ _key] );
+/// @desc Devuelve la plantilla de un objeto.
+function pocket_item_get(_key) 
+{ 
+	return Systemall.__items[$ _key]; 
 }
 
-/// @param {String} key
-function pocket_item_exists(_key)
-{
-    return (struct_exists(Systemall.items, _key) );
+/// @desc Comprueba si un objeto existe.
+function pocket_item_exists(_key) 
+{ 
+	return struct_exists(Systemall.__items, _key); 
 }

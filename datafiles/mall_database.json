@@ -6,16 +6,18 @@
     ],
     "Party": [
         "party/heroes.json",
-        "party/enemigos_comunes.json",
+        "party/groups.json",
         "party/jefes.json"
     ],
     "Pocket": [
-        "pocket/items_consumibles.json",
-        "pocket/items_armaduras.json",
-        "pocket/items_armas.json"
+        "pocket/general_items.json"
     ],
     "Dark": [
         "dark/comandos.json",
         "dark/efectos.json"
-    ]
+    ],
+	
+	"AI": [
+		"party/ai.json"
+	]
 }

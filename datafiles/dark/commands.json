@@ -1,0 +1,16 @@
+{
+    "type": "Commands",
+    "CMD_ATTACK": {
+        "command_type": "PHYSICAL",
+        "targets": 1,
+        "target_types": ["enemy"],
+        "event_check": "EVT_CMD_CheckHit",
+        "event_execute": "EVT_CMD_ExecuteDamage"
+    },
+    "CMD_HEAL": {
+        "command_type": "MAGIC",
+        "targets": 1,
+        "target_types": ["self", "ally"],
+        "event_execute": "EVT_CMD_ExecuteHeal"
+    }
+}

@@ -1,0 +1,36 @@
+{
+    "type": "Items",
+    "POTION_01": {
+        "item_type": "CONSUMABLE",
+        "buy_value": 50,
+        "sell_value": 25,
+        "target_types": ["self", "ally"], // AHORA ES UN ARRAY
+        "event_on_use": "EVT_ITEM_Heal50HP"
+    },
+    "IRON_SWORD": {
+        "item_type": "WEAPON",
+        "buy_value": 200,
+        "sell_value": 100,
+        "stats": {
+            "FUERZA": [10, "real"] // [valor, "real" o "percent"]
+        },
+        "event_on_equip": "EVT_ITEM_DefaultEquip",
+        "event_on_desequip": "EVT_ITEM_DefaultDesequip"
+    },
+    "IRON_GOLD": {
+        "item_type": "WEAPON",
+        "buy_value": 10000,
+        "sell_value": 5000,
+        "stats": {
+            "FUERZA": [24, "real"] // [valor, "real" o "percent"]
+        },
+        "event_on_equip": "EVT_ITEM_DefaultEquip",
+        "event_on_desequip": "EVT_ITEM_DefaultDesequip"
+    },	
+    "BOMB": {
+        "item_type": "BATTLE",
+        "buy_value": 150,
+        "sell_value": 75,
+        "target_types": ["enemy"] // Puede usarse en enemigos
+    }
+}

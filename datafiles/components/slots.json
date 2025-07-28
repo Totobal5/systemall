@@ -1,6 +1,7 @@
 {
-    "type": "Slots",
+    "type": "slots",
     "SLOT_ARMA": {
+		"permited":	 "WEAPON", // Solo permitir armas
         "max_items": 1,
         "event_on_attack": "EVT_SLOT_ARMA_OnAttack" 
     },
@@ -8,11 +9,13 @@
         "max_items": 1,
         "event_on_defend": "EVT_SLOT_CUERPO_OnDefend"
     },
-    "SLOT_ACCESORIO1": {
+    
+	"SLOT_ACCESORIO1": {
         "max_items": 1
     },
+	
     "SLOT_ACCESORIO2": {
-        "max_items": 1,
+        "max_items": 2,
         "is_disabled": true,
         "depends_on_slot": "SLOT_ACCESORIO1"
     }

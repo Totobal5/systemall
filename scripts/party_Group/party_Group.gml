@@ -109,7 +109,7 @@ function PartyGroup(_key) : Mall(_key) constructor
     /// @param {Struct} data Struct con los datos (ej: { limit: 4 }).
     static FromData = function(_data)
     {
-        limit = _data.limit ?? -1;
+        limit = _data[$ "limit"] ?? -1;
         return self;
     }
     
@@ -168,46 +168,33 @@ function PartyGroup(_key) : Mall(_key) constructor
 // API PÚBLICA PARA MANEJAR GRUPOS
 // -----------------------------------------------------------------------------
 
-/// @desc Crea una plantilla de grupo a partir de datos y la añade a la base de datos.
+/// @desc Crea una plantilla de grupo desde data y la añade a la base de datos.
 /// @param {String} key La llave del grupo (ej: "HEROES").
 /// @param {Struct} data El struct de datos leído del JSON.
-function party_group_create_from_data(_key, _data)
+function party_create_group_from_data(_key, _data)
 {
-    if (party_exists_group(_key))
-    {
-        show_debug_message($"[Systemall] Advertencia: El grupo '{_key}' ya existe. Se omitirá el duplicado.");
-        return;
-    }
+    if (party_exists_group(_key)) return;
     
-    var _group = (new PartyGroup(_key)).FromData(_data);
+    var _group = (new PartyGroup(_key) ).FromData(_data);
+	
     Systemall.__groups[$ _key] = _group;
     array_push(Systemall.__groups_keys, _key);
 }
 
-/// @desc Crea un grupo de party en tiempo de ejecución.
-/// @param {Struct.PartyGroup} group_struct La instancia del grupo a crear.
-function party_create_group(_group_struct)
-{
-    var _key = _group_struct.key;
-    if (!party_exists_group(_key))
-	{
-        Systemall.__groups[$ _key] = _group_struct;
-        array_push(Systemall.__groups_keys, _key);
-    }
-}
-
-/// @desc Devuelve un grupo de party por su llave.
+/// @desc Devuelve la plantilla de un grupo de party.
 /// @param {String} key
 /// @return {Struct.PartyGroup}
 function party_get_group(_key)
 {
-    if (party_exists_group(_key)) {
+    if (party_exists_group(_key) ) 
+	{
         return Systemall.__groups[$ _key];
     }
+	
     return undefined;
 }
 
-/// @desc Comprueba si un grupo existe en la base de datos.
+/// @desc Comprueba si una plantilla de grupo existe en la base de datos.
 /// @param {String} key
 function party_exists_group(_key)
 {

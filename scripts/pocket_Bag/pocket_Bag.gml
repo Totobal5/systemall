@@ -62,8 +62,9 @@ function PocketBag(_key) constructor
         }
         
 		// Establecer posicion en el array.
-        array_set(order, _index, _key
-        // Actualizar items.
+        array_set(order, _index, _key);
+        
+		// Actualizar items.
         Update();
         
         return _rt;
