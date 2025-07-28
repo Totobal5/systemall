@@ -7,6 +7,7 @@ function PartyGroup(_key) : Mall(_key) constructor
     // --- Propiedades ---
     limit = -1;      // Límite de entidades en este grupo. -1 para infinito.
     entities = [];   // Array que contiene las instancias de PartyEntity.
+	is_persistent = false; // Si el estado de este grupo se debe guardar.
 	
     #region MÉTODOS DE MANIPULACIÓN
     
@@ -117,44 +118,35 @@ function PartyGroup(_key) : Mall(_key) constructor
     /// @return {Struct}
     static Export = function()
     {
-        var _this = self;
-		var _export_data = method(_this, Mall.Export)(); // Llama al export del padre
-        with (_export_data)
-		{
-			limit = _this.limit;
-			entity_keys = [];
-			
-	        // Guardar solo las llaves de las entidades, no las entidades completas
-	        for (var i = 0; i < array_length(_this.entities); i++)
-	        {
-	            array_push(entity_keys, _this.entities[i].key);
-	        }		
-		
-			return self;
-		}
+        var _export_data = method(self, Mall.Export)();
+        _export_data.entity_ids = [];
+        
+        // Guardar solo los IDs de las instancias
+        for (var i = 0; i < array_length(entities); i++)
+        {
+            array_push(_export_data.entity_ids, entities[i].id);
+        }
+        
+        return _export_data;
     }
     
     /// @desc Importa y restaura el estado del grupo desde un struct.
     /// @param {Struct} import_data El struct con los datos guardados.
     static Import = function(_import_data)
     {
-        method(self, Mall.Import)(_import_data); // Llama al import del padre
+        method(self, Mall.Import)(_import_data);
         
-        limit = _import_data.limit;
-		
-		// Limpiar el grupo antes de llenarlo
         Clean();
         
-        // Añadir las entidades al grupo buscándolas por su llave.
-        // Asume que las entidades ya han sido creadas y están disponibles.
-        var _entity_keys = _import_data.entity_keys;
-        for (var i = 0; i < array_length(_entity_keys); i++)
+        // Añadir las entidades al grupo buscándolas en el gestor de instancias.
+        var _entity_ids = _import_data.entity_ids ?? [];
+        for (var i = 0; i < array_length(_entity_ids); i++)
         {
-            var _entity_key = _entity_keys[i];
-			// Necesitarás esta función
-            var _entity_instance = party_get_entity(_entity_key);
-			
-            if (!is_undefined(_entity_instance))
+            var _id = _entity_ids[i];
+			// Usar el gestor de instancias
+            var _entity_instance = party_get_instance(_id);
+            
+            if (!is_undefined(_entity_instance) )
             {
                 self.Add(_entity_instance);
             }

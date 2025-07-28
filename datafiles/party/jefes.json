@@ -1,0 +1,41 @@
+{
+    "type": "Party",
+    "BOSS_SKELETON_KING": {
+        "vars": {
+            "display_name_key": "UI.NAMES.SKELETON_KING",
+            "battle_object": "oCoBossSkeleton"
+        },
+        
+        "faction": "ENEMY",
+        "ai_package": "AI_PACKAGE_BOSS_SKELETON",
+
+        "exp_drop": [1000, 1250], 
+        "drops": [
+            { "key": "ITEM_ROYAL_SWORD", "quantity": 1, "chance": 100 },
+            { "key": "ITEM_ECTOPLASM", "quantity": [1, 3], "chance": 75 }
+        ],
+
+        "learnset": [
+            { "level": 10, "command": "CMD_BONE_CRUSH", "category": "SKILLS" },
+            { "level": 20, "command": "CMD_SOUL_DRAIN", "category": "MAGIC" }
+        ],
+        
+        "stats": {
+            "EN": 2500,
+            "FUERZA": 85,
+            "DEFENSA": 120
+        },
+        
+        "slots": {
+            "SLOT_ARMA": {
+                "equip": "ITEM_CURSED_BLADE"
+            },
+            "SLOT_ACCESORIO": {
+                "permited": [
+                    "-RING", 
+                    "+RING_OF_UNDEATH"
+                ]
+            }
+        }
+    }
+}

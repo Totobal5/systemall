@@ -1,45 +1,85 @@
-// -----------------------------------------------------------------------------
-// EJEMPLO DE JSON (data/ai/packages.json) - NUEVA ESTRUCTURA MODULAR
-// -----------------------------------------------------------------------------
-/*
+// Feather ignore all
+/// @desc El "cerebro" de una entidad, que toma decisiones basadas en un paquete de IA.
+/// @param {Struct.PartyEntity} parent_entity La entidad que posee esta IA.
+/// @param {String} ai_package_key La llave del paquete de IA a utilizar.
+function EntityAIInstance(_parent_entity, _ai_package_key) constructor
 {
-    "type": "AI",
-    "rules": {
-        "RULE_HEAL_LOW_ALLY": {
-            "priority": 100,
-            "condition": "AI_COND_Ally_HP_Below_30_Percent",
-            "action": "AI_ACTION_Use_Heal_Spell",
-            "target": "AI_TARGET_Ally_With_Lowest_HP"
-        },
-        "RULE_ATTACK_DEFAULT": {
-            "priority": 0,
-            "condition": "AI_COND_Always_True",
-            "action": "AI_ACTION_Use_Default_Attack",
-            "target": "AI_TARGET_Random_Enemy"
-        },
-        "RULE_BOSS_SPECIAL_ATTACK": {
-            "priority": 80,
-            "condition": "AI_COND_Turn_Is_Multiple_Of_3",
-            "action": "AI_ACTION_Use_Ultimate_Skill",
-            "target": "AI_TARGET_All_Enemies"
+    parent_entity = _parent_entity;
+    
+    // Lista final de reglas, aplanada y ordenada por prioridad.
+    resolved_rules = [];
+    
+    // Aquí se podrían guardar variables de estado de la IA (ej: memoria de aggro)
+    memory = {};
+
+    // --- Inicialización ---
+    var _package = mall_get_ai_package(_ai_package_key);
+    if (!is_undefined(_package))
+    {
+        resolved_rules = __ResolveRules(_package.rules);
+        array_sort(resolved_rules, function(ruleA, ruleB) {
+            return ruleB.priority - ruleA.priority;
+        });
+    }
+   
+    /// @desc (Privado) Procesa un array de llaves de reglas y paquetes para construir una lista plana.
+    /// @ignore
+    static __ResolveRules = function(_rules_array)
+    {
+        var _flat_list = [];
+        for (var i = 0; i < array_length(_rules_array); i++)
+        {
+            var _key = _rules_array[i];
+            
+            if (variable_struct_exists(Systemall.__ai_rules, _key))
+            {
+                array_push(_flat_list, Systemall.__ai_rules[$ _key]);
+            }
+            else if (variable_struct_exists(Systemall.__ai_packages, _key))
+            {
+                var _nested_package = Systemall.__ai_packages[$ _key];
+                var _nested_rules = __ResolveRules(_nested_package.rules);
+                array_copy(_flat_list, array_length(_flat_list), _nested_rules, 0, array_length(_nested_rules));
+            }
         }
-    },
-    "packages": {
-        "AI_PACKAGE_SIMPLE_ATTACKER": {
-            "rules": [ "RULE_ATTACK_DEFAULT" ]
-        },
-        "AI_PACKAGE_HEALER_SUPPORT": {
-            "rules": [ "RULE_HEAL_LOW_ALLY", "RULE_ATTACK_DEFAULT" ]
-        },
-        "AI_PACKAGE_BOSS": {
-            "rules": [
-                "RULE_BOSS_SPECIAL_ATTACK",
-                "AI_PACKAGE_HEALER_SUPPORT" 
-            ]
+        return _flat_list;
+    }
+	
+    /// @desc Selecciona la mejor acción a realizar en el turno actual.
+    /// @param {Struct} battle_context Un struct con información del combate (aliados, enemigos, etc.).
+    /// @return {Struct.WateAction} La acción a ejecutar, o undefined.
+    static SelectAction = function(_battle_context)
+    {
+        for (var i = 0; i < array_length(resolved_rules); i++)
+        {
+            var _rule = resolved_rules[i];
+            var _condition_func = mall_get_function(_rule.condition);
+            
+            if (is_callable(_condition_func) && _condition_func(parent_entity, _battle_context))
+            {
+                var _target_func = mall_get_function(_rule.target);
+                var _targets = is_callable(_target_func) ? _target_func(parent_entity, _battle_context) : [];
+                
+                if (array_length(_targets) > 0)
+                {
+                    var _action_func = mall_get_function(_rule.action);
+                    if (is_callable(_action_func))
+                    {
+                        var _command_key = _action_func(parent_entity, _targets);
+                        var _command_template = mall_get_dark(_command_key);
+                        
+                        if (!is_undefined(_command_template)) {
+                            // Devolver una instancia de WateAction
+                            return new WateAction(parent_entity, _command_template, _targets);
+                        }
+                    }
+                }
+            }
         }
+        
+        return undefined;
     }
 }
-*/
 
 /// @desc Crea las plantillas de IA (reglas y paquetes) desde data.
 function mall_ai_create_from_data(_data)

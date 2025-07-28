@@ -5,7 +5,8 @@ function DarkEffect(_key) : MallEvents(_key) constructor
     // --- Propiedades del Efecto ---
     state_key = "";             // El estado al que este efecto está asociado.
     state_set_value = true;     // El valor booleano que este efecto intenta imponer al estado.
-    
+     params = {};				// Parámetros para configurar eventos reutilizables
+	 
 	// El valor numérico del efecto (ej: 15 de daño).
     value = 0;
 	// El tipo de valor (real o porcentual).
@@ -25,7 +26,10 @@ function DarkEffect(_key) : MallEvents(_key) constructor
         state_set_value = _data[$ "state_set_value"] ?? true;
         value =	_data[$ "value"] ?? 0;
         num_type = (_data[$ "num_type"] == "percent") ? MALL_NUMTYPE.PERCENT : MALL_NUMTYPE.REAL;
-        
+		
+		// Cargar parámetros
+		params = _data[$ "params"] ?? {};
+		
         var _tt = _data[$ "turn_type"] ?? "start";
         switch (_tt) 
 		{

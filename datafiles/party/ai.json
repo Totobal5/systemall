@@ -1,36 +1,67 @@
 {
     "type": "AI",
+
     "rules": {
-        "RULE_HEAL_LOW_ALLY": {
+        "RULE_ATTACK_HIGHEST_AGGRO": {
+            "priority": 10,
+            "condition": "AI_COND_Always_True",
+            "action": "AI_ACTION_Use_Default_Attack",
+            "target": "AI_TARGET_Highest_Aggro"
+        },
+        "RULE_HEAL_ALLY_BELOW_50_PERCENT": {
             "priority": 100,
-            "condition": "AI_COND_Ally_HP_Below_30_Percent",
+            "condition": "AI_COND_Ally_HP_Below_50_Percent",
             "action": "AI_ACTION_Use_Heal_Spell",
             "target": "AI_TARGET_Ally_With_Lowest_HP"
         },
-        "RULE_ATTACK_DEFAULT": {
-            "priority": 0,
-            "condition": "AI_COND_Always_True",
-            "action": "AI_ACTION_Use_Default_Attack",
+        "RULE_USE_FIREBALL_ON_WEAKEST": {
+            "priority": 50,
+            "condition": "AI_COND_Caster_MP_Above_20",
+            "action": "AI_ACTION_Use_Fireball",
+            "target": "AI_TARGET_Enemy_With_Lowest_HP"
+        },
+        "RULE_APPLY_POISON": {
+            "priority": 40,
+            "condition": "AI_COND_Target_Not_Poisoned",
+            "action": "AI_ACTION_Use_Poison_Sting",
             "target": "AI_TARGET_Random_Enemy"
         },
-        "RULE_BOSS_SPECIAL_ATTACK": {
-            "priority": 80,
-            "condition": "AI_COND_Turn_Is_Multiple_Of_3",
+        "RULE_BOSS_ULTIMATE_ON_TURN_5": {
+            "priority": 200,
+            "condition": "AI_COND_Turn_Is_5",
             "action": "AI_ACTION_Use_Ultimate_Skill",
             "target": "AI_TARGET_All_Enemies"
         }
     },
+
     "packages": {
-        "AI_PACKAGE_SIMPLE_ATTACKER": {
-            "rules": [ "RULE_ATTACK_DEFAULT" ]
-        },
-        "AI_PACKAGE_HEALER_SUPPORT": {
-            "rules": [ "RULE_HEAL_LOW_ALLY", "RULE_ATTACK_DEFAULT" ]
-        },
-        "AI_PACKAGE_BOSS": {
+        "AI_PACKAGE_SIMPLE_BRUTE": {
+            "comment": "Una IA básica que solo ataca al objetivo con más amenaza.",
             "rules": [
-                "RULE_BOSS_SPECIAL_ATTACK",
-                "AI_PACKAGE_HEALER_SUPPORT" 
+                "RULE_ATTACK_HIGHEST_AGGRO"
+            ]
+        },
+        "AI_PACKAGE_SUPPORT_HEALER": {
+            "comment": "Prioriza curar a los aliados antes de atacar.",
+            "rules": [
+                "RULE_HEAL_ALLY_BELOW_50_PERCENT",
+                "RULE_ATTACK_HIGHEST_AGGRO"
+            ]
+        },
+        "AI_PACKAGE_TACTICAL_MAGE": {
+            "comment": "Usa veneno si puede, si no, lanza bolas de fuego al más débil.",
+            "rules": [
+                "RULE_APPLY_POISON",
+                "RULE_USE_FIREBALL_ON_WEAKEST",
+                "RULE_ATTACK_HIGHEST_AGGRO" 
+            ]
+        },
+        "AI_PACKAGE_FINAL_BOSS": {
+            "comment": "Un jefe que usa una habilidad definitiva en el turno 5 y además tiene comportamientos de apoyo y ataque.",
+            "rules": [
+                "RULE_BOSS_ULTIMATE_ON_TURN_5",
+                "AI_PACKAGE_SUPPORT_HEALER",
+                "AI_PACKAGE_TACTICAL_MAGE"
             ]
         }
     }

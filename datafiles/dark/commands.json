@@ -4,13 +4,20 @@
         "command_type": "PHYSICAL",
         "targets": 1,
         "target_types": ["enemy"],
-        "event_check": "EVT_CMD_CheckHit",
-        "event_execute": "EVT_CMD_ExecuteDamage"
+        "event_check": "EVT_CORE_CheckHit",
+        "event_execute": "EVT_CORE_PhysicalDamage",
+        "params": {
+            "base_power": 10,
+            "scaling_stat": "FUERZA"
+        }
     },
-    "CMD_HEAL": {
-        "command_type": "MAGIC",
+    "CMD_POISON_STING": {
+        "command_type": "SKILL",
         "targets": 1,
-        "target_types": ["self", "ally"],
-        "event_execute": "EVT_CMD_ExecuteHeal"
+        "target_types": ["enemy"],
+        "event_execute": "EVT_CORE_ApplyEffect",
+        "params": {
+            "effect_key": "EFFECT_POISON_TICK"
+        }
     }
 }

@@ -1,96 +1,60 @@
-#region TEMPLATES
-/// @desc Crea un template de batalla.
-/// @param	{String}	template_key	Llave de la plantilla de combate.
-/// @param	{Function}	template		Funcion a ejecutar.
-function wate_template_create(_key, _fn)
+/// @desc Encapsula una acción de combate completa, estandarizando la comunicación
+///      entre el selector de acción (IA o UI) y el gestor de combate.
+/// @param {Struct.PartyEntity} caster La entidad que realiza la acción.
+/// @param {Struct.DarkCommand / Struct.PocketItem} source El comando o item que se usa.
+/// @param {Array<Struct.PartyEntity>} targets Los objetivos de la acción.
+function WateAction(_caster, _source, _targets) constructor
 {
-    if (!struct_exists(Systemall.wate, _key) ) 
-    {
-        Systemall.wate[$ _key] = _fn;
-        #region TRACE
-        if (__MALL_WATE_TRACE) {show_debug_message($"M_Wate: template {_key} creada"); }
-        #endregion
+    /// @desc La entidad que realiza la acción.
+    caster = _caster;
+    
+    /// @desc La plantilla del comando o item que se está utilizando.
+    source = _source;
+    
+    /// @desc Un array con las instancias de las entidades objetivo.
+    targets = _targets;
+}
+
+
+/// @desc Obtiene una lista de objetivos válidos para un comando.
+/// @param {Struct.PartyEntity} caster La entidad que lanza el comando.
+/// @param {Struct.DarkCommand} command La plantilla del comando.
+/// @param {Struct} battle_context El contexto de la batalla { player_group: PartyGroup, enemy_group: PartyGroup }.
+/// @return {Array<Struct.PartyEntity>}
+function wate_get_valid_targets(_caster, _command, _battle_context)
+{
+    var _valid_targets = [];
+    var _player_group = _battle_context.player_group;
+    var _enemy_group = _battle_context.enemy_group;
+    
+    var _allies =  (_caster.faction == "PLAYER") ? _player_group.entities : _enemy_group.entities;
+    var _enemies = (_caster.faction == "PLAYER") ? _enemy_group.entities : _player_group.entities;
+    
+    // 1. Construir la lista de objetivos potenciales
+    var _potential_targets = [];
+    if (_command.can_target_self) {
+        array_push(_potential_targets, _caster);
     }
-}
-
-/// @param	{String}	template_key	Llave de la plantilla de combate
-function wate_template_get(_key)
-{
-    return (Systemall.wate[$ _key] );
-}
-
-#endregion
-
-#region MESSAGES
-/// @ignore
-/// @param {Any*} message
-function WateDispatch(_msg) constructor
-{
-    msg = _msg;
-    ready = false;
-}
-
-/// @param	{Any}	message		Mensaje a enviar.
-/// @param	{Bool}	[at_start]	Si agregar el mensaje al final o al comienzo.
-function wate_message_send(_msg, _atstart = false)
-{
-	// Insertar mensaje al comienzo o al final.
-	if (!_atstart) 
-	{
-		array_push(Systemall.messages, _msg);
-	}
-	else
-	{
-		array_insert(Systemall.messages, 0, _msg);
-	}
-}
-
-/// @desc Limpia todos los mensajes.
-function wate_message_clean()
-{
-    Systemall.messages = [];
-    Systemall.mcurrent = undefined;
-}
-
-/// @param	{Function}	[function]
-function wate_message_dispatch(_fn)
-{
-    var _message = array_shift(Systemall.messages);
-    if (!is_undefined(_message) )
-    {
-		// Ejecutar un funcion al ejecutar.
-        if (is_callable(_fn) ) _message = _fn(_message);
-        // Crear nuevo dispatch.
-        Systemall.mcurrent = new WateDispatch(_message);
-        
-		return (Systemall.mcurrent);
+    if (_command.can_target_ally) {
+        array_copy(_potential_targets, array_length(_potential_targets), _allies, 0, array_length(_allies));
+    }
+    if (_command.can_target_enemy) {
+        array_copy(_potential_targets, array_length(_potential_targets), _enemies, 0, array_length(_enemies));
     }
     
-    return undefined;
-}
-
-/// @return {Any}
-function wate_message_get()
-{
-    return (Systemall.mcurrent);
-}
-
-/// @desc Establece el mensaje actual como ready.
-function wate_message_set_ready()
-{
-    if (Systemall.mcurrent != undefined) 
+    // 2. Filtrar la lista (eliminar duplicados y objetivos no válidos como los derrotados)
+    for (var i = 0; i < array_length(_potential_targets); i++)
     {
-        Systemall.mcurrent.ready = true;
+        var _target = _potential_targets[i];
+        
+        // (Aquí se podría añadir lógica más compleja, como no poder curar a alguien con vida llena)
+        var _is_alive = _target.StatGet("EN").current_value > 0;
+        
+        if (_is_alive && !array_contains(_valid_targets, _target))
+        {
+            array_push(_valid_targets, _target);
+        }
     }
+    
+    return _valid_targets;
 }
-
-/// @return {Bool}
-function wate_message_is_ready()
-{
-    if (Systemall.mcurrent != undefined) 
-    {
-        return Systemall.mcurrent.ready;
-    }
-}
-
-#endregion

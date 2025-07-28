@@ -56,6 +56,8 @@ function Systemall()
 	static __master = {};
 	/// @ignore Struct con todas las funciones accesibles por Systemall.
 	static __functions = {};
+	/// @ignore Struct con todas las instancias "vivas" de entidades en el juego.
+	static __instances = {};
 
 	// -- Componentes --
 	/// @ignore Base de datos donde se guardan todos los constructors de estadisticas del sistema.
@@ -77,10 +79,15 @@ function Systemall()
 	/// @ignore Base de datos donde se guardan todas las mochilas del sistema.
 	static __bags = {};
 	static __bags_keys = [];
+	static __persistent_bags = [];	
 	
 	/// @ignore Base de datos donde se guardan todos los grupos del sistema.
 	static __groups = {};
 	static __groups_keys = [];
+	static __persistent_groups = [];
+	/// @ignore El grupo principal del jugador.
+    static __player_group = undefined;
+
 	
 	/// @ignore Base de datos donde se guardan todas las entidades del sistema.
 	static __entities = {};
@@ -97,7 +104,8 @@ function Systemall()
 	static __types_keys = [];
 	
 	/// @ignore Base de datos donde se guardan todos los "Grupos" de batalla del sistema (Para enfrentamientos).
-    static __wate = {};
+    static __wate_manager = undefined;
+	static __wate = {};
 	static __wate_keys = [];
 	
 	/// @ignore
@@ -112,7 +120,7 @@ function Systemall()
 
 /// @desc Carga un archivo maestro y procesa los datos en un orden garantizado.
 /// @param {String} master_file_path La ruta al archivo JSON maestro.
-function mall_system_load(_master_file_path)
+function mall_init(_master_file_path)
 {
 	static _process_order = [
         "STATS", "ITEMS", "SLOTS", "STATES", "EFFECTS", "COMMANDS", "AI", "PARTY", "GROUPS", "BAGS" 
@@ -256,27 +264,172 @@ function mall_system_load(_master_file_path)
     show_debug_message("[Systemall] Carga de la base de datos desde JSON completada.");
 }
 
+// -----------------------------------------------------------------------------
+// API DE GUARDADO Y CARGA
+// -----------------------------------------------------------------------------
+
+/// @desc Guarda el estado completo del juego en un archivo.
+/// @param {String} filename El nombre del archivo de guardado (ej: "savegame1.sav").
+/// @return {Bool} Devuelve true si el guardado fue exitoso.
+function mall_save_system(_filename)
+{
+    try
+    {
+        var _save_data = {
+            version:	__MALL_VERSION_MINE,
+            instances:	[],
+            bags:		{},
+            groups:		{}
+        };
+        
+        // --- 1. Guardar Instancias de Entidades ---
+        var _instance_keys = variable_struct_get_names(Systemall.__instances);
+        for (var i = 0; i < array_length(_instance_keys); i++)
+        {
+            var _inst = Systemall.__instances[$ _instance_keys[i]];
+            array_push(_save_data.instances, _inst.Export());
+        }
+        
+        // --- 2. Guardar Mochilas Persistentes ---
+        for (var i = 0; i < array_length(Systemall.__persistent_bags); i++)
+        {
+            var _bag_key = Systemall.__persistent_bags[i];
+            if (pocket_bag_exists(_bag_key))
+            {
+                var _bag = pocket_bag_get(_bag_key);
+                _save_data.bags[$ _bag_key] = _bag.Export();
+            }
+        }
+        
+        // --- 3. Guardar Grupos Persistentes ---
+        for (var i = 0; i < array_length(Systemall.__persistent_groups); i++)
+        {
+            var _group_key = Systemall.__persistent_groups[i];
+            if (party_exists_group(_group_key))
+            {
+                var _group = party_get_group(_group_key);
+                _save_data.groups[$ _group_key] = _group.Export();
+            }
+        }
+        
+        // --- 4. Convertir a JSON y Guardar en Archivo ---
+        var _json_string = json_stringify(_save_data);
+        
+        var _file = file_text_open_write(_filename);
+        file_text_write_string(_file, _json_string);
+        file_text_close(_file);
+        
+        show_debug_message($"[Systemall] Partida guardada exitosamente en '{_filename}'.");
+        return true;
+    }
+    catch (_ex)
+    {
+        show_error($"[Systemall] Error al guardar la partida: " + exception_get_string(_ex), true);
+        return false;
+    }
+}
+
+/// @desc Carga el estado completo del juego desde un archivo.
+/// @param {String} filename El nombre del archivo de guardado.
+/// @return {Bool} Devuelve true si la carga fue exitosa.
+function mall_load_system(_filename)
+{
+    if (!file_exists(_filename))
+    {
+        show_debug_message($"[Systemall] Archivo de guardado no encontrado: '{_filename}'.");
+        return false;
+    }
+    
+    try
+    {
+        // --- 1. Cargar y Parsear el Archivo ---
+        var _file = file_text_open_read(_filename);
+        var _json_string = "";
+        while (!file_text_eof(_file)) { _json_string += file_text_readln(_file); }
+        file_text_close(_file);
+        
+        var _load_data = json_parse(_json_string);
+        
+        // --- 2. Limpiar el Estado Actual del Juego ---
+        Systemall.__instances = {};
+        
+        // Limpiar grupos persistentes antes de cargar
+        for (var i = 0; i < array_length(Systemall.__persistent_groups); i++) {
+            var _group = party_get_group(Systemall.__persistent_groups[i]);
+            if (!is_undefined(_group)) _group.Clean();
+        }
+        
+        // --- 3. Cargar Instancias de Entidades ---
+        var _saved_instances = _load_data.instances ?? [];
+        for (var i = 0; i < array_length(_saved_instances); i++)
+        {
+            var _inst_data = _saved_instances[i];
+            var _template_key = _inst_data.template_key;
+            
+            // Crear una nueva instancia (se registra automáticamente)
+            var _new_inst = party_entity_create_instance(_template_key, 1);
+            
+            // Importar el estado guardado
+            _new_inst.Import(_inst_data);
+        }
+        
+        // --- 4. Cargar Grupos Persistentes ---
+        // Esto debe hacerse DESPUÉS de cargar las instancias, para que las entidades existan.
+        if (variable_struct_exists(_load_data, "groups"))
+        {
+            var _saved_groups = _load_data.groups;
+            var _group_keys = variable_struct_get_names(_saved_groups);
+            for (var i = 0; i < array_length(_group_keys); i++)
+            {
+                var _key = _group_keys[i];
+                if (party_exists_group(_key)) {
+                    var _group = party_get_group(_key);
+                    _group.Import(_saved_groups[$ _key]);
+                }
+            }
+        }
+        
+        // --- 5. Cargar Mochilas Persistentes ---
+        if (variable_struct_exists(_load_data, "bags"))
+        {
+            var _saved_bags = _load_data.bags;
+            var _bag_keys = variable_struct_get_names(_saved_bags);
+            for (var i = 0; i < array_length(_bag_keys); i++)
+            {
+                var _key = _bag_keys[i];
+                if (pocket_bag_exists(_key)) {
+                    var _bag = pocket_bag_get(_key);
+                    _bag.Import(_saved_bags[$ _key]);
+                }
+            }
+        }
+        
+        // --- 6. Notificar al resto del juego ---
+        mall_broadcast_post("ON_GAME_LOADED", { success: true });
+        show_debug_message("[Systemall] Partida cargada exitosamente.");
+        return true;
+    }
+    catch (_ex)
+    {
+        show_error($"[Systemall] Error al cargar la partida: " + exception_get_string(_ex), true);
+        mall_broadcast_post("ON_GAME_LOADED", { success: false });
+        return false;
+    }
+}
+
+
 // Generar statics
 script_execute(Systemall);
 script_execute(Mall);
+script_execute(MallEvents);
+script_execute(MallIterator);
 
-mall_system_load("mall_database.json");
+script_execute(MallStat);
+script_execute(MallSlot);
+script_execute(MallState);
+script_execute(MallResult);
+
+mall_init("mall_database.json");
 
 
 var _entity = party_entity_create_instance("JON", 10);
-
-/*
-// Iniciar comandos y funciones
-dark_database();
-
-// Iniciar states, stats, slots, types
-mall_database();
-
-// Iniciar objetos
-pocket_database();
-
-// Iniciar entidades
-party_database();
-
-// Iniciar templates de combates
-wate_database();

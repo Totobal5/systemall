@@ -5,7 +5,7 @@ function DarkCommand(_key) : MallEvents(_key) constructor
     // --- Propiedades del Comando ---
 	command_type = "";          // Tipo de comando (ej: "PHYSICAL", "MAGIC").
     targets = 1;                // Cuántos objetivos puede afectar.
-    
+    params = {};				// Parámetros para configurar eventos reutilizables
     // Capacidades de objetivo
     can_target_self = false;
     can_target_ally = false;
@@ -27,7 +27,9 @@ function DarkCommand(_key) : MallEvents(_key) constructor
         command_type = _data[$ "command_type"] ?? "";
         targets = _data[$ "targets"] ?? 1;
         can_target_same = _data[$ "can_target_same"] ?? true;
-        
+        // Cargar parámetros
+		params = _data[$ "params"] ?? {};
+		
         // Cargar tipos de objetivo desde el array
         var _targets = _data[$ "target_types"] ?? [];
         if (is_array(_targets) )

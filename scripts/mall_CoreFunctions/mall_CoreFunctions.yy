@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mall_CoreFunctions",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_CoreFunctions",
+  "parent":{
+    "name":"Databases",
+    "path":"folders/Systemall/Databases.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

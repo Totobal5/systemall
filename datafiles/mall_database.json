@@ -10,7 +10,8 @@
         "party/jefes.json"
     ],
     "Pocket": [
-        "pocket/general_items.json"
+        "pocket/general_items.json",
+        "pocket/bags.json"
     ],
     "Dark": [
         "dark/comandos.json",

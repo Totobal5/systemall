@@ -1,0 +1,21 @@
+{
+    "type": "Bags",
+    "BAG_PLAYER_INVENTORY": {
+        "bag_type": "simple",
+        "slot_limit": 50,
+        "is_persistent": true
+    },
+
+    "BAG_STORAGE": {
+        "bag_type": "complex",
+        "is_persistent": true,
+        "category_defaults": {
+            "slot_limit": 30
+        }
+    },
+
+    "BAG_ENEMY_LOOT": {
+        "bag_type": "simple",
+        "slot_limit": 10
+    }
+}
