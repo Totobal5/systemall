@@ -10,6 +10,7 @@
     {"name":"Wate","order":6,"path":"folders/Systemall/Wate.yy",},
   ],
   "ResourceOrderSettings":[
+    {"name":"oTestSuite","order":3,"path":"objects/oTestSuite/oTestSuite.yy",},
     {"name":"rDemo","order":2,"path":"rooms/rDemo/rDemo.yy",},
     {"name":"__crispyStructUnpack","order":1,"path":"scripts/__crispyStructUnpack/__crispyStructUnpack.yy",},
     {"name":"__lexicon_add_file","order":5,"path":"scripts/__lexicon_add_file/__lexicon_add_file.yy",},
@@ -64,6 +65,7 @@
     {"name":"mall_Slot","order":3,"path":"scripts/mall_Slot/mall_Slot.yy",},
     {"name":"mall_Stat","order":2,"path":"scripts/mall_Stat/mall_Stat.yy",},
     {"name":"mall_State","order":4,"path":"scripts/mall_State/mall_State.yy",},
+    {"name":"mall_TestSuite","order":8,"path":"scripts/mall_TestSuite/mall_TestSuite.yy",},
     {"name":"mall_Type","order":5,"path":"scripts/mall_Type/mall_Type.yy",},
     {"name":"mall_Wate","order":2,"path":"scripts/mall_Wate/mall_Wate.yy",},
     {"name":"party_database","order":1,"path":"scripts/party_database/party_database.yy",},

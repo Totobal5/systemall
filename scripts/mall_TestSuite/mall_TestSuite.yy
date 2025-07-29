@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mall_TestSuite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_TestSuite",
+  "parent":{
+    "name":"Systemall",
+    "path":"folders/Systemall.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

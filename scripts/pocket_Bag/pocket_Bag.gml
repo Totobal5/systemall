@@ -1,3 +1,5 @@
+// Feather ignore all
+
 /// @desc Representa una entrada de objeto en una mochila, con su cantidad y variables únicas.
 /// @param {String} item_key La llave de la plantilla del objeto.
 /// @param {Real} count La cantidad de este objeto.
@@ -25,15 +27,30 @@ function BagItemInstance(_item_key, _count, _vars = {}) constructor
 function PocketBag(_key) : Mall(_key) constructor
 {
     is_persistent = false;
+	
+	/// @param item_key
+	/// @param count
+	/// @param vars
 	event_on_add_item =		"";
+	
+	/// @param item_key
+	/// @param removed
+	/// @param vars
     event_on_remove_item =	"";
-    
+
+	/// @ignore
+	static __LoadFunction = function(_data)
+	{
+        event_on_add_item =		method(self, mall_get_function(_data[$ "event_on_add_item"] ) );
+        event_on_remove_item =	method(self, mall_get_function(_data[$ "event_on_remove_item"] ) );			
+	}
+ 
     /// @desc (Virtual) Configura la mochila desde datos. Debe ser sobreescrito.
     static FromData = function(_data)
     {
 		is_persistent = _data[$ "is_persistent"] ?? false;
-        event_on_add_item =		method(self, mall_get_function(_data[$ "event_on_add_item"] ) );
-        event_on_remove_item =	method(self, mall_get_function(_data[$ "event_on_remove_item"] ) );
+		// Cargar funciones
+		__LoadFunction(_data);
         
 		return self;
     }
@@ -51,9 +68,8 @@ function PocketBag(_key) : Mall(_key) constructor
 /// @param {String} key
 function PocketBagSimple(_key) : PocketBag(_key) constructor
 {
+	// Limite de objetos.
     slot_limit = 30;
-    // El stack_limit ahora se consulta desde la plantilla del item.
-    
     // El array 'order' ahora contiene instancias de BagItemInstance
     order = [];
 	
@@ -67,73 +83,101 @@ function PocketBagSimple(_key) : PocketBag(_key) constructor
 		var _keys1 = variable_struct_get_names(struct1);
 		var _keys2 = variable_struct_get_names(struct2);
 		
-		if (array_length(_keys1) != array_length(_keys2)) return false;
+		if (array_length(_keys1) != array_length(_keys2) ) return false;
 		
-		for (var i = 0; i < array_length(_keys1); i++) {
+		var i=0; repeat(array_length(_keys1) )
+		{
 			var _key = _keys1[i];
-			if (!variable_struct_exists(struct2, _key) || struct1[$ _key] != struct2[$ _key]) {
+			if (!variable_struct_exists(struct2, _key) || struct1[$ _key] != struct2[$ _key] ) 
+			{
 				return false;
-			}
+			}				
+			
+			i++;
 		}
-		
+
 		return true;
 	}
 	
     /// @desc Añade una cantidad de un objeto a la mochila.
     static AddItem = function(_item_key, _count, _vars = {})
     {
-		static __default = { success: false, added: 0, leftover: _count };
+        var _item_template = pocket_item_get(_item_key);
+        if (is_undefined(_item_template) ) return { success: false, added: 0, leftover: _count };
         
-		var _item_template = pocket_item_get(_item_key);
-		// Salir si no existe.
-        if (is_undefined(_item_template) ) return __default;
-        
-        var _result = variable_clone(__default);
-        var _stack_limit = _item_template.stack_limit;
+        var _result = { success: false, added: 0, leftover: 0 };
         var _amount_to_add = _count;
         
-        // Si el item es apilable, intentar añadir a una pila existente
+        // --- LÓGICA PARA ITEMS APILABLES ---
         if (_item_template.is_stackable)
         {
-            for (var i = 0; i < array_length(order); i++)
-            {
+            // FASE 1: Intentar apilar en stacks existentes
+			var _length = array_length(order);
+            for (var i = 0; i < _length; i++)
+			{
                 var _inst = order[i];
-                // Comprobar si es el mismo item y tiene las mismas variables
 				if (_inst.key == _item_key && __CompareVars(_inst.vars, _vars) )
-                {
-                    var _can_add = _stack_limit - _inst.count;
+				{
+                    var _can_add = _item_template.stack_limit - _inst.count;
                     var _to_add_here = min(_amount_to_add, _can_add);
                     
-                    if (_to_add_here > 0)
+                    if (_to_add_here > 0) 
 					{
-                        _inst.count += _to_add_here;
-                        _result.added += _to_add_here;
-                        _amount_to_add -= _to_add_here;
+                        _inst.count		+= _to_add_here;
+                        _result.added	+= _to_add_here;
+                        _amount_to_add	-= _to_add_here;
                     }
                 }
 				
                 if (_amount_to_add <= 0) break;
             }
-        }
-        
-        // Si quedan objetos por añadir (o no era apilable), crear nuevas entradas
-        while (_amount_to_add > 0 && array_length(order) < slot_limit)
-        {
-            var _to_add_here = min(_amount_to_add, _stack_limit);
-            var _new_instance = new BagItemInstance(_item_key, _to_add_here, _vars);
-            array_push(order, _new_instance);
             
-            _result.added += _to_add_here;
-            _amount_to_add -= _to_add_here;
+            // FASE 2: Crear nuevas entradas con el remanente
+            while (_amount_to_add > 0 && array_length(order) < slot_limit)
+			{
+                var _to_add_here =	min(_amount_to_add, _item_template.stack_limit);
+                var _new_instance = new BagItemInstance(_item_key, _to_add_here, _vars);
+                array_push(order, _new_instance);
+                
+                _result.added	+= _to_add_here;
+                _amount_to_add	-= _to_add_here;
+            }
+        }
+        // --- LÓGICA PARA ITEMS NO APILABLES ---
+        else
+        {
+            // Para objetos no apilables, se intenta añadir uno por uno.
+            while (_amount_to_add > 0 && array_length(order) < slot_limit)
+            {
+                // Comprobar si ya existe un item idéntico (misma key y vars)
+                var _already_exists = false;
+                for (var i = 0; i < array_length(order); i++) 
+				{
+                    var _inst = order[i];
+                    if (_inst.key == _item_key && __CompareVars(_inst.vars, _vars) ) 
+					{
+                        _already_exists = true;
+                        break;
+                    }
+                }
+                
+                // Si ya existe, no se puede añadir otro igual.
+                if (_already_exists) break;
+                
+                // Si no existe, añadir una nueva instancia.
+                var _new_instance = new BagItemInstance(_item_key, 1, _vars);
+                array_push(order, _new_instance);
+                _result.added++;
+                _amount_to_add--;
+            }
         }
         
-        _result.leftover = _amount_to_add;
-        _result.success = _result.added > 0;
+        _result.leftover =	_amount_to_add;
+        _result.success =	_result.added > 0;
         
-        // Evento de añadir objetos.
-		if (_result.success && is_callable(event_on_add_item) ) 
+        if (_result.success && is_callable(event_on_add_item) ) 
 		{
-            event_on_add_item(_item_key, _result.added);
+            event_on_add_item(_item_key, _result.added, args);
         }
 		
         return _result;
@@ -149,15 +193,13 @@ function PocketBagSimple(_key) : PocketBag(_key) constructor
         for (var i = array_length(order) - 1; i >= 0; i--)
         {
             var _inst = order[i];
-            if (_inst.key == _item_key && __CompareVars(_inst.vars, _vars))
+            if (_inst.key == _item_key && __CompareVars(_inst.vars, _vars) )
             {
-                var _removed_here = min(_amount_to_remove, _inst.count);
-                _inst.count -= _removed_here;
-                _amount_to_remove -= _removed_here;
+                var _removed_here =		min(_amount_to_remove, _inst.count);
+                _inst.count -=			_removed_here;
+                _amount_to_remove -=	_removed_here;
                 
-                if (_inst.count <= 0) {
-                    array_delete(order, i, 1);
-                }
+                if (_inst.count <= 0) {array_delete(order, i, 1); }
             }
 			
             if (_amount_to_remove <= 0) break;
@@ -166,27 +208,32 @@ function PocketBagSimple(_key) : PocketBag(_key) constructor
         var _total_removed = _count - _amount_to_remove;
         if (_total_removed > 0 && is_callable(event_on_remove_item) )
 		{
-            event_on_remove_item(_item_key, _total_removed);
+            event_on_remove_item(_item_key, _total_removed, args);
         }
 		
-        return _total_removed > 0;
+        return (_total_removed > 0);
     }
 	
     /// @desc Obtiene la cantidad total de un objeto específico.
     static GetItemCount = function(_item_key)
     {
-        var _total = 0;
-        for (var i = 0; i < array_length(order); i++) 
+        var _total =	0;
+		var _length =	array_length(order);
+		
+        for (var i = 0; i < _length; i++)
 		{
-            if (order[i].key == _item_key) 
-			{
-                _total += order[i].count;
-            }
+            if (order[i].key == _item_key) {_total += order[i].count; }
         }
 		
         return _total;
     }
-    
+
+    /// @desc Devuelve un array con todas las instancias de objetos.
+    static GetOrderedItems = function() 
+	{ 
+		return order; 
+	}
+	
     /// @desc Obtiene la primera instancia de un objeto por su llave.
     static GetItemByKey = function(_key)
     {
@@ -211,12 +258,6 @@ function PocketBagSimple(_key) : PocketBag(_key) constructor
 		
         return undefined;
     }
- 
-    /// @desc Devuelve un array con todas las instancias de objetos.
-    static GetOrderedItems = function() 
-	{ 
-		return order; 
-	}
 	
     /// @desc Configura la mochila a partir de un struct de datos.
     static FromData = function(_data)
@@ -272,11 +313,15 @@ function BagCategorySlot(_slot_limit, _stack_limit) constructor
     stack_limit =	_stack_limit;
     items = {};
     order = [];
+	args =  {}
     
     // Referenciar los métodos de la mochila simple para reutilizar la lógica
     static __CompareVars =	PocketBagSimple.__CompareVars;
     static AddItem =		PocketBagSimple.AddItem;
     static RemoveItem =		PocketBagSimple.RemoveItem;
+	static GetItemCount =	PocketBagSimple.GetItemCount;
+	static GetItemByKey =	PocketBagSimple.GetItemByKey;
+	static GetItemByIndex = PocketBagSimple.GetItemByIndex;
 	
 	static Export = function() 
 	{ 
@@ -307,7 +352,14 @@ function PocketBagComplex(_key) : PocketBag(_key) constructor
                 ? category_overrides[$ _type]
                 : category_defaults;
             
-            categories[$ _type] = new BagCategorySlot(_limits.slot_limit);
+			var _category = new BagCategorySlot(_limits.slot_limit);
+            categories[$ _type] = _category;
+			
+			// Añadir eventos.
+			_category.event_on_add_item =		self.event_on_add_item;
+			_category.event_on_remove_item =	self.event_on_remove_item;
+			// Añadir los mismos argumentos.
+			_category.args = self.args;
         }
 		
         return categories[$ _type];
@@ -472,8 +524,6 @@ function PocketBagComplex(_key) : PocketBag(_key) constructor
     }
 }
 
-
-
 // -----------------------------------------------------------------------------
 // API PÚBLICA PARA MANEJAR MOCHILAS
 // -----------------------------------------------------------------------------
@@ -507,7 +557,8 @@ function pocket_bag_create_from_data(_key, _data)
     array_push(Systemall.__bags_keys, _key);
 	
     // Si la mochila está marcada como persistente, añadirla a la lista de guardado.
-    if (_bag.is_persistent) {
+    if (_bag.is_persistent)
+	{
         array_push(Systemall.__persistent_bags, _key);
     }	
 }

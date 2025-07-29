@@ -10,10 +10,11 @@ enum MALL_STAT_TARGET
 }
 
 /// @desc Representa la instancia de una estadística para una entidad.
-function EntityStatInstance(_template) constructor
+function EntityStatInstance(_template, _entity) constructor
 {
 	// Referencia a la plantilla MallStat
-    template = _template;
+    parent_entity = _entity;
+	template = _template;
     
     // Valores de estado
     level = template.base_level;
@@ -28,19 +29,59 @@ function EntityStatInstance(_template) constructor
 	last_peak_value = peak_value;
 	last_current_value = current_value;
 	
-	// Events
-    event_on_start =		mall_get_function( template[$ "event_on_start"] );
-    event_on_end =			mall_get_function( template[$ "event_on_end"] );
-    event_on_update =		mall_get_function( template[$ "event_on_update"] );
-    event_on_level_up =		mall_get_function( template[$ "event_on_level_up"] );
-    event_on_level_check =	__mall_get_function_check_true( template[$ "event_on_level_check"] );
-    event_on_equip =		mall_get_function( template[$ "event_on_equip"] );
-    event_on_desequip =		mall_get_function( template[$ "event_on_desequip"] );
+	// --- Eventos ---
+	
+	/// @desc Se ejecuta una vez cuando la instancia es creada para una entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
+    event_on_start =		method(parent_entity, mall_get_function( template[$ "event_on_start"] ) );
+	
+	/// @desc (Sin implementación actual en el motor)
+    event_on_end =			method(parent_entity, mall_get_function( template[$ "event_on_end"] ) );
+	
+	/// @desc Se ejecuta en cada llamada a RecalculateStats, después de calcular el peak_value.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
+    event_on_update =		method(parent_entity, mall_get_function( template[$ "event_on_update"] ) );
+	
+	/// @desc Se ejecuta para calcular el peak_value de la estadística. Debe devolver el nuevo valor.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
+    event_on_level_up =		method(parent_entity, mall_get_function( template[$ "event_on_level_up"] ) );
+	
+	/// @desc (Para stats standalone) Comprueba si la estadística puede subir de nivel. Debe devolver bool.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
+    event_on_level_check =	method(parent_entity, __mall_get_function_check_true( template[$ "event_on_level_check"] ) );
+	
+	/// @desc Se ejecuta cuando se equipa un objeto en CUALQUIER slot de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot donde se equipó el objeto.
+    event_on_equip =		method(parent_entity, mall_get_function( template[$ "event_on_equip"] ) );
+	
+	/// @desc Se ejecuta cuando se desequipa un objeto de CUALQUIER slot de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot de donde se desequipó el objeto.
+    event_on_desequip =		method(parent_entity, mall_get_function( template[$ "event_on_desequip"] ) );
 
     // Eventos de Turno
-    event_on_turn_update =	mall_get_function( template[$ "event_on_turn_update"] );
-    event_on_turn_start =	mall_get_function( template[$ "event_on_turn_start"] );
-    event_on_turn_end =		mall_get_function( template[$ "event_on_turn_end"] );	
+	
+	/// @desc Se ejecuta en cada actualización de turno del WateManager.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
+    event_on_turn_update =	method(parent_entity, mall_get_function( template[$ "event_on_turn_update"] ) );
+	
+	/// @desc Se ejecuta al inicio del turno de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
+    event_on_turn_start =	method(parent_entity, mall_get_function( template[$ "event_on_turn_start"] ) );
+	
+	/// @desc Se ejecuta al final del turno de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
+    event_on_turn_end =		method(parent_entity, mall_get_function( template[$ "event_on_turn_end"] ) );	
 	
     /// @desc Recalcula el valor base de la estadística (peak_value).
     static Recalculate = function(_entity)
@@ -48,22 +89,22 @@ function EntityStatInstance(_template) constructor
 		// Si sube de nivel de manera independiente.
 		if (template.is_standalone_level)
 		{
-			var _level_up_check = Systemall.__functions[$ template.event_on_level_check];
-			if (is_callable(_level_up_check) && !_level_up_check(_entity, self))
+			if (is_callable(_level_up_check) && event_on_level_check(self) )
 			{
 				return;
 			}
 		}
-			
-        var _level_up_event = Systemall.__functions[$ template.event_on_level_up];
-        if (is_callable(_level_up_event))
+		
+        if (is_callable(event_on_level_up) )
         {
-            peak_value = _level_up_event(_entity, self);
+            peak_value = event_on_level_up(self);
         }
         else
         {
             peak_value = base_value;
         }
+		
+		if (is_callable(event_on_update) ) event_on_update(self);
     }
 	
 	/// @desc Devuelve un valor específico de la estadística.
@@ -123,34 +164,69 @@ function EntitySlotInstance(_template, _entity) constructor
     // La llave de otro slot del que depende para estar activo.
 	depends_on_slot = template.depends_on_slot;
 
-    // Asignar llaves de eventos
-	event_on_start =	mall_get_function( template[$ "event_on_start"] );
-	event_on_end =		mall_get_function( template[$ "event_on_end"] );
-	event_on_update =	mall_get_function( template[$ "event_on_update"] );
+    // --- Eventos ---
+	
+	/// @desc Se ejecuta una vez cuando la instancia es creada para una entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance La instancia actual.
+	event_on_start =	method(parent_entity, mall_get_function( template[$ "event_on_start"] ) );
+	
+	/// @desc (Sin implementación actual en el motor)
+	event_on_end =		method(parent_entity, mall_get_function( template[$ "event_on_end"] ) );
+	
+	/// @desc Se ejecuta en cada llamada a RecalculateStats.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance La instancia actual.
+	event_on_update =	method(parent_entity, mall_get_function( template[$ "event_on_update"] ) );
     
 	// Eventos de Turno
-	event_on_turn_update =	mall_get_function( template[$ "event_on_turn_update"] );
-	event_on_turn_start =	mall_get_function( template[$ "event_on_turn_start"] );
-	event_on_turn_end =		mall_get_function( template[$ "event_on_turn_end"] );
+	
+	/// @desc Se ejecuta en cada actualización de turno del WateManager.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance La instancia actual.
+	event_on_turn_update =	method(parent_entity, mall_get_function( template[$ "event_on_turn_update"] ) );
+	
+	/// @desc Se ejecuta al inicio del turno de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance La instancia actual.
+	event_on_turn_start =	method(parent_entity, mall_get_function( template[$ "event_on_turn_start"] ) );
+	
+	/// @desc Se ejecuta al final del turno de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance La instancia actual.
+	event_on_turn_end =		method(parent_entity, mall_get_function( template[$ "event_on_turn_end"] ) );
     
 	// Eventos de Equipamiento
-	event_on_equip =	mall_get_function( template[$ "event_on_equip"] );
-	event_on_desequip =	mall_get_function( template[$ "event_on_desequip"] );
+	
+	/// @desc Se ejecuta después de que un objeto ha sido equipado exitosamente en este slot.
+	/// @context PartyEntity
+	/// @param {Struct.PocketItem} item_template El objeto que fue equipado.
+	event_on_equip =	method(parent_entity, mall_get_function( template[$ "event_on_equip"] ) );
+	
+	/// @desc Se ejecuta después de que un objeto ha sido desequipado exitosamente de este slot.
+	/// @context PartyEntity
+	/// @param {Struct.PocketItem} item_template El objeto que fue desequipado.
+	event_on_desequip =	method(parent_entity, mall_get_function( template[$ "event_on_desequip"] ) );
 
-	// Evento para comprobar el objeto que se le va a equipar.
-	/// @param entity
-	/// @param item
-	event_can_equip =		__mall_get_function_check_true( template[$ "event_can_equip"] );
+	/// @desc Valida si un objeto se puede equipar. Debe devolver bool.
+	/// @context PartyEntity
+	/// @param {Struct.PocketItem} item_template El objeto a comprobar.
+	event_can_equip =		method(parent_entity, __mall_get_function_check_true( template[$ "event_can_equip"] ) );
 	
-	// Evento para comprobar si el objeto se puede desequipar.
-	/// @param entity
-	/// @param item	
-	event_can_desequip =	__mall_get_function_check_true( template[$ "event_can_desequip"] );
+	/// @desc Valida si el objeto actual se puede desequipar. Debe devolver bool.
+	/// @context PartyEntity
+	/// @param {Struct.PocketItem} item_template El objeto a comprobar.
+	event_can_desequip =	method(parent_entity, __mall_get_function_check_true( template[$ "event_can_desequip"] ) );
 	
-	// Evento al atacar
-	event_on_attack =		mall_get_function( template[$ "event_on_attack"] );
-	// Evento al ser atacado.
-	event_on_defend =		mall_get_function( template[$ "event_on_defend"] );
+	/// @desc Se ejecuta cuando la entidad ataca.
+	/// @context PartyEntity
+	/// @param {Struct.PartyEntity} target El objetivo del ataque.
+	event_on_attack =		method(parent_entity, mall_get_function( template[$ "event_on_attack"] ) );
+
+	/// @desc Se ejecuta cuando la entidad es atacada.
+	/// @context PartyEntity
+	/// @param {Struct.PartyEntity} attacker El atacante.
+	event_on_defend =		method(parent_entity, mall_get_function( template[$ "event_on_defend"] ) );
 
 	/// @desc Intenta equipar un objeto en este slot.
 	/// @param {String} item_key La llave del objeto a equipar.
@@ -167,17 +243,17 @@ function EntitySlotInstance(_template, _entity) constructor
 		}
 		
 		// 2. Comprobar si el nuevo objeto se puede equipar.
-		var _can_equip_slot = event_can_equip(parent_entity, _item_to_equip);
+		var _can_equip_slot = event_can_equip(_item_to_equip);
 		var _can_equip_item = _item_to_equip.event_can_equip(_item_to_equip, parent_entity);
 		
 		if (_can_equip_slot && _can_equip_item)
 		{
 			// --- Todas las comprobaciones pasaron, proceder con el equipamiento ---
-			last_equipped_items = array_clone(equipped_items);
+			array_copy(last_equipped_items, 0, equipped_items, 0, array_length(equipped_items) );
 			array_push(equipped_items, _item_key);
 			
 			// Disparar eventos de equipamiento
-			event_on_equip(parent_entity, _item_to_equip);
+			event_on_equip(_item_to_equip);
 			_item_to_equip.event_on_equip(_item_to_equip, parent_entity);
 			
 			_result.success = true;
@@ -202,7 +278,7 @@ function EntitySlotInstance(_template, _entity) constructor
 		}
 
 		// 2. Comprobar si el objeto se puede desequipar.
-		var _can_desequip_slot = event_can_desequip(parent_entity, _item_to_remove);
+		var _can_desequip_slot = event_can_desequip(_item_to_remove);
 		var _can_desequip_item = _item_to_remove.event_can_desequip(_item_to_remove, parent_entity);
 
 		if (_can_desequip_slot && _can_desequip_item)
@@ -211,11 +287,11 @@ function EntitySlotInstance(_template, _entity) constructor
 			_result.unequipped_item = _item_key;
 			
 			// Disparar eventos de desequipamiento
-			event_on_desequip(parent_entity, _item_to_remove);
+			event_on_desequip(_item_to_remove);
 			_item_to_remove.event_on_desequip(_item_to_remove, parent_entity);
 			
 			// Limpiar el slot
-			last_equipped_items = array_clone(equipped_items);
+			array_copy(last_equipped_items, 0, equipped_items, 0, array_length(equipped_items) );
 			array_delete(equipped_items, _item_index, 1);
 			
 			_result.success = true;
@@ -255,14 +331,14 @@ function EntityStateInstance(_template) constructor
 	effects = [];
 	
 	// Eventos (referencias a funciones ya cargadas)
-	event_on_start =	mall_get_function( template.event_on_start );
-	event_on_end =		mall_get_function( template.event_on_end );
-	event_on_update =	mall_get_function( template.event_on_update );
-	event_on_turn_update =	mall_get_function( template.event_on_turn_update );
-	event_on_turn_start =	mall_get_function( template.event_on_turn_start );
-	event_on_turn_end =		mall_get_function( template.event_on_turn_end );
-	event_on_equip =		mall_get_function( template.event_on_equip );
-	event_on_desequip =		mall_get_function( template.event_on_desequip );
+	event_on_start =	mall_get_function( template[$ "event_on_start"] );
+	event_on_end =		mall_get_function( template[$ "event_on_end"] );
+	event_on_update =	mall_get_function( template[$ "event_on_update"] );
+	event_on_turn_update =	mall_get_function( template[$ "event_on_turn_update"] );
+	event_on_turn_start =	mall_get_function( template[$ "event_on_turn_start"] );
+	event_on_turn_end =		mall_get_function( template[$ "event_on_turn_end"] );
+	event_on_equip =		mall_get_function( template[$ "event_on_equip"] );
+	event_on_desequip =		mall_get_function( template[$ "event_on_desequip"] );
 
 	/// @desc Exporta el estado actual de la instancia del estado.
 	static Export = function()
@@ -373,7 +449,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	id = _instance_id;
 	template_key = _template_key;
 	group_key = "";
-
+	
 	// Flag para optimizar actualizaciones en bucle
 	__is_updating_all_states = false;
 
@@ -400,25 +476,43 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	
 	// -- Eventos --
 	
-	/// @desc Funcion al terminar de subir de nivel.
-	/// @context self
-	event_on_level_up = "";
+	/// @desc Se ejecuta al final de LevelUp, después de recalcular stats.
+	/// @context PartyEntity
+    event_on_level_up = "";
 	
-	/// @desc Funcion para comprobar si debe o no subir de nivel.
-    /// @context self
-	event_on_level_check = "";
+	/// @desc Se ejecuta al inicio de LevelUp para validar si puede subir de nivel. Debe devolver bool.
+	/// @context PartyEntity
+	/// @param {Real} levels_to_add La cantidad de niveles que se intentan subir.
+    event_on_level_check = "";
 	
-	/// @context self
+	/// @desc Se ejecuta para que la IA decida una acción. Debe devolver una WateAction.
+	/// @context PartyEntity
+	/// @param {Struct} battle_context El contexto de la batalla.
 	event_on_action_select = "";
+
+	/// @desc Se ejecuta después de que un objeto es equipado en CUALQUIER slot.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot afectado.
+	/// @param {Struct} result El resultado de la operación de equipamiento.
+	event_on_equip = "";
+
+	/// @desc Se ejecuta después de que un objeto es desequipado de CUALQUIER slot.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot afectado.
+	/// @param {Struct} result El resultado de la operación de desequipamiento.
+    event_on_desequip = "";
 	
 	#region MÉTODOS PRIVADOS DE CARGA
 	
 	static __LoadFunctions = function(_template)
 	{
-		event_on_level_up =		method(self, mall_get_function(_template.event_on_level_up) );
-		event_on_level_check =	method(self, __mall_get_function_check_true(_template.event_on_level_check) );
+		event_on_level_up =		method(self, mall_get_function(_template[$ "event_on_level_up"]) );
+		event_on_level_check =	method(self, __mall_get_function_check_true(_template[$ "event_on_level_check"] ) );
 		
-		event_on_action_select = method(self, mall_get_function(_template.event_on_action_select) );
+		event_on_action_select = method(self, mall_get_function(_template[$ "event_on_action_select"] ) );
+		
+		event_on_equip = method(self, mall_get_function(_template[$ "event_on_equip"] ) );
+		event_on_desequip = method(self, mall_get_function(_template[$ "event_on_desequip"] ) );
 	}
 	
 	/// @desc (Privado) Carga las instancias de stats y aplica los valores base.
@@ -426,18 +520,33 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @ignore
 	static __LoadStats = function(_template)
 	{
-        var _all_stat_keys = mall_get_stat_keys();
-        for (var i = 0; i < array_length(_all_stat_keys); i++) {
+        var _all_stat_keys =	mall_get_stat_keys();
+		var _all_stat_length =	array_length(_all_stat_keys);
+		// Recorrer cada estadistica del sistema para añadirlo a la entidad.
+        for (var i = 0; i < _all_stat_length; i++) 
+		{
             var _stat_key = _all_stat_keys[i];
-            stats[$ _stat_key] = new EntityStatInstance(mall_get_stat(_stat_key));
+            var _stat_instance = new EntityStatInstance(mall_get_stat(_stat_key), self);
+			
+			stats[$ _stat_key] = _stat_instance;
+			
+			// Ejecutar funcion al iniciarse.
+			var _start_event = _stat_instance.event_on_start;
+			if (is_callable(_start_event) ) _start_event(_stat_instance);
         }
 		
-		if (variable_struct_exists(_template, "stats")) {
-			var _template_stats = _template.stats;
-			var _template_stat_keys = variable_struct_get_names(_template_stats);
-			for (var i = 0; i < array_length(_template_stat_keys); i++) {
+		// Cargar valores base.
+		if (variable_struct_exists(_template, "stats") ) 
+		{
+			var _template_stats =		_template.stats;
+			var _template_stat_keys =	variable_struct_get_names(_template_stats);
+			var _template_stat_length =	array_length(_template_stat_keys);
+			
+			for (var i = 0; i < _template_stat_length; i++) 
+			{
 				var _stat_key = _template_stat_keys[i];
-				if (struct_exists(stats, _stat_key)) {
+				if (struct_exists(stats, _stat_key) ) 
+				{
 					stats[$ _stat_key].base_value = _template_stats[$ _stat_key];
 				}
 			}
@@ -450,47 +559,72 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	static __LoadSlots = function(_template)
 	{
         var _all_slot_keys = mall_get_slot_keys();
-        for (var i = 0; i < array_length(_all_slot_keys); i++) {
+        var _all_slot_length = array_length(_all_slot_keys);
+		
+		for (var i = 0; i < _all_slot_length; i++) 
+		{
             var _slot_key = _all_slot_keys[i];
-            slots[$ _slot_key] = new EntitySlotInstance(mall_get_slot(_slot_key), self);
+			var _slot_instance = new EntitySlotInstance(mall_get_slot(_slot_key), self);
+			
+            slots[$ _slot_key] = _slot_instance;
+			
+			// Ejecutar funcion al iniciarse.
+			var _start_event = _slot_instance.event_on_start;
+			if (is_callable(_start_event) ) _start_event(_slot_instance);			
         }
 		
         if (variable_struct_exists(_template, "slots") ) 
 		{
             var _template_slots = _template.slots;
             var _template_slot_keys = variable_struct_get_names(_template_slots);
-            for (var i = 0; i < array_length(_template_slot_keys); i++) 
+			var _template_slot_keys_length = array_length(_template_slot_keys);
+			
+            for (var i = 0; i < _template_slot_keys_length; i++) 
 			{
                 var _slot_key = _template_slot_keys[i];
                 var _slot_data = _template_slots[$ _slot_key];
                 
-                if (is_struct(_slot_data) ) {
-                    if (variable_struct_exists(_slot_data, "permited")) 
+                if (is_struct(_slot_data) ) 
+				{
+                    // Configurar los objetos permitidos en cada slot por instancia.
+					if (variable_struct_exists(_slot_data, "permited") )
 					{
                         var _permited_mods = _slot_data.permited;
-                        for (var j = 0; j < array_length(_permited_mods); j++) {
+						var _permited_mods_length = array_length(_permited_mods);
+						
+                        for (var j = 0; j < _permited_mods_length; j++)
+						{
+							// Obtener ultimo caracter al final de la llave.
                             var _mod_string = _permited_mods[j];
-                            var _prefix = string_char_at(_mod_string, 1);
-                            var _key = string_delete(_mod_string, 1, 1);
-                            
-                            if (_prefix == "+") { SlotPermitedAdd(_slot_key, _key); } 
-							else if (_prefix == "-") { SlotPermitedRemove(_slot_key, _key); }
+			                var _mod_len = string_length(_mod_string);
+			                var _prefix = string_char_at(_mod_string, _mod_len);
+                            var _key = string_delete(_mod_string, _mod_len, 1);
+							
+                            if (_prefix == "+")
+							{ 
+								SlotPermitedAdd(_slot_key, _key); 
+							} 
+							else if (_prefix == "-") 
+							{ 
+								SlotPermitedRemove(_slot_key, _key); 
+							}
                         }
                     }
 					
-                    if (variable_struct_exists(_slot_data, "equip")) 
+					// Configurar equipo inicial por instancia
+                    if (variable_struct_exists(_slot_data, "equip") )
 					{
                         var _to_equip = _slot_data.equip;
-                        if (is_array(_to_equip)) 
+                        if (is_array(_to_equip) ) 
 						{
-                            for (var j = 0; j < array_length(_to_equip); j++) { SlotEquip(_slot_key, _to_equip[j]); }
+							var j=0; repeat( array_length(_to_equip) ) SlotEquip( _slot_key, _to_equip[j++] );
                         }
-						else 
+						else
 						{ 
 							SlotEquip(_slot_key, _to_equip); 
 						}
                     }
-                } 
+                }
 				else 
 				{
                     SlotEquip(_slot_key, _slot_data);
@@ -833,12 +967,18 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
     static SlotEquip = function(_slot_key, _item_key)
     {
         var _slot_inst = SlotGet(_slot_key);
-        if (is_undefined(_slot_inst)) {
-            return { success: false, previously_equipped: undefined };
-        }
+        if (is_undefined(_slot_inst) ) 
+		{
+			return { success: false, previously_equipped: undefined }; 
+		}
         
         var _result = _slot_inst.Equip(_item_key);
-        if (_result.success) { RecalculateStats(); }
+        if (_result.success) 
+		{ 
+			RecalculateStats();
+		}
+		
+		if (is_callable(event_on_equip) ) event_on_equip(_slot_inst, _result);
 		
 		return _result;
     }
@@ -850,12 +990,18 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
     static SlotDesequip = function(_slot_key, _item_key)
     {
         var _slot_inst = SlotGet(_slot_key);
-        if (is_undefined(_slot_inst)) {
+        if (is_undefined(_slot_inst) ) 
+		{
             return { success: false, unequipped_item: undefined };
         }
 
         var _result = _slot_inst.Desequip(_item_key);
-        if (_result.success) { RecalculateStats(); }
+        if (_result.success) 
+		{ 
+			RecalculateStats();
+		}
+		
+		if (is_callable(event_on_desequip) ) event_on_desequip(_slot_inst, _result);
 		
 		return _result;
     }
@@ -1511,7 +1657,7 @@ function party_exists_entity_template(_key)
 /// @param {String}	template_key La llave de la plantilla (ej: "JON", "SLIME").
 /// @param {Real}	[level]=1 El nivel inicial de la instancia.
 /// @return {Struct.PartyEntity}
-function party_entity_create_instance(_template_key, _level=1)
+function party_entity_create_instance(_template_key, _level=1, _args = {})
 {
     if (!party_exists_entity_template(_template_key) )
     {
@@ -1523,6 +1669,7 @@ function party_entity_create_instance(_template_key, _level=1)
     var _instance_id = $"{_template_key}_{get_timer()}"; 
     
     var _entity = new PartyEntity(_template_key, _instance_id);
+	_entity.args = _args;
     _entity.FromTemplate();
     _entity.level = _level;
     _entity.RecalculateStats();

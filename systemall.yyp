@@ -37,6 +37,7 @@
     {"$GMIncludedFile":"","%Name":"commands.json","CopyToMask":-1,"filePath":"datafiles/dark","name":"commands.json","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"efectos.json","CopyToMask":-1,"filePath":"datafiles/dark","name":"efectos.json","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"Crispy License.txt","CopyToMask":-1,"filePath":"datafiles/Licenses","name":"Crispy License.txt","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"Systemall License.txt","CopyToMask":-1,"filePath":"datafiles/Licenses","name":"Systemall License.txt","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"locale.csv","CopyToMask":-1,"filePath":"datafiles","name":"locale.csv","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"localize.json","CopyToMask":-1,"filePath":"datafiles","name":"localize.json","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"mall_database.json","CopyToMask":-1,"filePath":"datafiles","name":"mall_database.json","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
@@ -56,6 +57,7 @@
   "name":"systemall",
   "resources":[
     {"id":{"name":"oPlayer","path":"objects/oPlayer/oPlayer.yy",},},
+    {"id":{"name":"oTestSuite","path":"objects/oTestSuite/oTestSuite.yy",},},
     {"id":{"name":"rDemo","path":"rooms/rDemo/rDemo.yy",},},
     {"id":{"name":"__crispy_config_macros","path":"scripts/__crispy_config_macros/__crispy_config_macros.yy",},},
     {"id":{"name":"__crispyStructUnpack","path":"scripts/__crispyStructUnpack/__crispyStructUnpack.yy",},},
@@ -121,6 +123,7 @@
     {"id":{"name":"mall_Slot","path":"scripts/mall_Slot/mall_Slot.yy",},},
     {"id":{"name":"mall_Stat","path":"scripts/mall_Stat/mall_Stat.yy",},},
     {"id":{"name":"mall_State","path":"scripts/mall_State/mall_State.yy",},},
+    {"id":{"name":"mall_TestSuite","path":"scripts/mall_TestSuite/mall_TestSuite.yy",},},
     {"id":{"name":"mall_Type","path":"scripts/mall_Type/mall_Type.yy",},},
     {"id":{"name":"mall_Wate","path":"scripts/mall_Wate/mall_Wate.yy",},},
     {"id":{"name":"mall_WateManager","path":"scripts/mall_WateManager/mall_WateManager.yy",},},

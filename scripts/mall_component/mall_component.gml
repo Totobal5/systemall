@@ -15,13 +15,12 @@ function Mall(_key="") constructor
 {
 	/// @ignore Referencia a su propio tipo.
 	is = instanceof(self);
-	
 	// LLave base de datos.
 	key = _key;
-	// Display key.
-	dkey = "";
 	// Indice en donde esta (si esta en algun array)
     index = -1;
+	// Argumentos para eventos.
+	args = {};
 	
 	#region API
 	

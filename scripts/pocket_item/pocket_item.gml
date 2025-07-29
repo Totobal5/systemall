@@ -6,7 +6,7 @@ function PocketItem(_key) : MallEvents(_key) constructor
     item_type = "UNDEFINED";
     is_stackable = true;    // Si el objeto se puede apilar.
     stack_limit = 99;       // Límite de apilamiento.
-	vars = {};				// Variables únicas del objeto.
+	vars = {};				// Variables únicas del objeto y que comparten todas las plantillas de este.
 	
     // Capacidades de objetivo
     can_target_self = false;
@@ -22,46 +22,90 @@ function PocketItem(_key) : MallEvents(_key) constructor
     // Estadísticas que el objeto otorga [valor, tipo]
     stats = {};
 
-	// Comprobar si se puede equipar en un slot.
-	/// @param self
-	/// @param entity
+	// --- Eventos ---
+	
+	/// @desc Evento que se ejecuta en: PartyEntity.RecalculateStat
+	/// @param {Struct.PartyEntity} entity
+	event_on_update = "";
+	
+	/// @desc Valida si este objeto puede ser equipado por una entidad en un slot. Debe devolver bool.
+	/// @context PocketItem (la plantilla)
+	/// @param {Struct.PartyEntity} entity La entidad que intenta equipar.
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot objetivo.
 	event_can_equip = "";
 	
-	// Comprobar si se puede desequipar de un slot.
-	/// @param self
-	/// @param entity	
+	/// @desc Valida si este objeto puede ser desequipado. Debe devolver bool.
+	/// @context PocketItem (la plantilla)
+	/// @param {Struct.PartyEntity} entity La entidad que intenta desequipar.
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot de donde se desequipa.
     event_can_desequip = "";
 	
+	/// @desc Se ejecuta cuando el objeto es comprado.
+	/// @context PocketItem (la plantilla)
+	/// @param {Struct.MallShop} shop La tienda donde se compró.
 	event_on_buy =	"";
+	
+	/// @desc Se ejecuta cuando el objeto es vendido.
+	/// @context PocketItem (la plantilla)
+	/// @param {Struct.MallShop} shop La tienda donde se vendió.
 	event_on_sell = "";
 	
+	/// @desc (Sin implementación en el motor)
 	event_on_world_step = "";
+	/// @desc (Sin implementación en el motor)
 	event_on_world_enter = "";
+	/// @desc (Sin implementación en el motor)
 	event_on_world_exit = "";
 	
+	/// @desc Se ejecuta cuando la entidad equipada ataca.
+	/// @context PocketItem (la plantilla)
+	/// @param {Struct.PartyEntity} caster La entidad que ataca.
+	/// @param {Struct.PartyEntity} target El objetivo del ataque.
 	event_on_attack = "";
+	
+	/// @desc Se ejecuta cuando la entidad equipada es atacada.
+	/// @context PocketItem (la plantilla)
+	/// @param {Struct.PartyEntity} defender La entidad que es atacada.
+	/// @param {Struct.PartyEntity} attacker El atacante.
 	event_on_defense = "";
+
+	/// @desc Se ejecuta en cada actualización de turno del WateManager.
+	/// @context PocketItem (la plantilla)
+	/// @param {Struct.PartyEntity} entity La entidad que actualiza turno.
+    event_on_turn_update =	"";
+	
+	/// @desc Se ejecuta al inicio del turno de la entidad que lo lleve activado.
+	/// @context PocketItem (la plantilla)
+	/// @param {Struct.PartyEntity} entity La entidad que actualiza turno.
+    event_on_turn_start =	"";
+	
+	/// @desc Se ejecuta al final del turno de la entidad que lo lleve activado.
+	/// @context PocketItem (la plantilla)
+	/// @param {Struct.PartyEntity} entity La entidad que actualiza turno.
+    event_on_turn_end =		"";
 
     /// @desc (Privado) Carga las estadísticas desde el struct de datos.
     /// @param {Struct} data El struct con los datos del item.
     /// @ignore
     static __LoadStats = function(_data)
     {
-        if (variable_struct_exists(_data, "stats"))
+        if (variable_struct_exists(_data, "stats") )
         {
             var _mod_keys = variable_struct_get_names(_data.stats);
-            for (var i = 0; i < array_length(_mod_keys); i++)
+			var _mod_length = array_length(_mod_keys);
+            for (var i = 0; i < _mod_length; i++)
             {
                 var _mod_key_full = _mod_keys[i];
-                var _prefix = string_char_at(_mod_key_full, 1);
+                var _len = string_length(_mod_key_full);
+                var _suffix = string_char_at(_mod_key_full, _len);
                 
                 var _stat_key = _mod_key_full;
                 var _type = MALL_NUMTYPE.REAL;
                 
-                // Comprobar si hay un prefijo
-                if (_prefix == "%" || _prefix == "+") {
-                    _stat_key = string_delete(_mod_key_full, 1, 1);
-                    if (_prefix == "%") {
+                // Comprobar si hay un sufijo
+                if (_suffix == "%" || _suffix == "+") {
+                    _stat_key = string_delete(_mod_key_full, _len, 1);
+                    if (_suffix == "%") {
                         _type = MALL_NUMTYPE.PERCENT;
                     }
                 }
@@ -77,16 +121,14 @@ function PocketItem(_key) : MallEvents(_key) constructor
 	/// @ignore
 	static __LoadFunctions = function(_data)
 	{
-        // Cargar eventos (heredados de MallEvents)
-	    event_on_start =		mall_get_function( _data[$ "event_on_start"] );
-	    event_on_end =			mall_get_function( _data[$ "event_on_end"] );
+        // Cargar eventos (heredados de MallEvents) No implementados
 	    event_on_update =		mall_get_function( _data[$ "event_on_update"] );
     
 	    // Eventos de Turno
 	    event_on_turn_update =	mall_get_function( _data[$ "event_on_turn_update"] );
 	    event_on_turn_start =	mall_get_function( _data[$ "event_on_turn_start"] );
 	    event_on_turn_end =		mall_get_function( _data[$ "event_on_turn_end"] );
-    
+		
 	    // Eventos de Equipamiento
 		event_on_equip =		mall_get_function( _data[$ "event_on_equip"] );
 		event_on_desequip =		mall_get_function( _data[$ "event_on_desequip"] );
@@ -97,9 +139,9 @@ function PocketItem(_key) : MallEvents(_key) constructor
 		event_on_buy =			mall_get_function( _data[$ "event_on_buy"] );
 		event_on_sell =			mall_get_function( _data[$ "event_on_sell" ] );
 	
-		event_on_world_step =	mall_get_function( _data[$ "event_on_world_step"] );
-		event_on_world_enter =	mall_get_function( _data[$ "event_on_world_enter"] );
-		event_on_world_exit =	mall_get_function( _data[$ "event_on_world_exit"] );
+		// event_on_world_step =	mall_get_function( _data[$ "event_on_world_step"] );
+		// event_on_world_enter =	mall_get_function( _data[$ "event_on_world_enter"] );
+		// event_on_world_exit =	mall_get_function( _data[$ "event_on_world_exit"] );
 	
 		event_on_attack =		mall_get_function( _data[$ "event_on_attack"] );
 		event_on_defense =		mall_get_function( _data[$ "event_on_defense"] );

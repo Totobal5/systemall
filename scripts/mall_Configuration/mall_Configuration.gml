@@ -252,7 +252,10 @@ function mall_init(_master_file_path)
 						break;
 						
 						
-                    // case "BAGS":    pocket_bag_create_from_data(_key, _entry_data);    break;
+                    case "BAGS":    
+						pocket_bag_create_from_data(_key, _entry_data);
+						
+						break;
                 }
             }
         }
@@ -269,6 +272,85 @@ function mall_init(_master_file_path)
     // ... etc.
     
     show_debug_message("[Systemall] Carga de la base de datos desde JSON completada.");
+}
+
+function mall_system_cleanup()
+{
+	static _mall = static_get(Systemall);
+	with (_mall)
+	{
+		/// @ignore Struct con todos los archivos cargados.
+		__master = {};
+		/// @ignore Struct con todas las funciones accesibles por Systemall.
+		__functions = {};
+		/// @ignore Struct con todas las instancias "vivas" de entidades en el juego.
+		__instances = {};
+
+		// -- Componentes --
+		/// @ignore Base de datos donde se guardan todos los constructors de estadisticas del sistema.
+		__stats = {};
+		__stats_keys = [];
+
+		/// @ignore Base de datos donde se guardan los "Estados" del sistema.
+		__states = {}
+		__states_keys = [];
+	
+		/// @ignore Base de datos donde se guardan todos los constructors de slots del sistema.
+		__slots = {};
+		__slots_keys = [];
+	
+		/// @ignore Base de datos donde se guardan todos los items del sistema.
+		__items = {};
+		__items_keys = [];
+	
+		/// @ignore Base de datos donde se guardan todas las mochilas del sistema.
+		__bags = {};
+		__bags_keys = [];
+		__persistent_bags = [];	
+	
+		/// @ignore Base de datos donde se guardan las tiendas.
+		__shops = {};
+		__shops_keys = [];
+	
+		/// @ignore Base de datos donde se guardan todos los grupos del sistema.
+		__groups = {};
+		__groups_keys = [];
+		__persistent_groups = [];
+		/// @ignore El grupo principal del jugador.
+	    __player_group = undefined;
+
+		/// @ignore Base de datos donde se guardan todas las entidades del sistema.
+		__entities = {};
+		__entities_keys = [];	
+	
+		/// @ignore Base de datos para las loottable.
+		__loot_tables = {};
+		__loot_tables_keys = [];
+	
+		/// @ignore Base de datos donde se guardan todos los comandos y efectos del sistema.
+		__dark = {};
+		__dark_keys = [];	
+	
+		/// @ignore Base de datos donde se guardan todos los "Tipos" del sistema.
+	    __types = {
+			// tipo: [valor 1, valor 2, valor 3]
+		};
+		__types_keys = [];
+	
+		/// @ignore Base de datos donde se guardan todos los "Grupos" de batalla del sistema (Para enfrentamientos).
+	    __wate_manager = undefined;
+		__wate = {};
+		__wate_keys = [];
+	
+		/// @ignore
+		__ai_packages = {};
+		__ai_rules = {};
+		__ai_keys = [];
+	
+		/// @ignore Sistema de Broadcast y Mensajes para el sistema.
+	    __broadcast = {};
+		__messages = [];
+	}		
 }
 
 // -----------------------------------------------------------------------------
@@ -438,7 +520,5 @@ script_execute(MallSlot);
 script_execute(MallState);
 script_execute(MallResult);
 
-mall_init("mall_database.json");
-
-
-var _entity = party_entity_create_instance("JON", 10);
+// mall_init("mall_database.json");
+// var _entity = party_entity_create_instance("JON", 10);
