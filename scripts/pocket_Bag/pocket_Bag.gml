@@ -28,14 +28,18 @@ function PocketBag(_key) : Mall(_key) constructor
 {
     is_persistent = false;
 	
-	/// @param item_key
-	/// @param count
-	/// @param vars
+	/// @desc Se ejecuta después de que uno o más objetos han sido añadidos exitosamente.
+	/// @context PocketBag (la instancia)
+	/// @param {Struct.PocketBag} bag_instance La instancia de la mochila.
+	/// @param {String} item_key La llave del objeto que fue añadido.
+	/// @param {Real} count_added La cantidad que fue realmente añadida.
 	event_on_add_item =		"";
 	
-	/// @param item_key
-	/// @param removed
-	/// @param vars
+	/// @desc Se ejecuta después de que uno o más objetos han sido eliminados.
+	/// @context PocketBag (la instancia)
+	/// @param {Struct.PocketBag} bag_instance La instancia de la mochila.
+	/// @param {String} item_key La llave del objeto que fue eliminado.
+	/// @param {Real} count_removed La cantidad que fue realmente eliminada.
     event_on_remove_item =	"";
 
 	/// @ignore
