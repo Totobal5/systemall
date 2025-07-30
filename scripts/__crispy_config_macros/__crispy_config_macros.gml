@@ -6,15 +6,15 @@
 #macro CRISPY_VERSION "1.8.5" // major.minor.patch
 #macro CRISPY_DATE "2023-09-04" // yyyy-mm-dd
 
-#macro CRISPY_RUN true // Boolean flag that can be used to automatically run tests
-#macro CRISPY_DEBUG false // Enables outputting extra context on some silent functions
+#macro CRISPY_RUN false // Boolean flag that can be used to automatically run tests
+#macro CRISPY_DEBUG true // Enables outputting extra context on some silent functions
 #macro CRISPY_VERBOSITY 2 // Determines how verbose assertion outputs will be. Acceptable values are 0, 1, or 2
 
 #macro CRISPY_TIME_PRECISION 6 // Number of decimal places timers will output to
 
 #macro CRISPY_PASS_MSG_SILENT "." // Output string when an assertion passes silently
 #macro CRISPY_FAIL_MSG_SILENT "F" // Output string when an assertion fails silently
-#macro CRISPY_PASS_MSG_VERBOSE "ok" // Output string when an assertion passes verbosely
+#macro CRISPY_PASS_MSG_VERBOSE "Ok" // Output string when an assertion passes verbosely
 #macro CRISPY_FAIL_MSG_VERBOSE "Fail" // Output string when an assertion fails verbosely
 #macro CRISPY_STATUS_OUTPUT_LENGTH 150 // Number of characters per line when outputting TestCase statuses
 

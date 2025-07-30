@@ -23,6 +23,18 @@ function PocketItem(_key) : MallEvents(_key) constructor
     stats = {};
 
 	// --- Eventos ---
+
+	/// @desc Se ejecuta después de que un objeto ha sido equipado exitosamente en este slot.
+	/// @context PocketItem (la plantilla)
+	/// @param {Struct.PartyEntity} entity La entidad que equipó.
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot donde se equipó.
+	event_on_equip =	"";
+	
+	/// @desc Se ejecuta después de que un objeto ha sido desequipado exitosamente de este slot.
+	/// @context PocketItem (la plantilla)
+	/// @param {Struct.PartyEntity} entity La entidad que desequipó.
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot de donde se desequipó.
+	event_on_desequip =	"";
 	
 	/// @desc Evento que se ejecuta en: PartyEntity.RecalculateStat
 	/// @param {Struct.PartyEntity} entity
@@ -122,29 +134,29 @@ function PocketItem(_key) : MallEvents(_key) constructor
 	static __LoadFunctions = function(_data)
 	{
         // Cargar eventos (heredados de MallEvents) No implementados
-	    event_on_update =		mall_get_function( _data[$ "event_on_update"] );
+	    event_on_update =		method(self, mall_get_function( _data[$ "event_on_update"] ) );
     
 	    // Eventos de Turno
-	    event_on_turn_update =	mall_get_function( _data[$ "event_on_turn_update"] );
-	    event_on_turn_start =	mall_get_function( _data[$ "event_on_turn_start"] );
-	    event_on_turn_end =		mall_get_function( _data[$ "event_on_turn_end"] );
+	    event_on_turn_update =	method(self, mall_get_function( _data[$ "event_on_turn_update"] ) );
+	    event_on_turn_start =	method(self, mall_get_function( _data[$ "event_on_turn_start"] ) );
+	    event_on_turn_end =		method(self, mall_get_function( _data[$ "event_on_turn_end"] ) );
 		
 	    // Eventos de Equipamiento
-		event_on_equip =		mall_get_function( _data[$ "event_on_equip"] );
-		event_on_desequip =		mall_get_function( _data[$ "event_on_desequip"] );
+		event_on_equip =		method(self, mall_get_function( _data[$ "event_on_equip"] ) );
+		event_on_desequip =		method(self, mall_get_function( _data[$ "event_on_desequip"] ) );
 		
-		event_can_equip =		__mall_get_function_check_true( _data[$ "event_can_equip"] );
-	    event_can_desequip =	__mall_get_function_check_true( _data[$ "event_can_desequip"] );
+		event_can_equip =		method(self, __mall_get_function_check_true( _data[$ "event_can_equip"] ) );
+	    event_can_desequip =	method(self, __mall_get_function_check_true( _data[$ "event_can_desequip"] ) );
 	
-		event_on_buy =			mall_get_function( _data[$ "event_on_buy"] );
-		event_on_sell =			mall_get_function( _data[$ "event_on_sell" ] );
+		event_on_buy =			method(self, mall_get_function( _data[$ "event_on_buy"] ) );
+		event_on_sell =			method(self, mall_get_function( _data[$ "event_on_sell" ] ) );
 	
 		// event_on_world_step =	mall_get_function( _data[$ "event_on_world_step"] );
 		// event_on_world_enter =	mall_get_function( _data[$ "event_on_world_enter"] );
 		// event_on_world_exit =	mall_get_function( _data[$ "event_on_world_exit"] );
 	
-		event_on_attack =		mall_get_function( _data[$ "event_on_attack"] );
-		event_on_defense =		mall_get_function( _data[$ "event_on_defense"] );
+		event_on_attack =		method(self, mall_get_function( _data[$ "event_on_attack"] ) );
+		event_on_defense =		method(self, mall_get_function( _data[$ "event_on_defense"] ) );
 	}
 
     /// @desc Configura el item a partir de un struct de datos.

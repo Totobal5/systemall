@@ -426,11 +426,13 @@ function __mall_test_party_entity(_runner)
 			"type": "Stats", 
 			"EN": {
 				"max_value": 9999,
-				"event_on_start": "EVT_EnStart"
+				"event_on_start": "EVT_EnStart",
+				"event_on_level_up": "EVT_GenericStatUp"
 			}, 
 			"FUERZA": {
 				"max_value": 255, 
-				"event_on_level_up": "EVT_GenericStatUp"
+				"event_on_level_up": "EVT_GenericStatUp",
+				"event_on_equip": "EVT_STAT_OnEquip_Test"
 			}
 		};
 		
@@ -445,8 +447,8 @@ function __mall_test_party_entity(_runner)
 				"stats": {
 					"FUERZA+": 10 
 				},
-				"event_on_equip": "EVT_OnEquip",
-				"event_on_desequip": "EVT_OnDesequip"
+				"event_on_equip": "EVT_ITEM_OnEquip_Test",
+				"event_on_desequip": "EVT_ITEM_OnDesequip_Test"
 			}
 		};
 		
@@ -457,7 +459,8 @@ function __mall_test_party_entity(_runner)
 	    var slots = { 
 			"type": "Slots", 
 			"SLOT_ARMA": { 
-				"permited": ["WEAPON"] 
+				"permited": ["WEAPON"],
+				"event_on_equip": "EVT_SLOT_OnEquip_Test"
 			} 
 		};
 		
@@ -483,10 +486,6 @@ function __mall_test_party_entity(_runner)
 		file_text_close(file);
     
 	    mall_system_cleanup();
-	    Systemall.__functions[$ "EVT_GenericStatUp"] = function(_e, _s) 
-		{ 
-			return _s.base_value + _e.level * 2; 
-		};
 
 		/// @context entity
 		/// @param stat_instance
@@ -496,15 +495,34 @@ function __mall_test_party_entity(_runner)
 			show_debug_message($"El stat {_key} debería existir: {struct_exists(args, _key)}");
 		};
 		
-	    Systemall.__functions[$ "EVT_GenericStatUp"] = function(_e, _s) 
+	    Systemall.__functions[$ "EVT_GenericStatUp"] = function(_stat) 
 		{ 
-			return _s.base_value + _e.level * 2; 
-		};		
-
-	    Systemall.__functions[$ "EVT_GenericStatUp"] = function(_e, _s) 
-		{ 
-			return _s.base_value + _e.level * 2; 
+			return _stat.base_value + (level * 2); 
 		};
+
+	    Systemall.__functions[$ "EVT_SLOT_OnEquip_Test"] = function(_slot, _item) {
+	        if (!global.__test_vars.wait)
+			{
+				global.__test_vars.slot = true;
+				global.__test_vars.test.assertEqual(_item.key, "ITEM_ESPADA_BASICA");
+			}
+	    };
+		
+	    Systemall.__functions[$ "EVT_ITEM_OnEquip_Test"] = function(_entity, _slot) {
+	        if (!global.__test_vars.wait)
+			{
+				global.__test_vars.item = true;
+		        global.__test_vars.test.assertEqual(key, "ITEM_ESPADA_BASICA");
+			}
+	    };
+		
+	    Systemall.__functions[$ "EVT_STAT_OnEquip_Test"] = function(_stat, _slot) {
+	        if (!global.__test_vars.wait)
+			{
+		        global.__test_vars.stat = true;
+		        global.__test_vars.test.assertEqual(_slot.template.key, "SLOT_ARMA");
+			}
+	    };
 		
 	    mall_init("test_master_party.json");
 	});
@@ -512,6 +530,12 @@ function __mall_test_party_entity(_runner)
 	suite_party.onRunBegin(function() {
 	    // Crear una instancia fresca del héroe para cada prueba
 	    self.hero = party_entity_create_instance("HERO_TEST", 1, { "EN": 0, "FUERZA": 0 } );
+		global.__test_vars = {
+			wait: true,
+	        slot: false,
+	        item: false,
+	        stat: false
+	    };
 	});
 
 	suite_party.tearDown(function() {
@@ -552,6 +576,65 @@ function __mall_test_party_entity(_runner)
 	    assertTrue(parent.hero.CommandExists("MAGIC", "CMD_BOLA_FUEGO"), "Debería haber aprendido Bola de Fuego a nivel 5.");
 	});
 	suite_party.addTestCase(test_party_learnset);
+	
+	var test_party_equip_events = new TestCase("Test Eventos de Equipamiento (Slot, Item, Stat)", function() {
+	    // Arrange
+		var _test = self;
+		global.__test_vars = {
+			test: _test,
+			wait: false,
+	        slot: false,
+	        item: false,
+	        stat: false
+	    };
+		
+	    // Act
+	    parent.hero.SlotEquip("SLOT_ARMA", "ITEM_ESPADA_BASICA");
+    
+	    // Assert
+	    assertTrue(global.__test_vars.slot, "El evento on_equip del slot debería haberse disparado.");
+	    assertTrue(global.__test_vars.item, "El evento on_equip del item debería haberse disparado.");
+	    assertTrue(global.__test_vars.stat, "El evento on_equip de la estadística debería haberse disparado.");
+	});
+	suite_party.addTestCase(test_party_equip_events);	
+
+	var test_party_add_effect = new TestCase("Test Aplicación de Efectos y Estados", function() {
+	    // Assert (Pre-Efecto)
+	    assertFalse(parent.hero.StateIsActive("STATE_FUERZA_AUMENTADA"), "El estado no debería estar activo al inicio.");
+    
+	    // Act
+	    parent.hero.EffectAdd("EFFECT_BUFF_FUERZA");
+    
+	    // Assert (Post-Efecto)
+	    assertTrue(parent.hero.StateIsActive("STATE_FUERZA_AUMENTADA"), "El estado debería activarse al añadir un efecto.");
+	});
+	suite_party.addTestCase(test_party_add_effect);
+
+	var test_party_state_stat_recalc = new TestCase("Test Recalcular Stats con Estados Activos", function() {
+	    // Arrange
+	    var fuerza_inicial = parent.hero.StatGet("FUERZA").control_value;
+    
+	    // Act
+	    parent.hero.EffectAdd("EFFECT_BUFF_FUERZA");
+    
+	    // Assert
+	    var fuerza_final = parent.hero.StatGet("FUERZA").control_value;
+	    assertEqual(fuerza_final, fuerza_inicial + 5, "La Fuerza debería aumentar en 5 debido al estado.");
+	});
+	suite_party.addTestCase(test_party_state_stat_recalc);
+
+	var test_party_remove_effect = new TestCase("Test Eliminación de Efectos y Estados", function() {
+	    // Arrange
+	    var efecto_inst = parent.hero.EffectAdd("EFFECT_BUFF_FUERZA");
+    
+	    // Act
+	    parent.hero.EffectRemove(efecto_inst);
+    
+	    // Assert
+	    assertFalse(parent.hero.StateIsActive("STATE_FUERZA_AUMENTADA"), "El estado debería desactivarse al eliminar su último efecto.");
+	    assertEqual(parent.hero.StatGet("FUERZA").control_value, 12, "La Fuerza debería volver a su valor original sin el estado.");
+	});
+	suite_party.addTestCase(test_party_remove_effect);
 }
 
 

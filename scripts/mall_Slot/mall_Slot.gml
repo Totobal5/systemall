@@ -10,33 +10,71 @@ function MallSlot(_key) : MallEvents(_key) constructor
     permited = {};			// Lista de objetos permitidos. Si esta vacio se considera que acepta todos.
 	
     // --- Llaves de Eventos ---
+	
+	/// @desc Se ejecuta una vez cuando la instancia es creada para una entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance La instancia actual.
     event_on_start = "";
+	
+	/// @desc (Sin implementación actual en el motor)
     event_on_end = "";
+	
+	/// @desc Se ejecuta en cada llamada a RecalculateStats.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance La instancia actual.
     event_on_update = "";
     
     // Eventos de Turno
+	
+	/// @desc Se ejecuta en cada actualización de turno del WateManager.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance La instancia actual.
     event_on_turn_update = "";
+	
+	/// @desc Se ejecuta al inicio del turno de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance La instancia actual.
     event_on_turn_start = "";
+	
+	/// @desc Se ejecuta al final del turno de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance La instancia actual.
     event_on_turn_end = "";
     
     // Eventos de Equipamiento
+	
+	/// @desc Se ejecuta después de que un objeto ha sido equipado exitosamente en este slot.
+	/// @context PartyEntity
+	/// @param {Struct.PocketItem} item_template El objeto que fue equipado.
     event_on_equip = "";
+	
+	/// @desc Se ejecuta después de que un objeto ha sido desequipado exitosamente de este slot.
+	/// @context PartyEntity
+	/// @param {Struct.PocketItem} item_template El objeto que fue desequipado.
     event_on_desequip = "";
 
-	// Evento para comprobar el objeto que se le va a equipar.
-	/// @param entity
-	/// @param item	
-	event_can_equip = ""
+	/// @desc Valida si un objeto se puede equipar. Debe devolver bool.
+	/// @context PartyEntity
+	/// @param {Struct.PocketItem} item_template El objeto a comprobar.
+	event_can_equip = "";
 	
-	// Evento para comprobar si el objeto se puede desequipar.
-	/// @param entity
-	/// @param item
+	/// @desc Valida si el objeto actual se puede desequipar. Debe devolver bool.
+	/// @context PartyEntity
+	/// @param {Struct.PocketItem} item_template El objeto a comprobar.
 	event_can_desequip = "";
 	
 	// Evento al atacar
+	
+	/// @desc Se ejecuta cuando la entidad ataca.
+	/// @context PartyEntity
+	/// @param {Struct.PartyEntity} target El objetivo del ataque.
     event_on_attack = "";
-	// Evento al ser atacado.
+	
+	/// @desc Se ejecuta cuando la entidad es atacada.
+	/// @context PartyEntity
+	/// @param {Struct.PartyEntity} attacker El atacante.
     event_on_defend = "";
+
 
     /// @desc (Privado) Método auxiliar para poblar la lista de objetos permitidos.
     /// @param {String, Array} data La llave o array de llaves a añadir.
@@ -69,7 +107,9 @@ function MallSlot(_key) : MallEvents(_key) constructor
             }
         }
     }
-
+	
+	/// @desc (Privado) Cargar string de eventos para ser usados más adelante.
+	/// @ignore
 	static __LoadFunctions = function(_data)
 	{
         // Asignar llaves de eventos

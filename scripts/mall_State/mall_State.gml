@@ -21,28 +21,91 @@ function MallState(_key) : MallEvents(_key) constructor
     iterator = new MallIterator();
 
     // --- Llaves de Eventos ---
+	
+	/// @desc Se ejecuta una vez cuando la instancia del estado es creada para una entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
     event_on_start = "";
+	
+	/// @desc (Sin implementación actual en el motor)
     event_on_end = "";
+	
+	/// @desc Se ejecuta en cada llamada a RecalculateStats.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
     event_on_update = "";
+	
+	/// @desc Se ejecuta en cada actualización de turno del WateManager.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
     event_on_turn_update = "";
+	
+	/// @desc Se ejecuta al inicio del turno de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
     event_on_turn_start = "";
+	
+	/// @desc Se ejecuta al final del turno de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
     event_on_turn_end = "";
+	
+	/// @desc Se ejecuta cuando se equipa un objeto en CUALQUIER slot de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot donde se equipó el objeto.
     event_on_equip = "";
+	
+	/// @desc Se ejecuta cuando se desequipa un objeto de CUALQUIER slot de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot de donde se desequipó el objeto.
     event_on_desequip = "";
+	
+	/// @desc Se ejecuta después de que un efecto es añadido a este estado.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
+	/// @param {Struct.DarkEffectInstance} effect_instance El efecto que fue añadido.
+	event_on_add_effect = "";
+	
+	/// @desc Se ejecuta después de que un efecto es eliminado de este estado.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
+	/// @param {Struct.DarkEffectInstance} effect_instance El efecto que fue eliminado.
+	event_on_remove_effect = "";
+
+	/// @desc Valida si un efecto puede ser añadido a este estado. Debe devolver bool.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
+	/// @param {Struct.DarkEffect} effect_template La plantilla del efecto a añadir.
+	event_can_add_effect = "";
+	
+	/// @desc Valida si un efecto puede ser eliminado de este estado. Debe devolver bool.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
+	/// @param {Struct.DarkEffectInstance} effect_instance El efecto a eliminar.
+	event_can_remove_effect = "";
 	
     /// @desc (Privado) Carga las llaves de los eventos desde el struct de datos.
     /// @ignore
 	static __LoadFunctions = function(_data)
 	{
         // Asignar llaves de eventos
-		event_on_start =	_data.event_on_start ?? "";
-		event_on_end =		_data.event_on_end ?? "";
-		event_on_update =	_data.event_on_update ?? "";
-	    event_on_turn_update =	_data.event_on_turn_update ?? "";
-	    event_on_turn_start =	_data.event_on_turn_start	?? "";
-	    event_on_turn_end =		_data.event_on_turn_end		?? "";
-	    event_on_equip =		_data.event_on_equip ?? "";
-	    event_on_desequip =		_data.event_on_desequip	?? "";
+		event_on_start =		_data[$ "event_on_start"]		?? "";
+		event_on_end =			_data[$ "event_on_end"]			?? "";
+		event_on_update =		_data[$ "event_on_update"]		?? "";
+	    event_on_turn_update =	_data[$ "event_on_turn_update"]	?? "";
+	    event_on_turn_start =	_data[$ "event_on_turn_start"]	?? "";
+	    event_on_turn_end =		_data[$ "event_on_turn_end"]	?? "";
+		
+		event_on_equip =		_data[$ "event_on_equip"]	?? "";
+		event_on_desequip =		_data[$ "event_on_desequip"]	?? "";
+		
+	    event_on_add_effect =		_data[$ "event_on_add_effect"]		?? "";
+	    event_on_remove_effect =	_data[$ "event_on_remove_effect"]	?? "";
+		
+	    event_can_add_effect =		_data[$ "event_can_add_effect"]		?? "";
+	    event_can_remove_effect =	_data[$ "event_can_remove_effect"]	?? "";		
 	}
 	
     /// @desc Configura el estado a partir de un struct de datos.
@@ -50,23 +113,24 @@ function MallState(_key) : MallEvents(_key) constructor
     static FromData = function(_data)
     {
 		// Cargar nuevas propiedades
-		state_type =		string_upper(_data.state_type ?? "AILMENT");
-		priority =			_data.priority ?? 0;
-		clears_states =		_data.clears_states ?? [];
-		prevents_states =	_data.prevents_states ?? [];
-		restricts_action =	_data.restricts_action ?? false;
+		state_type =		string_upper(_data[$ "state_type"] ?? "AILMENT");
+		priority =			_data[$ "priority"]			?? 0;
+		clears_states =		_data[$ "clears_states"]	?? [];
+		prevents_states =	_data[$ "prevents_states"]	?? [];
+		restricts_action =	_data[$ "restricts_action"]	?? false;
 		
 		// Cargar propiedades existentes
-        boolean_value =		_data.boolean_value ?? false;
-        reset_value =		_data.reset_value ?? false;
-        allow_multiple =	_data.allow_multiple ?? false;
-        max_effects =		_data.max_effects ?? 1;
+        boolean_value =		_data[$ "boolean_value"]	?? false;
+        reset_value =		_data[$ "reset_value"]		?? false;
+        allow_multiple =	_data[$ "allow_multiple"]	?? false;
+        max_effects =		_data[$ "max_effects"]		?? 1;
         
-        if (variable_struct_exists(_data, "stats")) {
-            stats = variable_clone(_data.stats);
-        }
+        if (variable_struct_exists(_data, "stats") ) 
+		{
+			stats = variable_clone(_data.stats);
+		}
         
-        if (variable_struct_exists(_data, "iterator"))
+        if (variable_struct_exists(_data, "iterator") )
         {
             iterator.Configure(
                 _data.iterator.duration ?? 1,

@@ -37,20 +37,59 @@ function MallStat(_key) : MallEvents(_key) constructor
     iterator = new MallIterator();
     
     // --- Llaves de Eventos ---
-    // Estas variables ahora guardan el NOMBRE de la función, no la función en sí.
+	
+	/// @desc Se ejecuta una vez cuando la instancia es creada para una entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
     event_on_start =		"";
+	
+	/// @desc (Sin implementación actual en el motor)
     event_on_end =			"";
+	
+	/// @desc Se ejecuta en cada llamada a RecalculateStats, después de calcular el peak_value.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
     event_on_update =		"";
+	
+	/// @desc Se ejecuta para calcular el peak_value de la estadística. Debe devolver el nuevo valor.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
     event_on_level_up =		"";
+	
+	/// @desc (Para stats standalone) Comprueba si la estadística puede subir de nivel. Debe devolver bool.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
     event_on_level_check =	"";
+	
+	/// @desc Se ejecuta cuando se equipa un objeto en CUALQUIER slot de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot donde se equipó el objeto.
     event_on_equip =		"";
+	
+	/// @desc Se ejecuta cuando se desequipa un objeto de CUALQUIER slot de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot de donde se desequipó el objeto.
     event_on_desequip =		"";
 
     // Eventos de Turno
+	
+	/// @desc Se ejecuta en cada actualización de turno del WateManager.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
     event_on_turn_update =	"";
+	
+	/// @desc Se ejecuta al inicio del turno de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
     event_on_turn_start =	"";
+	
+	/// @desc Se ejecuta al final del turno de la entidad.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
     event_on_turn_end =		"";
-
+	
     /// @desc Configura la estadística a partir de un struct de datos (leído del JSON).
     /// @param {Struct} data El struct con los datos de la estadística.
     static FromData = function(_data)
@@ -63,7 +102,7 @@ function MallStat(_key) : MallEvents(_key) constructor
         
         restore_on_equip = _data[$ "restore_on_equip"] ?? false;
         
-        base_value = _data[$ "base_value"] ?? 0;
+        base_value = _data[$ "base_value"] ?? 1;
         min_value = _data[$ "min_value"] ?? __MALL_STAT_MIN;
         max_value = _data[$ "max_value"] ?? __MALL_STAT_MAX;
         

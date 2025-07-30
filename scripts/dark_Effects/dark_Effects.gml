@@ -5,7 +5,7 @@ function DarkEffect(_key) : MallEvents(_key) constructor
     // --- Propiedades del Efecto ---
     state_key = "";             // El estado al que este efecto está asociado.
     state_set_value = true;     // El valor booleano que este efecto intenta imponer al estado.
-     params = {};				// Parámetros para configurar eventos reutilizables
+    params = {};				// Parámetros para configurar eventos reutilizables
 	 
 	// El valor numérico del efecto (ej: 15 de daño).
     value = 0;
@@ -50,16 +50,21 @@ function DarkEffect(_key) : MallEvents(_key) constructor
         }
         
         // Cargar llaves de eventos...
-		// Al ser añadido
+		__LoadFunction(_data)
+        
+        return self;
+    }
+	
+	/// @ignore
+	static __LoadFunction = function(_data)
+	{
         event_on_start =		_data[$ "event_on_start"]	?? "";
 		// Al ser eliminado
         event_on_end =			_data[$ "event_on_end"]		?? "";
 		
         event_on_turn_start =	_data[$ "event_on_turn_start"]	?? "";
-        event_on_turn_end =		_data[$ "event_on_turn_end"]	?? "";
-        
-        return self;
-    }
+        event_on_turn_end =		_data[$ "event_on_turn_end"]	?? "";			
+	}
 }
 
 /// @desc Crea una plantilla de efecto desde data y la añade a la base de datos.
