@@ -67,11 +67,13 @@ function MallSlot(_key) : MallEvents(_key) constructor
 	
 	/// @desc Se ejecuta cuando la entidad ataca.
 	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot que esta atacando.
 	/// @param {Struct.PartyEntity} target El objetivo del ataque.
     event_on_attack = "";
 	
 	/// @desc Se ejecuta cuando la entidad es atacada.
 	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot que esta defendiendo.
 	/// @param {Struct.PartyEntity} attacker El atacante.
     event_on_defend = "";
 

@@ -405,19 +405,25 @@ function __mall_test_pocket_bag_events(_runner)
 
 function __mall_test_party_entity(_runner)
 {
-	var suite_party = new TestSuite("Pruebas de Entidades");
+	var suite_party = new TestSuite("Pruebas de Entidades y Eventos");
 	_runner.addTestSuite(suite_party);
 
 	// --- Configuración de la Suite de Entidades ---
 	suite_party.setUp(function() {
+		// Limpiar
+		mall_system_cleanup();
+		
 	    // Arrange: Crear un set de datos completo para probar una entidad
 	    var master = {
 	        "Stats":	["./test_p_stats.json"],
 	        "Items":	["./test_p_items.json"],
 	        "Slots":	["./test_p_slots.json"],
-	        "Commands":	["./test_p_commands.json"],
+	        "States":	["./test_p_states.json"],
+	        "Effects":	["./test_p_effects.json"],
+	        "Commands": ["./test_p_commands.json"],
 	        "Party":	["./test_p_entities.json"]
 	    };
+		
 	    var file = file_text_open_write("test_master_party.json");
 		file_text_write_string(file, json_stringify(master));
 		file_text_close(file);
@@ -467,7 +473,32 @@ function __mall_test_party_entity(_runner)
 	    file = file_text_open_write("test_p_slots.json");
 		file_text_write_string(file, json_stringify(slots));
 		file_text_close(file);
-    
+
+	    var states = { 
+			"type": "States", 
+			"STATE_TEST_BUFF": { 
+				"event_on_add_effect": "EVT_STATE_OnAddEffect_Test", 
+				"event_can_add_effect": "EVT_STATE_CanAddEffect_Test" 
+			},
+			"STATE_FUERZA_AUMENTADA": { 
+				"stats": { "FUERZA+": 5 } 
+			}
+		};
+		
+	    file = file_text_open_write("test_p_states.json");
+		file_text_write_string(file, json_stringify(states));
+		file_text_close(file);
+
+	    var effects = { 
+			"type": "Effects", 
+			"EFFECT_TEST_BUFF": { "state_key": "STATE_TEST_BUFF" },
+			"EFFECT_BUFF_FUERZA": { "state_key": "STATE_FUERZA_AUMENTADA" }
+		};
+		
+	    file = file_text_open_write("test_p_effects.json");
+		file_text_write_string(file, json_stringify(effects));
+		file_text_close(file);
+	
 	    var commands = { "type": "Commands", "CMD_BOLA_FUEGO": {} };
 	    file = file_text_open_write("test_p_commands.json");
 		file_text_write_string(file, json_stringify(commands));
@@ -484,158 +515,352 @@ function __mall_test_party_entity(_runner)
 	    file = file_text_open_write("test_p_entities.json");
 		file_text_write_string(file, json_stringify(entities));
 		file_text_close(file);
-    
-	    mall_system_cleanup();
-
-		/// @context entity
-		/// @param stat_instance
-	    Systemall.__functions[$ "EVT_EnStart"] = function(_stat) 
-		{
-			var _key = _stat.template.key;
-			show_debug_message($"El stat {_key} debería existir: {struct_exists(args, _key)}");
-		};
 		
 	    Systemall.__functions[$ "EVT_GenericStatUp"] = function(_stat) 
 		{ 
-			return _stat.base_value + (level * 2); 
+			return _stat.base_value + level * 2;
 		};
-
-	    Systemall.__functions[$ "EVT_SLOT_OnEquip_Test"] = function(_slot, _item) {
-	        if (!global.__test_vars.wait)
-			{
-				global.__test_vars.slot = true;
-				global.__test_vars.test.assertEqual(_item.key, "ITEM_ESPADA_BASICA");
-			}
-	    };
 		
-	    Systemall.__functions[$ "EVT_ITEM_OnEquip_Test"] = function(_entity, _slot) {
-	        if (!global.__test_vars.wait)
-			{
-				global.__test_vars.item = true;
-		        global.__test_vars.test.assertEqual(key, "ITEM_ESPADA_BASICA");
-			}
-	    };
+		Systemall.__functions[$ "EVT_SLOT_OnEquip_Test"] = function() 
+		{ 
+			global.crispy_test_flags.slot = true;
+		};
 		
-	    Systemall.__functions[$ "EVT_STAT_OnEquip_Test"] = function(_stat, _slot) {
-	        if (!global.__test_vars.wait)
-			{
-		        global.__test_vars.stat = true;
-		        global.__test_vars.test.assertEqual(_slot.template.key, "SLOT_ARMA");
-			}
-	    };
+	    Systemall.__functions[$ "EVT_ITEM_OnEquip_Test"] = function() 
+		{ 
+			global.crispy_test_flags.item = true;
+		};
+		
+	    Systemall.__functions[$ "EVT_STAT_OnEquip_Test"] = function() 
+		{ 
+			global.crispy_test_flags.stat = true;
+		};		
+		
+		Systemall.__functions[$ "EVT_STATE_OnAddEffect_Test"] = function(_state, _effect)
+		{
+			global.crispy_test_flags.effect = true;
+			global.crispy_test_flags.test.assertEqual(_effect.template.key, "EFFECT_TEST_BUFF");
+		};
+		
+		Systemall.__functions[$ "EVT_STATE_CanAddEffect_Test"] = function() 
+		{ 
+			return true;
+		};
+		
+		Systemall.__functions[$ "EVT_STATE_CanAddEffect_Test"] = function() 
+		{ 
+			return global.crispy_test_flags.can_add; 
+		};
+		
 		
 	    mall_init("test_master_party.json");
 	});
 
 	suite_party.onRunBegin(function() {
-	    // Crear una instancia fresca del héroe para cada prueba
-	    self.hero = party_entity_create_instance("HERO_TEST", 1, { "EN": 0, "FUERZA": 0 } );
-		global.__test_vars = {
+	    // Usar una variable global para rastrear los eventos
+	    global.crispy_test_flags = {
 			wait: true,
 	        slot: false,
 	        item: false,
-	        stat: false
+	        stat: false,
+			effect: false,
+			can_add: true,
+			test: undefined,
 	    };
 	});
 
 	suite_party.tearDown(function() {
-	    // Limpiar archivos
-	    if (file_exists("test_master_party.json") ) file_delete("test_master_party.json");
-	    if (file_exists("test_p_stats.json") ) file_delete("test_p_stats.json");
-	    if (file_exists("test_p_items.json") ) file_delete("test_p_items.json");
-	    if (file_exists("test_p_slots.json") ) file_delete("test_p_slots.json");
-	    if (file_exists("test_p_commands.json") ) file_delete("test_p_commands.json");
-	    if (file_exists("test_p_entities.json") ) file_delete("test_p_entities.json");
+	    // Limpiar archivos y la variable global
+	    if (file_exists("test_master_party.json")) file_delete("test_master_party.json");
+	    if (file_exists("test_p_stats.json")) file_delete("test_p_stats.json");
+	    if (file_exists("test_p_items.json")) file_delete("test_p_items.json");
+	    if (file_exists("test_p_slots.json")) file_delete("test_p_slots.json");
+	    if (file_exists("test_p_states.json")) file_delete("test_p_states.json");
+	    if (file_exists("test_p_effects.json")) file_delete("test_p_effects.json");
+	    if (file_exists("test_p_commands.json")) file_delete("test_p_commands.json");
+	    if (file_exists("test_p_entities.json")) file_delete("test_p_entities.json");
+		global.crispy_test_flags = undefined;
 	});
 
 	// --- Casos de Prueba ---
 	var test_party_stat_calc = new TestCase("Test Cálculo de Estadísticas", function() {
-	    // Assert
-	    assertEqual(parent.hero.StatGet("FUERZA").base_value, 10, "El valor base de Fuerza debe ser 10.");
-	    assertEqual(parent.hero.StatGet("FUERZA").peak_value, 12, "El valor peak de Fuerza a nivel 1 debe ser 12.");
+		global.crispy_test_flags.test = self;
+		var hero = party_entity_create_instance("HERO_TEST", 1);
+	    assertEqual(hero.StatGet("FUERZA").base_value, 10, "El valor base de Fuerza debe ser 10.");
+	    assertEqual(hero.StatGet("FUERZA").peak_value, 12, "El valor peak de Fuerza a nivel 1 debe ser 12.");
 	});
 	suite_party.addTestCase(test_party_stat_calc);
 
 	var test_party_equip = new TestCase("Test Equipar y Recalcular Stats", function() {
-	    // Act
-	    parent.hero.SlotEquip("SLOT_ARMA", "ITEM_ESPADA_BASICA");
-		
-	    // Assert
-	    assertEqual(parent.hero.StatGet("FUERZA").equipment_value, 22, "La Fuerza con equipo debe ser 22 (12 de base + 10 de la espada).");
+		global.crispy_test_flags.test = self;
+		var hero = party_entity_create_instance("HERO_TEST", 1);
+	    hero.SlotEquip("SLOT_ARMA", "ITEM_ESPADA_BASICA");
+	    assertEqual(hero.StatGet("FUERZA").equipment_value, 22, "La Fuerza con equipo debe ser 22 (12 de base + 10 de la espada).");
 	});
 	suite_party.addTestCase(test_party_equip);
 
 	var test_party_learnset = new TestCase("Test Aprendizaje de Habilidades por Nivel", function() {
-	    // Assert (Pre-LevelUp)
-	    assertFalse(parent.hero.CommandExists("MAGIC", "CMD_BOLA_FUEGO"), "No debería tener Bola de Fuego a nivel 1.");
-    
-	    // Act
-	    parent.hero.LevelUp(4); // Subir a nivel 5
-    
-	    // Assert (Post-LevelUp)
-	    assertTrue(parent.hero.CommandExists("MAGIC", "CMD_BOLA_FUEGO"), "Debería haber aprendido Bola de Fuego a nivel 5.");
+		global.crispy_test_flags.test = self;
+		var hero = party_entity_create_instance("HERO_TEST", 1);
+	    assertFalse(hero.CommandExists("MAGIC", "CMD_BOLA_FUEGO"), "No debería tener Bola de Fuego a nivel 1.");
+	    hero.LevelUp(4); // Subir a nivel 5
+	    assertTrue(hero.CommandExists("MAGIC", "CMD_BOLA_FUEGO"), "Debería haber aprendido Bola de Fuego a nivel 5.");
 	});
 	suite_party.addTestCase(test_party_learnset);
 	
 	var test_party_equip_events = new TestCase("Test Eventos de Equipamiento (Slot, Item, Stat)", function() {
+		global.crispy_test_flags.test = self;
 	    // Arrange
-		var _test = self;
-		global.__test_vars = {
-			test: _test,
-			wait: false,
-	        slot: false,
-	        item: false,
-	        stat: false
-	    };
+		var hero = party_entity_create_instance("HERO_TEST", 1);
+		hero.event_on_equip = function() { global.crispy_test_flags.entity = true; };
 		
 	    // Act
-	    parent.hero.SlotEquip("SLOT_ARMA", "ITEM_ESPADA_BASICA");
-    
+	    hero.SlotEquip("SLOT_ARMA", "ITEM_ESPADA_BASICA");
+		
 	    // Assert
-	    assertTrue(global.__test_vars.slot, "El evento on_equip del slot debería haberse disparado.");
-	    assertTrue(global.__test_vars.item, "El evento on_equip del item debería haberse disparado.");
-	    assertTrue(global.__test_vars.stat, "El evento on_equip de la estadística debería haberse disparado.");
+	    assertTrue(global.crispy_test_flags.entity, "El evento on_equip de la entidad debe dispararse.");
+	    assertTrue(global.crispy_test_flags.slot, "El evento on_equip del slot debería haberse disparado.");
+	    assertTrue(global.crispy_test_flags.item, "El evento on_equip del item debería haberse disparado.");
+	    assertTrue(global.crispy_test_flags.stat, "El evento on_equip de la estadística debería haberse disparado.");
 	});
-	suite_party.addTestCase(test_party_equip_events);	
+	suite_party.addTestCase(test_party_equip_events);
+
+	var test_party_state_events = new TestCase("Test Eventos de Notificación de Estados", function() {
+		global.crispy_test_flags.test = self;
+		
+		var hero = party_entity_create_instance("HERO_TEST", 1);
+	    hero.EffectAdd("EFFECT_TEST_BUFF");
+		
+	    assertTrue(global.crispy_test_flags.effect, "El evento on_add_effect del estado debería haberse disparado.");
+	    assertTrue(hero.StateIsActive("STATE_TEST_BUFF"), "El estado debería estar activo.");
+	});
+	suite_party.addTestCase(test_party_state_events);
+
+	var test_party_state_validation = new TestCase("Test Eventos de Validación de Estados", function() {
+		global.crispy_test_flags.test = self;
+		var hero = party_entity_create_instance("HERO_TEST", 1);
+		
+	    // Act & Assert (Bloqueado)
+		global.crispy_test_flags.can_add = false;
+	    var result1 = hero.EffectAdd("EFFECT_TEST_BUFF");
+	    assertFalse(result1.success, "La adición del efecto debería haber fallado.");
+	    assertFalse(hero.StateIsActive("STATE_TEST_BUFF"), "El estado no debería estar activo si la validación falla.");
+		
+	    // Act & Assert (Permitido)
+	    global.crispy_test_flags.can_add = true;
+	    var result2 = hero.EffectAdd("EFFECT_TEST_BUFF");
+	    assertTrue(result2.success, "La adición del efecto debería haber sido exitosa.");
+	    assertTrue(hero.StateIsActive("STATE_TEST_BUFF"), "El estado debería estar activo si la validación es exitosa.");
+	});
+	suite_party.addTestCase(test_party_state_validation);
 
 	var test_party_add_effect = new TestCase("Test Aplicación de Efectos y Estados", function() {
-	    // Assert (Pre-Efecto)
-	    assertFalse(parent.hero.StateIsActive("STATE_FUERZA_AUMENTADA"), "El estado no debería estar activo al inicio.");
-    
-	    // Act
-	    parent.hero.EffectAdd("EFFECT_BUFF_FUERZA");
-    
-	    // Assert (Post-Efecto)
-	    assertTrue(parent.hero.StateIsActive("STATE_FUERZA_AUMENTADA"), "El estado debería activarse al añadir un efecto.");
+		global.crispy_test_flags.test = self;
+		var hero = party_entity_create_instance("HERO_TEST", 1);
+	    assertFalse(hero.StateIsActive("STATE_FUERZA_AUMENTADA"), "El estado no debería estar activo al inicio.");
+	    hero.EffectAdd("EFFECT_BUFF_FUERZA");
+	    assertTrue(hero.StateIsActive("STATE_FUERZA_AUMENTADA"), "El estado debería activarse al añadir un efecto.");
 	});
 	suite_party.addTestCase(test_party_add_effect);
 
 	var test_party_state_stat_recalc = new TestCase("Test Recalcular Stats con Estados Activos", function() {
-	    // Arrange
-	    var fuerza_inicial = parent.hero.StatGet("FUERZA").control_value;
-    
-	    // Act
-	    parent.hero.EffectAdd("EFFECT_BUFF_FUERZA");
-    
-	    // Assert
-	    var fuerza_final = parent.hero.StatGet("FUERZA").control_value;
+		global.crispy_test_flags.test = self;
+		var hero = party_entity_create_instance("HERO_TEST", 1);
+	    var fuerza_inicial = hero.StatGet("FUERZA").control_value;
+	    hero.EffectAdd("EFFECT_BUFF_FUERZA");
+	    var fuerza_final = hero.StatGet("FUERZA").control_value;
 	    assertEqual(fuerza_final, fuerza_inicial + 5, "La Fuerza debería aumentar en 5 debido al estado.");
 	});
 	suite_party.addTestCase(test_party_state_stat_recalc);
 
 	var test_party_remove_effect = new TestCase("Test Eliminación de Efectos y Estados", function() {
-	    // Arrange
-	    var efecto_inst = parent.hero.EffectAdd("EFFECT_BUFF_FUERZA");
-    
-	    // Act
-	    parent.hero.EffectRemove(efecto_inst);
-    
-	    // Assert
-	    assertFalse(parent.hero.StateIsActive("STATE_FUERZA_AUMENTADA"), "El estado debería desactivarse al eliminar su último efecto.");
-	    assertEqual(parent.hero.StatGet("FUERZA").control_value, 12, "La Fuerza debería volver a su valor original sin el estado.");
+		global.crispy_test_flags.test = self;
+		
+		var hero = party_entity_create_instance("HERO_TEST", 1);
+	    var efecto_inst = hero.EffectAdd("EFFECT_BUFF_FUERZA").added;
+		hero.EffectRemove(efecto_inst.template.key, function(_value, _index) { 
+			return template.key == _value.template.key;
+		});
+		
+		
+	    assertFalse(hero.StateIsActive("STATE_FUERZA_AUMENTADA"), "El estado debería desactivarse al eliminar su último efecto.");
+	    assertEqual(hero.StatGet("FUERZA").control_value, 12, "La Fuerza debería volver a su valor original sin el estado.");
 	});
 	suite_party.addTestCase(test_party_remove_effect);
 }
+function __mall_test_party_entity_events(_runner)
+{
+	var suite_party_events = new TestSuite("Pruebas de Eventos de Entidad");
+	_runner.addTestSuite(suite_party_events);
 
+	// --- Configuración de la Suite ---
+	suite_party_events.setUp(function() {
+		// Limpiar Systemall
+		mall_system_cleanup();
+		
+	    // Arrange: Crear un set de datos completo para probar los eventos
+	    var master = {
+	        "Stats": ["./test_e_stats.json"],
+	        "Items": ["./test_e_items.json"],
+	        "Slots": ["./test_e_slots.json"],
+	        "States": ["./test_e_states.json"],
+	        "Party": ["./test_e_entities.json"]
+	    };
+	    var file = file_text_open_write("test_master_events.json");
+		file_text_write_string(file, json_stringify(master));
+		file_text_close(file);
+    
+	    var stats = { "type": "Stats", 
+			"STAT_TEST": {
+				"max_value": 9999,
+				"event_on_equip": "EVT_StatOnEquip",
+				"event_on_turn_start": "EVT_StatOnTurnStart",
+				"event_on_level_up": "EVT_GenericStatUp"
+			}	
+	    };
+	    file = file_text_open_write("test_e_stats.json");
+		file_text_write_string(file, json_stringify(stats));
+		file_text_close(file);
+    
+	    var items = { 
+			"type": "Items", 
+			"ITEM_TEST": { 
+				"item_type": "WEAPON", 
+				"event_on_equip": "EVT_ItemOnEquip", 
+				"event_on_turn_start": "EVT_ItemOnTurnStart" 
+			} 
+		};
+	    file = file_text_open_write("test_e_items.json");
+		file_text_write_string(file, json_stringify(items));
+		file_text_close(file);
+    
+	    var slots = { "type": "Slots", "SLOT_TEST": { "permited": ["WEAPON"], "event_on_equip": "EVT_SlotOnEquip", "event_on_turn_start": "EVT_SlotOnTurnStart" } };
+	    file = file_text_open_write("test_e_slots.json");
+		file_text_write_string(file, json_stringify(slots));
+		file_text_close(file);
+    
+	    var states = { "type": "States", "STATE_TEST": { "event_on_equip": "EVT_StateOnEquip", "event_on_turn_start": "EVT_StateOnTurnStart" } };
+	    file = file_text_open_write("test_e_states.json");
+		file_text_write_string(file, json_stringify(states));
+		file_text_close(file);
+    
+	    var entities = { 
+			"type": "Party", 
+	        "HERO_TEST": {
+	            "stats": { "STAT_TEST": 10 },
+	            "learnset": [ { "level": 5, "command": "CMD_BOLA_FUEGO", "category": "MAGIC" } ]
+	        }			
+		};
+	    file = file_text_open_write("test_e_entities.json");
+		file_text_write_string(file, json_stringify(entities));
+		file_text_close(file);
+    
+	    Systemall.__functions[$ "EVT_GenericStatUp"] = function(_stat) 
+		{ 
+			return _stat.base_value + (level * 2); 
+		};
+		
+	    Systemall.__functions[$ "EVT_StatOnTurnStart"] = function() 
+		{
+			global.crispy_test_flags.stat = true; 
+		};
+	    
+		Systemall.__functions[$ "EVT_SlotOnTurnStart"] = function() 
+		{ 
+			global.crispy_test_flags.slot = true; 
+		};
+		
+	    Systemall.__functions[$ "EVT_StateOnTurnStart"] = function() 
+		{ 
+			global.crispy_test_flags.state = true; 
+		};
+		
+	    Systemall.__functions[$ "EVT_ItemOnTurnStart"] = function() 
+		{ 
+			global.crispy_test_flags.item = true; 
+		};
+		
+	    Systemall.__functions[$ "EVT_StatOnEquip"] = function() 
+		{
+			global.crispy_test_flags.stat = true; 
+		};
+		
+	    Systemall.__functions[$ "EVT_SlotOnEquip"] = function() 
+		{ 
+			global.crispy_test_flags.slot = true; 
+		};
+	    
+		Systemall.__functions[$ "EVT_StateOnEquip"] = function() 
+		{
+			global.crispy_test_flags.state = true; 
+		};
+	    
+		Systemall.__functions[$ "EVT_ItemOnEquip"] = function() 
+		{ 
+			global.crispy_test_flags.item = true;
+		};
+		
+	    mall_init("test_master_events.json");		
+	});
 
+	suite_party_events.onRunBegin(function() {
+	    // Crear una instancia fresca del héroe para cada prueba
+	    self.hero = party_entity_create_instance("HERO_TEST", 1);
+    
+	    // Usar una variable global para rastrear los eventos, ya que el contexto de 'parent' no está disponible en los callbacks
+	    global.crispy_test_flags = {
+	        entity: false,
+	        stat: false,
+	        slot: false,
+	        state: false,
+	        item: false
+	    };
+	});
+
+	suite_party_events.tearDown(function() {
+	    // Limpiar archivos
+	    if (file_exists("test_master_events.json")) file_delete("test_master_events.json");
+	    if (file_exists("test_e_stats.json")) file_delete("test_e_stats.json");
+	    if (file_exists("test_e_items.json")) file_delete("test_e_items.json");
+	    if (file_exists("test_e_slots.json")) file_delete("test_e_slots.json");
+	    if (file_exists("test_e_states.json")) file_delete("test_e_states.json");
+	    if (file_exists("test_e_entities.json")) file_delete("test_e_entities.json");
+    
+	    // Limpiar la variable global
+	    global.crispy_test_flags = undefined;
+	});
+
+	// --- Casos de Prueba ---
+
+	var test_equip_dispatch = new TestCase("Test Despacho de Eventos al Equipar", function() {
+	    // Arrange: Sobrescribir las funciones de evento para que modifiquen el tracker global
+	    parent.hero.event_on_equip = function() { global.crispy_test_flags.entity = true; };
+    
+	    // Act
+	    parent.hero.SlotEquip("SLOT_TEST", "ITEM_TEST");
+    
+	    // Assert
+	    assertTrue(global.crispy_test_flags.entity, "El evento on_equip de la entidad debe dispararse.");
+	    assertTrue(global.crispy_test_flags.stat, "El evento on_equip de la estadística debe dispararse.");
+	    assertTrue(global.crispy_test_flags.slot, "El evento on_equip del slot debe dispararse.");
+	    assertTrue(global.crispy_test_flags.state, "El evento on_equip del estado debe dispararse.");
+	    assertTrue(global.crispy_test_flags.item, "El evento on_equip del objeto debe dispararse.");
+	});
+	suite_party_events.addTestCase(test_equip_dispatch);
+
+	var test_turn_start_dispatch = new TestCase("Test Despacho de Eventos al Iniciar Turno", function() {
+	    // Arrange
+	    parent.hero.SlotEquip("SLOT_TEST", "ITEM_TEST"); // Equipar el item para que su evento de turno se active
+
+	    // Act
+	    parent.hero.OnTurnStart();
+    
+	    // Assert
+	    assertTrue(global.crispy_test_flags.stat, "El evento on_turn_start de la estadística debe dispararse.");
+	    assertTrue(global.crispy_test_flags.slot, "El evento on_turn_start del slot debe dispararse.");
+	    assertTrue(global.crispy_test_flags.state, "El evento on_turn_start del estado debe dispararse.");
+	    assertTrue(global.crispy_test_flags.item, "El evento on_turn_start del objeto equipado debe dispararse.");
+	});
+	suite_party_events.addTestCase(test_turn_start_dispatch);	
+}
 

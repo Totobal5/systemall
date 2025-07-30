@@ -14,7 +14,7 @@ function MallState(_key) : MallEvents(_key) constructor
     allow_multiple = false;			// Si la entidad puede tener este estado varias veces.
     max_effects = 1;				// Cuántas veces se puede apilar si allow_multiple es true.
     
-	// Estadísticas que afectará este estado.
+	// Estadísticas que afectará este estado. [valor, numtype]
 	stats = {};
 	
     // Iterador para manejar la duración del estado.
@@ -126,12 +126,7 @@ function MallState(_key) : MallEvents(_key) constructor
         reset_value =		_data[$ "reset_value"]		?? false;
         allow_multiple =	_data[$ "allow_multiple"]	?? false;
         max_effects =		_data[$ "max_effects"]		?? 1;
-        
-        if (variable_struct_exists(_data, "stats") ) 
-		{
-			stats = variable_clone(_data.stats);
-		}
-        
+		
         if (variable_struct_exists(_data, "iterator") )
         {
             iterator.Configure(
@@ -139,11 +134,49 @@ function MallState(_key) : MallEvents(_key) constructor
                 _data.iterator.repeats ?? 0
             );
         }
-
+		
+		// Cargar estadisticas.
+		__LoadStats(_data);
+		
+		// Cargar funciones.
         __LoadFunctions(_data);
 		
         return self;
     }	
+
+    /// @desc (Privado) Carga las estadísticas desde el struct de datos.
+    /// @param {Struct} data El struct con los datos del item.
+    /// @ignore
+    static __LoadStats = function(_data)
+    {
+        if (variable_struct_exists(_data, "stats") )
+        {
+            var _mod_keys = variable_struct_get_names(_data.stats);
+			var _mod_length = array_length(_mod_keys);
+            for (var i = 0; i < _mod_length; i++)
+            {
+                var _mod_key_full = _mod_keys[i];
+                var _len = string_length(_mod_key_full);
+                var _suffix = string_char_at(_mod_key_full, _len);
+                
+                var _stat_key = _mod_key_full;
+                var _type = MALL_NUMTYPE.REAL;
+                
+                // Comprobar si hay un sufijo
+                if (_suffix == "%" || _suffix == "+") {
+                    _stat_key = string_delete(_mod_key_full, _len, 1);
+                    if (_suffix == "%") {
+                        _type = MALL_NUMTYPE.PERCENT;
+                    }
+                }
+                
+                var _value = _data.stats[$ _mod_key_full];
+                
+                // La representación interna sigue siendo un array [valor, tipo]
+                stats[$ _stat_key] = [_value, _type];
+            }
+        }
+    }
 }
 
 /// @desc Crea una plantilla de state desde data y la añade a la base de datos.

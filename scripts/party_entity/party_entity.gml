@@ -238,11 +238,13 @@ function EntitySlotInstance(_template, _entity) constructor
 	
 	/// @desc Se ejecuta cuando la entidad ataca.
 	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot que esta atacando.
 	/// @param {Struct.PartyEntity} target El objetivo del ataque.
 	event_on_attack =		method(parent_entity, mall_get_function( template[$ "event_on_attack"] ) );
 
 	/// @desc Se ejecuta cuando la entidad es atacada.
 	/// @context PartyEntity
+	/// @param {Struct.EntitySlotInstance} slot_instance El slot que esta defendiendo.
 	/// @param {Struct.PartyEntity} attacker El atacante.
 	event_on_defend =		method(parent_entity, mall_get_function( template[$ "event_on_defend"] ) );
 
@@ -338,10 +340,13 @@ function EntitySlotInstance(_template, _entity) constructor
 
 /// @desc Representa la instancia de un state para una entidad.
 /// @param {Struct.MallState} state_template
-function EntityStateInstance(_template) constructor
+function EntityStateInstance(_template, _entity) constructor
 {
 	// Referencia a la plantilla MallState
 	template = _template;
+	
+	// A quien pertenece esta instancia.
+	parent_entity = _entity;
 	
 	// Valor booleano de estado actual de esta instancia
 	boolean_value = template.boolean_value;
@@ -349,7 +354,10 @@ function EntityStateInstance(_template) constructor
 	
 	// Array para contener las instancias de efectos activos
 	effects = [];
-
+	
+	// Referencias a la estadisticas del template.
+	stats = template.stats;
+	
     // --- Llaves de Eventos ---
 	
 	/// @desc Se ejecuta cuando la instancia cambia su valor booleano y cuando es creada.
@@ -466,29 +474,62 @@ function DarkEffectInstance(_template) constructor
     id = $"{_template.key}_{effect_counter++}";
     template = _template;
     
-    // Cada instancia tiene sus propios iteradores
-    iterator_start = (new MallIterator() ).Configure(
-        _template.iterator_start_config.duration ?? 1,
-        _template.iterator_start_config.repeats ?? 0
-    );
+	// El valor numérico del efecto (ej: 15 de daño).
+    value = template.value;
+	// El tipo de valor (real o porcentual).
+    num_type = template.num_type;
+	// stats
+	stats = template.stats;	
+	// Copiar los parametros del template.
+	params = variable_clone(template.params);
 	
-    iterator_end = (new MallIterator() ).Configure(
-        _template.iterator_end_config.duration ?? 1,
-        _template.iterator_end_config.repeats ?? 0
-    );
-
+    // Cada instancia tiene sus propios iteradores
+	var _duration = 1;
+	var _repeats = 0;
+	
+	if (struct_exists(template, "iterator_start_config") )
+	{
+		var _i = template.iterator_start_config;
+		_duration = _i[$ "duration"] ?? 1;
+		_repeats = _i[$ "repeats"] ?? 0;
+	}
+	
+    iterator_start = (new MallIterator() ).Configure(_duration, _repeats);
+	
+	if (struct_exists(template, "iterator_end_config") )
+	{
+		var _i = template.iterator_end_config;
+		_duration = _i[$ "duration"] ?? 1;
+		_repeats = _i[$ "repeats"] ?? 0;
+	}
+	
+    iterator_end = (new MallIterator() ).Configure(_duration, _repeats);
+	
 	// -- Eventos --
 	
-	/// @desc Evento al ser añadido en un estado.
-	/// @param entity
-	/// @param state
-    event_on_start =		mall_get_function( template[$ "event_on_start"] );
+	/// @desc Se ejecuta cuando el efecto es añadido a un estado.
+	/// @context DarkEffectInstance
+	/// @param {Struct.PartyEntity} entity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia del estado que contiene este efecto.
+    event_on_start =		method(self, mall_get_function( template[$ "event_on_start"] ) );
 	
-	// Al ser eliminado
-    event_on_end =			mall_get_function( template[$ "event_on_end"] );
-		
-    event_on_turn_start =	mall_get_function( template[$ "event_on_turn_start"] );
-    event_on_turn_end =		mall_get_function( template[$ "event_on_turn_end"] );
+	/// @desc Se ejecuta cuando el efecto es eliminado de un estado.
+	/// @context DarkEffectInstance
+	/// @param {Struct.PartyEntity} entity	
+	/// @param {Struct.EntityStateInstance} state_instance La instancia del estado que contenía este efecto.
+    event_on_end =			method(self, mall_get_function( template[$ "event_on_end"] ) );
+	
+	/// @desc Se ejecuta al inicio del turno de la entidad.
+	/// @context DarkEffectInstance
+	/// @param {Struct.PartyEntity} entity	
+	/// @param {Struct.DarkEffectInstance} effect_instance La instancia actual del efecto.
+    event_on_turn_start =	method(self, mall_get_function( template[$ "event_on_turn_start"] ) );
+	
+	/// @desc Se ejecuta al final del turno de la entidad.
+	/// @context DarkEffectInstance
+	/// @param {Struct.PartyEntity} entity	
+	/// @param {Struct.DarkEffectInstance} effect_instance La instancia actual del efecto.
+    event_on_turn_end =		method(self, mall_get_function( template[$ "event_on_turn_end"] ) );
 
 
 	/// @desc Exporta el estado actual de la instancia del efecto.
@@ -737,7 +778,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
         for (var i = 0; i < _all_state_length; i++) 
 		{
             var _state_key = _all_state_keys[i];
-			var _state_inst = new EntityStateInstance( mall_get_state(_state_key) );
+			var _state_inst = new EntityStateInstance( mall_get_state(_state_key), self );
 			
             states[$ _state_key] = _state_inst;
 			
@@ -793,76 +834,135 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
         }
 	}
 	
-	/// @desc Aplica los modificadores del equipo.
-	/// @ignore
-	static __ApplyEquipmentModifiers = function()
-	{
-		var _stat_keys = variable_struct_get_names(stats);
-        for (var i = 0; i < array_length(_stat_keys); i++) 
-		{
-            var _stat_inst = stats[$ _stat_keys[i]];
-            _stat_inst.equipment_value = _stat_inst.peak_value;
-        }
-        
-        var _slot_keys = variable_struct_get_names(slots);
-        for (var i = 0; i < array_length(_slot_keys); i++) 
-		{
-            var _slot_inst = slots[$ _slot_keys[i]];
-            if (_slot_inst.is_active) 
-			{
-                for (var k = 0; k < array_length(_slot_inst.equipped_items); k++) 
-				{
-                    var _item = pocket_item_get(_slot_inst.equipped_items[k]);
-                    if (is_undefined(_item) || !variable_struct_exists(_item, "stats") ) continue;
-                    
-                    var _item_stat_keys = variable_struct_get_names(_item.stats);
-                    for (var j = 0; j < array_length(_item_stat_keys); j++) 
-					{
-                        var _item_stat_key = _item_stat_keys[j];
-                        if (struct_exists(stats, _item_stat_key) )
-						{
-                            stats[$ _item_stat_key].equipment_value += _item.stats[$ _item_stat_key][0];
-                        }
-                    }
-                }
-            }
-        }
-	}
-	
-	/// @desc Aplica los modificadores de los estados y efectos.
+	/// @desc (Privado) Aplica los modificadores pasivos de los estados y efectos.
 	/// @ignore
 	static __ApplyStateModifiers = function()
 	{
 		var _stat_keys = variable_struct_get_names(stats);
-        for (var i = 0; i < array_length(_stat_keys); i++) {
+		var _stat_keys_length = array_length(_stat_keys)
+		
+        for (var i = 0; i < _stat_keys_length; i++) 
+		{
             var _stat_inst = stats[$ _stat_keys[i]];
             _stat_inst.control_value = _stat_inst.equipment_value;
         }
         
         var _state_keys = variable_struct_get_names(states);
-        for (var i = 0; i < array_length(_state_keys); i++) {
+        var _state_keys_length = array_length(_state_keys);
+		
+		for (var i = 0; i < _state_keys_length; i++) 
+		{
             var _state_inst = states[$ _state_keys[i]];
-            
-            for (var eff_idx = 0; eff_idx < array_length(_state_inst.effects); eff_idx++) {
+            if (!_state_inst.boolean_value) continue;
+
+            // Aplicar modificadores de la plantilla del ESTADO
+            var _state_modifiers =			_state_inst.stats;
+            var _state_mod_keys =			variable_struct_get_names(_state_modifiers);
+            var _state_mod_keys_length =	array_length(_state_mod_keys);
+			
+			for (var j = 0; j < _state_mod_keys_length; j++) 
+			{
+                var _stat_key =  _state_mod_keys[j];
+                var _mod_array = _state_modifiers[$ _stat_key];
+				
+				if (!struct_exists(stats, _stat_key) ) continue;
+				
+                var _stat_to_mod = stats[$ _stat_key];
+                var _mod_value = _mod_array[0];
+                var _mod_type = _mod_array[1];
+                            
+                if (_mod_type == MALL_NUMTYPE.PERCENT) 
+				{
+                    _stat_to_mod.control_value += (_stat_to_mod.equipment_value * _mod_value) / 100;
+                } 
+				else 
+				{
+                    _stat_to_mod.control_value += _mod_value;
+                }
+            }
+
+            // Aplicar modificadores PASIVOS de los EFECTOS dentro del estado
+			var _effects_length = array_length(_state_inst.effects);
+            for (var eff_idx = 0; eff_idx < _effects_length; eff_idx++) 
+			{
                 var _effect_inst = _state_inst.effects[eff_idx];
-                var _modifiers = _effect_inst.template.stats;
-                var _mod_keys = variable_struct_get_names(_modifiers);
-                
-                for (var j = 0; j < array_length(_mod_keys); j++) {
-                    var _mod_key_full = _mod_keys[j];
-                    var _prefix = string_char_at(_mod_key_full, 1);
-                    var _stat_key = string_delete(_mod_key_full, 1, 1);
+                var _effect_modifiers = _effect_inst.stats;
+                var _effect_mod_keys = variable_struct_get_names(_effect_modifiers);
+                var _effect_mod_keys_length = array_length(_effect_mod_keys);
+				
+                for (var j = 0; j < _effect_mod_keys_length; j++) 
+				{
+                    var _stat_key = _effect_mod_keys[j];
+                    var _mod_array = _effect_modifiers[$ _stat_key];
                     
-                    if (struct_exists(stats, _stat_key)) {
-                        var _stat_to_mod = stats[$ _stat_key];
-                        var _mod_value = _modifiers[$ _mod_key_full];
-                        
-                        if (_prefix == "+") {
-                            _stat_to_mod.control_value += _mod_value;
-                        } else if (_prefix == "%") {
-                            _stat_to_mod.control_value += (_stat_to_mod.equipment_value * _mod_value) / 100;
-                        }
+					if (_mod_array[2] == false && !struct_exists(stat, _stat_key) ) continue;
+					
+                    // Solo procesar si es un modificador pasivo ([valor, numtype, true])
+                    var _stat_to_mod = stats[$ _stat_key];
+                    var _mod_value = _mod_array[0];
+                    var _mod_type = _mod_array[1];
+                            
+                    if (_mod_type == MALL_NUMTYPE.PERCENT) 
+					{
+                        _stat_to_mod.control_value += (_stat_to_mod.equipment_value * _mod_value) / 100;
+                    } 
+					else 
+					{
+                        _stat_to_mod.control_value += _mod_value;
                     }
+                }
+            }
+        }
+	}
+
+	/// @desc (Privado) Aplica los modificadores del equipo.
+	/// @ignore
+	static __ApplyEquipmentModifiers = function()
+	{
+		var _stat_keys = variable_struct_get_names(stats);
+		var _stat_keys_length = array_length(_stat_keys);
+		
+        for (var i = 0; i < _stat_keys_length; i++) 
+		{
+            var _stat_inst = stats[$ _stat_keys[i] ];
+            _stat_inst.equipment_value = _stat_inst.peak_value;
+        }
+        
+        var _slot_keys = variable_struct_get_names(slots);
+		var _slot_keys_length = array_length(_slot_keys);
+		
+        for (var i = 0; i < _slot_keys_length; i++) 
+		{
+            var _slot_inst = slots[$ _slot_keys[i]];
+			if (!_slot_inst.is_active) continue;
+			
+			var _equipped_items_length = array_length(_slot_inst.equipped_items);
+            for (var k = 0; k < _equipped_items_length; k++) 
+			{
+                var _item = pocket_item_get(_slot_inst.equipped_items[k]);
+                if (is_undefined(_item) || !variable_struct_exists(_item, "stats") ) continue;
+                    
+                var _item_stat_keys = variable_struct_get_names(_item.stats);
+				var _item_stat_keys_length = array_length(_item_stat_keys);
+					
+                for (var j = 0; j < _item_stat_keys_length; j++) 
+				{
+                    var _item_stat_key = _item_stat_keys[j];
+					if (!struct_exists(stats, _item_stat_key) ) continue;
+
+					var _stat_to_mod = stats[$ _item_stat_key];
+					var _mod_array = _item.stats[$ _item_stat_key];
+					var _mod_value = _mod_array[0];
+					var _mod_type = _mod_array[1];
+							
+					if (_mod_type == MALL_NUMTYPE.PERCENT)
+					{
+						_stat_to_mod.equipment_value += (_stat_to_mod.peak_value * _mod_value) / 100;
+					} 
+					else 
+					{
+						_stat_to_mod.equipment_value += _mod_value;
+					}
                 }
             }
         }
@@ -882,32 +982,89 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
         }
 	}
 	
-	static __StatLaunchOnEquip = function(_slot)
+	/// @desc (Privado) Despacha un evento a todas las instancias de stats.
+	/// @ignore
+	static __DispatchStatEvent = function(_event_name, _arg1 = undefined, _arg2 = undefined)
 	{
-		var _all_stat = mall_get_stat_keys();
+		var _keys = variable_struct_get_names(stats);
+		var _keys_length = array_length(_keys);
 		
-		var i=0; repeat(array_length(_all_stat) )
+		for (var i = 0; i < _keys_length; i++)
 		{
-			var _stat = StatGet( _all_stat[i] );
-			_stat.event_on_equip(_stat, _slot);
-			
-			i++;	
+			var _stat_inst = stats[$ _keys[i]];
+			var _event_func = _stat_inst[$ _event_name];
+			if (is_callable(_event_func) ) 
+			{
+				_event_func(_stat_inst, _arg1, _arg2);
+			}
 		}
+	}
+	
+	/// @desc (Privado) Despacha un evento a todas las instancias de slots.
+	/// @ignore
+	static __DispatchSlotEvent = function(_event_name, _arg1 = undefined, _arg2 = undefined)
+	{
+		var _keys = variable_struct_get_names(slots);
+		var _keys_length = array_length(_keys);
+		
+		for (var i = 0; i < _keys_length; i++)
+		{
+			var _slot_inst = slots[$ _keys[i]];
+			var _event_func = _slot_inst[$ _event_name];
+			if (is_callable(_event_func) ) 
+			{
+				_event_func(_slot_inst, _arg1, _arg2);
+			}
+		}
+	}
+	
+	/// @desc (Privado) Despacha un evento a todas las instancias de estados.
+	/// @ignore
+	static __DispatchStateEvent = function(_event_name, _arg1 = undefined, _arg2 = undefined)
+	{
+		var _keys = variable_struct_get_names(states);
+		var _keys_length = array_length(_keys);
+		
+		for (var i = 0; i < _keys_length; i++)
+		{
+			var _state_inst = states[$ _keys[i]];
+			var _event_func = _state_inst[$ _event_name];
+			if (is_callable(_event_func)) 
+			{
+				_event_func(_state_inst, _arg1, _arg2);
+			}
+		}
+	}
+	
+	/// @desc (Privado) Despacha un evento a todos los objetos equipados.
+	/// @ignore
+	static __DispatchEquippedItemEvent = function(_event_name, _arg1 = undefined, _arg2 = undefined)
+	{
+		static __function = function(_slot_inst, _slot_key)
+		{
+			var _equipped_items = _slot_inst.equipped_items;
+			var _equipped_items_length = array_length(_equipped_items) 
+			
+			for (var i = 0; i < _equipped_items_length; i++) 
+			{
+				var _item_key = _equipped_items[i];
+				var _item_template = pocket_item_get(_item_key);
+				
+				if (!is_undefined(_item_template) ) 
+				{
+					var _event_func = _item_template[$ event_name];
+					if (is_callable(_event_func) ) 
+					{
+						_event_func(self, arg1, arg2);
+					}
+				}
+			}
+		}
+		
+		var _this = self;
+		SlotForeach(method( { this: _this, event_name: _event_name, arg1: _arg1, arg2: _arg2 }, __function) ); 
 	}
 
-	static __StatLaunchOnDesequip = function(_slot)
-	{
-		var _all_stat = mall_get_stat_keys();
-		var _all_stat_length = array_length(_all_stat);
-		
-		var i=0; repeat(array_length(_all_stat) )
-		{
-			var _stat = StatGet( _all_stat[i] );
-			_stat.event_on_desequip(_stat, _slot);
-			
-			i++;
-		}
-	}
 	
 	#endregion
 	
@@ -950,11 +1107,16 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
     /// @desc Recalcula todas las estadísticas (usado al subir de nivel o al equipar/desequipar).
     static RecalculateStats = function()
     {
-		// Ejecuta cada paso del cálculo en orden.
 		__CalculatePeakValues();
 		__ApplyEquipmentModifiers();
 		__ApplyStateModifiers();
 		__FinalizeStatValues();
+		
+		// Notificar a todos los componentes que las estadísticas se han actualizado
+		__DispatchStatEvent("event_on_update");
+		__DispatchSlotEvent("event_on_update");
+		__DispatchStateEvent("event_on_update");
+		__DispatchEquippedItemEvent("event_on_update", self);
     }
 	
     /// @desc Sube de nivel a la entidad y recalcula sus estadísticas.
@@ -1098,53 +1260,47 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @desc Equipa un objeto en un slot.
 	/// @param {String} slot_key La llave del slot.
 	/// @param {String} item_key La llave del objeto a equipar.
-	/// @return {Struct} { success: bool, previously_equipped: string_or_undefined }
     static SlotEquip = function(_slot_key, _item_key)
     {
         var _slot_inst = SlotGet(_slot_key);
-        if (is_undefined(_slot_inst) ) 
-		{
-			return { success: false, previously_equipped: undefined }; 
-		}
+        if (is_undefined(_slot_inst) ) return { success: false, previously_equipped: undefined };
         
         var _result = _slot_inst.Equip(_item_key);
-        if (_result.success) 
+        if (_result.success)
 		{ 
 			RecalculateStats();
-			// Lanzar eventos de equipamiento.
-			__StatLaunchOnEquip(_slot_inst);
+			
+			// Lanzar eventos de notificación a todos los componentes
+			__DispatchStatEvent("event_on_equip", _slot_inst);
+			__DispatchStateEvent("event_on_equip", _slot_inst);
+			event_on_equip(_slot_inst, _result);
 		}
-		
-		if (is_callable(event_on_equip) ) event_on_equip(_slot_inst, _result);
 		
 		return _result;
     }
-    
+	
 	/// @desc Desequipa un objeto de un slot.
 	/// @param {String} slot_key La llave del slot.
 	/// @param {String} item_key La llave del objeto a desequipar.
-	/// @return {Struct} { success: bool, unequipped_item: string_or_undefined }
     static SlotDesequip = function(_slot_key, _item_key)
     {
         var _slot_inst = SlotGet(_slot_key);
-        if (is_undefined(_slot_inst) ) 
-		{
-            return { success: false, unequipped_item: undefined };
-        }
+        if (is_undefined(_slot_inst)) return { success: false, unequipped_item: undefined };
 
         var _result = _slot_inst.Desequip(_item_key);
         if (_result.success) 
 		{ 
 			RecalculateStats();
-			// Lanzar eventos de desequipamiento.
-			__StatLaunchOnDesequip(_slot_inst);
+			
+			// Lanzar eventos de notificación a todos los componentes
+			__DispatchStatEvent("event_on_desequip", _slot_inst);
+			__DispatchStateEvent("event_on_desequip", _slot_inst);
+			event_on_desequip(_slot_inst, _result);
 		}
-		
-		if (is_callable(event_on_desequip) ) event_on_desequip(_slot_inst, _result);
 		
 		return _result;
     }
-    
+   
     /// @desc Devuelve los objetos equipados en un slot.
 	/// @param {String} key La llave del slot.
     /// @return {Array<String>} Un array con las llaves de los objetos equipados.
@@ -1240,7 +1396,8 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 		
 		for (var i = 0; i < _state_keys_length; i++)
 		{
-			var _current_state_inst = states[ $ _state_keys[i] ];
+			var _k = _state_keys[i];
+			var _current_state_inst = states[$ _k];
 			if (!_current_state_inst.boolean_value) continue;
 			
 			// Si el estado que se esta analizando previene el estado que se intenta añadir.
@@ -1300,7 +1457,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 		if (is_undefined(_state_inst) ) return _result;
 
 		// Buscarlo por key y eliminarlo. Se buscará al primero que entregue true.
-		var _index = array_find_index(_state_inst.effects, method( {template: _effect_template} , _filter ?? __default_filter);
+		var _index = array_find_index(_state_inst.effects, method( {template: _effect_template} , _filter ?? __default_filter) );
 		var _effect_removed = undefined;
 		
 		if (_index > -1) _effect_removed = _state_inst.effects[_index];
@@ -1330,7 +1487,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 		}
 		
 		// Calcular todas las estadisticas.
-		RecalculateStats();
+		if (!__is_updating_all_states) RecalculateStats();
 			
 		// Guardar resultados.
 		_result.removed = _effect_removed;
@@ -1341,25 +1498,34 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	
 	/// @desc Elimina todos los efectos de un estado específico.
 	/// @param {String} key La llave del estado a limpiar.
-	static StateRemoveAllEffects = function(_key)
+	/// @param {Function} [filter] Una función opcional para encontrar un efecto específico. (_value, _index) context (template: EffectTemplate).	
+	static StateRemoveAllEffects = function(_key, _filter)
 	{
+		var _results = { };
 		var _state_inst = StateGet(_key);
-		if (is_undefined(_state_inst) || !_state_inst.boolean_value)
-		{
-			return;
-		}
-		
+		if (is_undefined(_state_inst) || !_state_inst.boolean_value) return _results;
+				
 		// Disparar evento de finalización para cada efecto
-		for (var i = 0; i < array_length(_state_inst.effects); i++) {
-			var _effect_inst = _state_inst.effects[i];
-			mall_get_function(_effect_inst.template.event_on_end)(self, _effect_inst);
+		var _state_effects = _state_inst.effects;
+		var _state_effects_length = array_length(_state_effects);
+		
+		// Flag para optimizar cada bucle.
+		__is_updating_all_states = true;
+		
+		for (var i = array_length(_state_inst.effects) - 1; i >= 0; i--)
+		{
+			var _effect_inst =	_state_inst.effects[i];
+			var _effect_key =	_effect_inst.template.key;
+			
+			struct_set(_results, _effect_key+i, EffectRemove(_effect_key, _filter) );
 		}
 		
-		_state_inst.effects = [];
-		_state_inst.boolean_value = false;
-		_state_inst.event_on_end(self);
+		__is_updating_all_states = false;
 		
+		// Recalcular todas las estadisticas.
 		RecalculateStats();
+		
+		return _results;
 	}
 
 	/// @desc Actualiza los efectos de un estado específico según el momento del turno.
@@ -1369,9 +1535,13 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	{
 		var _state_inst = StateGet(_key);
 		if (is_undefined(_state_inst) || !_state_inst.boolean_value) return;
+
+		// Flag para no recalcular los stats (optimizacion)
+		__is_updating_all_states = true;
 		
 		// Iterar hacia atrás para poder eliminar efectos de forma segura
-		for (var i = array_length(_state_inst.effects) - 1; i >= 0; i--) {
+		for (var i = array_length(_state_inst.effects) - 1; i >= 0; i--) 
+		{
 			var _effect_inst = _state_inst.effects[i];
 			var _template = _effect_inst.template;
 			
@@ -1386,36 +1556,86 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 			{
 				case MALL_ITERATOR_STATE.WORKING:
 				case MALL_ITERATOR_STATE.CYCLE_END:
-					// El efecto sigue activo, ejecutar su evento de turno
-					var _event = (_turn_type == MALL_EFFECT_TURN.START) ? _template.event_on_turn_start : _template.event_on_turn_end;
-					mall_get_function(_event)(self, _effect_inst);
+					// Procesar efectos activos (que modifican current_value)
+					var _effect_modifiers = _template.stats;
+					var _effect_mod_keys = variable_struct_get_names(_effect_modifiers);
+					var _effect_mod_keys_length = array_length(_effect_mod_keys);
+					
+					for (var j = 0; j < _effect_mod_keys_length; j++) 
+					{
+						var _stat_key = _effect_mod_keys[j];
+						var _mod_array = _effect_modifiers[$ _stat_key];
+						
+						// Solo procesar si es un modificador activo ([valor, numtype, false])
+						if (_mod_array[2] == true) continue;
+						
+						var _base_value = _mod_array[0];
+						var _base_type = _mod_array[1];
+						var _value_to_apply;
+						var _type_to_apply = _base_type;
+							
+						// Comprobar si hay un evento de cálculo
+						if (is_callable(_effect_inst.event_on_calculate) ) 
+						{
+							_value_to_apply = _effect_inst.event_on_calculate(self, _effect_inst, _base_value, _base_type);
+							// El evento devuelve un valor ya calculado.
+							_type_to_apply = MALL_NUMTYPE.REAL;
+						} 
+						else 
+						{
+							_value_to_apply = _base_value;
+						}
+							
+						StatAdd(_stat_key, _value_to_apply, _type_to_apply);
+					}
+					
+					// Llamar evento.
+					var _event = (_turn_type == MALL_EFFECT_TURN.START) ? _effect_inst.event_on_turn_start : _effect_inst.event_on_turn_end;
+					if (is_callable(_event) ) _event(self, _effect_inst);
+					
 					break;
 				
 				case MALL_ITERATOR_STATE.COMPLETED:
+					// Establecer variable en el effecto indicando que debe ser eliminada.
+					with (_effect_inst) __to_remove = true;
+				
 					// El efecto ha terminado, eliminarlo
-					EffectRemove(_effect_inst);
+					EffectRemove(_state_inst, function(_value, _index) {
+						if (struct_exists(_value, "__to_remove") && _value.template.key == key)
+						{
+							return true;
+						}
+					});
+					
 					break;
 			}
 		}
 		
+		// Recalcular
+		__is_updating_all_states = false;
+		
 		// Recalcular stats solo si no estamos en un bucle de actualización masiva
-		if (!__is_updating_all_states) {
-			RecalculateStats();
-		}
+		if (!__is_updating_all_states) RecalculateStats();
 	}
+
 	
 	/// @desc Actualiza todos los estados de la entidad según el momento del turno.
 	/// @param {Enum.MALL_EFFECT_TURN} turn_type El momento del turno (START o END).
 	static StateUpdateAll = function(_turn_type)
 	{
+		// Flag para optimizar.
 		__is_updating_all_states = true;
 		
 		var _keys = variable_struct_get_names(states);
-		for (var i = 0; i < array_length(_keys); i++) {
+		var _keys_length = array_length(_keys);
+		
+		for (var i = 0; i < _keys_length; i++)
+		{
 			EffectsUpdateByTurn(_keys[i], _turn_type);
 		}
 		
 		__is_updating_all_states = false;
+		
 		RecalculateStats();
 	}
 	
@@ -1594,6 +1814,11 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	{
 		// Actualiza todos los estados y efectos que se activan al inicio del turno.
 		StateUpdateAll(MALL_EFFECT_TURN.START);
+		
+		// Notificar a todos los componentes
+		__DispatchStatEvent("event_on_turn_start");
+		__DispatchSlotEvent("event_on_turn_start");
+		__DispatchEquippedItemEvent("event_on_turn_start", self);
 	}
 
 	/// @desc Se ejecuta al final del turno de la entidad en combate.
@@ -1601,6 +1826,11 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	{
 		// Actualiza todos los estados y efectos que se activan al final del turno.
 		StateUpdateAll(MALL_EFFECT_TURN.END);
+		
+		// Notificar a todos los componentes
+		__DispatchStatEvent("event_on_turn_end");
+		__DispatchSlotEvent("event_on_turn_end");
+		__DispatchEquippedItemEvent("event_on_turn_end", self);		
 	}
 
 	/// @desc Selecciona la acción a realizar en el turno.

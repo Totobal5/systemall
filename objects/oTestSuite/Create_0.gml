@@ -36,6 +36,11 @@ __mall_test_pocket_bag_events(runner);
 // =============================================================================
 __mall_test_party_entity(runner);
 
+// =============================================================================
+// SUITE 6: PRUEBAS DE EVENTOS DE ENTIDAD (PARTY)
+// =============================================================================
+__mall_test_party_entity_events(runner);
+
 
 // --- EJECUTAR TODAS LAS PRUEBAS ---
 runner.run();
