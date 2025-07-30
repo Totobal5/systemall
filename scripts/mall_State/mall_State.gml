@@ -22,13 +22,15 @@ function MallState(_key) : MallEvents(_key) constructor
 
     // --- Llaves de Eventos ---
 	
-	/// @desc Se ejecuta una vez cuando la instancia del estado es creada para una entidad.
+	/// @desc Se ejecuta cuando la instancia cambia su valor booleano y cuando es creada.
 	/// @context PartyEntity
 	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
-    event_on_start = "";
+	event_on_start = "";
 	
-	/// @desc (Sin implementación actual en el motor)
-    event_on_end = "";
+	/// @desc Se ejecuta cuando la instancia cambia su valor booleano al original.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
+	event_on_end = "";
 	
 	/// @desc Se ejecuta en cada llamada a RecalculateStats.
 	/// @context PartyEntity

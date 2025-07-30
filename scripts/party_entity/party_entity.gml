@@ -337,6 +337,7 @@ function EntitySlotInstance(_template, _entity) constructor
 }
 
 /// @desc Representa la instancia de un state para una entidad.
+/// @param {Struct.MallState} state_template
 function EntityStateInstance(_template) constructor
 {
 	// Referencia a la plantilla MallState
@@ -344,19 +345,21 @@ function EntityStateInstance(_template) constructor
 	
 	// Valor booleano de estado actual de esta instancia
 	boolean_value = template.boolean_value;
+	reset_value = template.reset_value;
 	
 	// Array para contener las instancias de efectos activos
 	effects = [];
 
     // --- Llaves de Eventos ---
 	
-	/// @desc Se ejecuta una vez cuando la instancia del estado es creada para una entidad.
+	/// @desc Se ejecuta cuando la instancia cambia su valor booleano y cuando es creada.
 	/// @context PartyEntity
 	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
-	/// @param effect effecto añadido
 	event_on_start =	method(parent_entity, mall_get_function( template[$ "event_on_start"] ) );
 	
-	/// @desc (Sin implementación actual en el motor)	
+	/// @desc Se ejecuta cuando la instancia cambia su valor booleano al original.
+	/// @context PartyEntity
+	/// @param {Struct.EntityStateInstance} state_instance La instancia actual.
 	event_on_end =		method(parent_entity, mall_get_function( template[$ "event_on_end"] ) );
 	
 	/// @desc Se ejecuta en cada llamada a RecalculateStats.
@@ -476,7 +479,7 @@ function DarkEffectInstance(_template) constructor
 
 	// -- Eventos --
 	
-	/// @desc Evento al ser creado.
+	/// @desc Evento al ser añadido en un estado.
 	/// @param entity
 	/// @param state
     event_on_start =		mall_get_function( template[$ "event_on_start"] );
@@ -556,12 +559,12 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	vars = {};
 	
 	// --- Estado de la Instancia ---
-	level = 1;
-    stats = {};
-    slots = {};
-    states = {};
-    commands = {};
-	flags = {};
+	level =		1;
+    stats =		{};
+    slots =		{};
+    states =	{};
+    commands =	{};
+	flags =		{};
 	
 	// -- Eventos --
 	
@@ -729,9 +732,17 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	static __LoadStates = function(_template)
 	{
         var _all_state_keys = mall_get_state_keys();
-        for (var i = 0; i < array_length(_all_state_keys); i++) {
+		var _all_state_length = array_length(_all_state_keys);
+		
+        for (var i = 0; i < _all_state_length; i++) 
+		{
             var _state_key = _all_state_keys[i];
-            states[$ _state_key] = new EntityStateInstance(mall_get_state(_state_key));
+			var _state_inst = new EntityStateInstance( mall_get_state(_state_key) );
+			
+            states[$ _state_key] = _state_inst;
+			
+			// Ejecutar evento de inicio.
+			if (is_callable(_state_inst.event_on_start) ) _state_inst.event_on_start(_state_inst);
         }
 	}
 	
@@ -1167,9 +1178,9 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	static SlotForeach = function(_fn)
 	{
 		var _keys = variable_struct_get_names(slots);
-		for (var i = 0; i < array_length(_keys); i++)
+		var i=0; repeat(array_length(_keys) )
 		{
-			var _key = _keys[i];
+			var _key = _keys[i++];
 			_fn(slots[$ _key], _key);
 		}
 	}
@@ -1200,16 +1211,30 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @return {Struct.DarkEffectInstance} La instancia del efecto creado, o undefined si falló.
 	static EffectAdd = function(_effect_key)
 	{
+		var _result = { added: undefined, success: false, leftover: undefined }
+		// Obtener efecto y si no existe salir.
 		var _effect_template = mall_get_dark(_effect_key);
-		if (is_undefined(_effect_template)) return undefined;
+		if (is_undefined(_effect_template) ) return _result;
 		
+		// Obtener instancia de estado y si no existe salir.
 		var _state_key = _effect_template.state_key;
 		var _state_inst = StateGet(_state_key);
-		if (is_undefined(_state_inst)) return undefined;
+		if (is_undefined(_state_inst) ) return _result;
 		
+		// Crear instancia de efecto y comprobar si se puede añadir.
+		var _effect_instance = new DarkEffectInstance(_effect_template);
+		// Comprobar si se puede añadir.
+		if (is_callable(_state_inst.event_can_add_effect) && !(_state_inst.event_can_add_effect(_state_inst, _effect_instance) ) ) 
+		{
+			// Añadir instancia de efecto no agregada al resultado.
+			_result.leftover = _effect_instance;
+			return _result;
+		}
+		
+		// Obtener template de estado.
 		var _state_template = _state_inst.template;
 		
-		// 1. Comprobar inmunidades y prioridades
+		// Comprobar inmunidades y prioridades
 		var _state_keys = variable_struct_get_names(states);
 		var _state_keys_length = array_length(_state_keys);
 		
@@ -1218,64 +1243,100 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 			var _current_state_inst = states[ $ _state_keys[i] ];
 			if (!_current_state_inst.boolean_value) continue;
 			
-			if (array_contains(_current_state_inst.template.prevents_states, _state_key) ) return undefined;
-			if (_current_state_inst.template.restricts_action && _state_template.priority < _current_state_inst.template.priority) return undefined;
+			// Si el estado que se esta analizando previene el estado que se intenta añadir.
+			if (array_contains(_current_state_inst.template.prevents_states, _state_key) ) return _result;
+			
+			// Comprobar prioridades.
+			if (_current_state_inst.template.restricts_action && _state_template.priority < _current_state_inst.template.priority) return _result;
 		}
 		
-		// 2. Limpiar otros estados
+		// Limpiar otros estados
 		var _states_to_clear = _state_template.clears_states;
-		for (var i = 0; i < array_length(_states_to_clear); i++)
-		{
-			StateRemoveAllEffects(_states_to_clear[i]);
-		}
+		var i=0; repeat(array_length(_states_to_clear) ) { StateRemoveAllEffects( _states_to_clear[i++] ); }
 		
-		// 3. Crear y añadir la instancia del efecto
-		var _effect_instance = new DarkEffectInstance(_effect_template);
+		// Crear y añadir la instancia del efecto
 		array_push(_state_inst.effects, _effect_instance);
 		
-		// 4. Activar el estado y ejecutar eventos
-		if (!_state_inst.boolean_value)
+		// Si esta en un estado inicial
+		if (_state_inst.boolean_value == _state_inst.reset_value) 
 		{
-			_state_inst.boolean_value = true;
-			_state_inst.event_on_start(self);
+			_state_inst.boolean_value = !_state_inst.reset_value;
+			
+			// Evento al cambiar de estado booleano.
+			if (is_callable(_state_inst.event_on_start) ) _state_inst.event_on_start(_state_inst, _effect_instance);
 		}
+	
+		// Ejecutar eventos.
+		_state_inst.event_on_add_effect(_state_inst, _effect_instance);
+		_effect_instance.event_on_start(self, _state_inst);
 		
-		// Evento de la instancia al añadir un nuevo efecto.
-		_state_inst.event_can_add_effect(_state_inst, _effect_instance);
-		
-		// Evento del effecto al ser creado.
-		_effect_instance(self, _state_inst);
-		
+		// Recalcular estadisticas.
 		RecalculateStats();
-		return _effect_instance;
+		
+		// Cambiar resultado.
+		_result.added = _effect_instance;
+		_result.success = true;
+		
+		return _result;
 	}
 	
 	/// @desc Elimina una instancia de efecto de un estado.
-	/// @param {Struct.DarkEffectInstance} effect_instance La instancia del efecto a eliminar.
-	/// @return {Bool} Devuelve true si el efecto fue eliminado.
-	static EffectRemove = function(_effect_instance)
+	/// @param {String} effect_key La llave de la plantilla del efecto a añadir.
+	/// @param {Function} [filter] Una función opcional para encontrar un efecto específico. (_value, _index) context (template: EffectTemplate).
+	static EffectRemove = function(_effect_key, _filter)
 	{
-		if (is_undefined(_effect_instance)) return false;
-		
-		var _state_key = _effect_instance.template.state_key;
-		var _state_inst = StateGet(_state_key);
-		if (is_undefined(_state_inst)) return false;
-		
-		var _removed = array_remove(_state_inst.effects, _effect_instance);
-		
-		if (_removed) {
-			mall_get_function(_effect_instance.template.event_on_end)(self, _effect_instance);
-			
-			// Si ya no quedan efectos, desactivar el estado
-			if (array_length(_state_inst.effects) == 0) {
-				_state_inst.boolean_value = false;
-				_state_inst.event_on_end(self);
-			}
-			
-			RecalculateStats();
+		static __default_filter = function(_value, _index) {
+			return (_value.template.key == template.key);
 		}
 		
-		return _removed;
+		var _result = { removed: undefined, success: false }
+		
+		// Obtener efecto y si no existe salir.
+		var _effect_template = mall_get_dark(_effect_key);
+		if (is_undefined(_effect_template) ) return _result;
+		
+		var _state_key = _effect_template.state_key;
+		var _state_inst = StateGet(_state_key);
+		if (is_undefined(_state_inst) ) return _result;
+
+		// Buscarlo por key y eliminarlo. Se buscará al primero que entregue true.
+		var _index = array_find_index(_state_inst.effects, method( {template: _effect_template} , _filter ?? __default_filter);
+		var _effect_removed = undefined;
+		
+		if (_index > -1) _effect_removed = _state_inst.effects[_index];
+		
+		// Si no existe entonces devolver resultado.
+		if (is_undefined(_effect_removed) ) return _result;
+		
+		// Validar si el efecto se puede eliminar
+		var _can_remove_effect = _state_inst.event_can_remove_effect;
+		if (is_callable(_can_remove_effect) && !_can_remove_effect(_state_inst, _effect_removed) ) 
+		{
+			return _result;
+		}
+		
+		// Elimnar del array de efectos de la instacia de estados.
+		array_delete(_state_inst.effects, _index, 1);
+			
+		// Ejecutar eventos de notificación
+		_state_inst.event_on_remove_effect(_state_inst, _effect_removed);
+		_effect_removed.event_on_end(self, _state_inst);
+		
+		// Si ya no quedan efectos, desactivar el estado
+		if (array_length(_state_inst.effects) == 0)
+		{
+			_state_inst.boolean_value = _state_inst.reset_value;
+			_state_inst.event_on_end(_state_inst);
+		}
+		
+		// Calcular todas las estadisticas.
+		RecalculateStats();
+			
+		// Guardar resultados.
+		_result.removed = _effect_removed;
+		_result.success = true;
+
+		return _result;
 	}
 	
 	/// @desc Elimina todos los efectos de un estado específico.
@@ -1283,7 +1344,8 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	static StateRemoveAllEffects = function(_key)
 	{
 		var _state_inst = StateGet(_key);
-		if (is_undefined(_state_inst) || !_state_inst.boolean_value) {
+		if (is_undefined(_state_inst) || !_state_inst.boolean_value)
+		{
 			return;
 		}
 		
