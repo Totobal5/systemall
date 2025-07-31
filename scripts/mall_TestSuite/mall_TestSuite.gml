@@ -688,6 +688,7 @@ function __mall_test_party_entity(_runner)
 	});
 	suite_party.addTestCase(test_party_remove_effect);
 }
+
 function __mall_test_party_entity_events(_runner)
 {
 	var suite_party_events = new TestSuite("Pruebas de Eventos de Entidad");
@@ -864,3 +865,292 @@ function __mall_test_party_entity_events(_runner)
 	suite_party_events.addTestCase(test_turn_start_dispatch);	
 }
 
+function __mall_test_ai(_runner)
+{
+	var suite_ai = new TestSuite("Pruebas del Sistema de IA");
+	_runner.addTestSuite(suite_ai);
+
+	// --- Configuración de la Suite de IA ---
+	suite_ai.setUp(function() {
+		// Limpiar
+		mall_system_cleanup();
+		
+	    // Arrange: Crear un set de datos completo para probar la IA
+	    var master = {
+	        "Stats": ["./test_ai_stats.json"],
+	        "Commands": ["./test_ai_commands.json"],
+	        "Party": ["./test_ai_entities.json"],
+	        "AI": ["./test_ai_packages.json"]
+	    };
+	    var file = file_text_open_write("test_master_ai.json");
+		file_text_write_string(file, json_stringify(master));
+		file_text_close(file);
+    
+	    var stats = { 
+			"type": "Stats", 
+			"EN": {
+			
+			} 
+		};
+	    file = file_text_open_write("test_ai_stats.json");
+		file_text_write_string(file, json_stringify(stats));
+		file_text_close(file);
+    
+	    var commands = { "type": "Commands", "CMD_ATAQUE": {}, "CMD_CURAR": {} };
+	    file = file_text_open_write("test_ai_commands.json");
+		file_text_write_string(file, json_stringify(commands));
+		file_text_close(file);
+    
+	    var entities = { 
+			"type": "Party", 
+			"ENEMY_TEST": {
+				"ai_package": "AI_SIMPLE",
+				"stats": { "EN": 10 }
+			},
+			
+			"ALLY_TEST": {
+			
+			} 
+		};
+	    file = file_text_open_write("test_ai_entities.json");
+		file_text_write_string(file, json_stringify(entities));
+		file_text_close(file);
+    
+	    var ai_data = {
+	        "type": "AI",
+	        "rules": {
+	            "RULE_ATTACK": { "priority": 0, "condition": "AI_COND_Always_True", "action": "AI_ACTION_Attack", "target": "AI_TARGET_Self" },
+	            "RULE_HEAL": { "priority": 100, "condition": "AI_COND_HP_Below_50", "action": "AI_ACTION_Heal", "target": "AI_TARGET_Self" }
+	        },
+	        "packages": {
+	            "AI_SIMPLE": { "rules": ["RULE_ATTACK"] },
+	            "AI_HEALER": { "rules": ["RULE_HEAL", "RULE_ATTACK"] },
+	            "AI_BOSS": { "rules": ["AI_HEALER"] } // Hereda de AI_HEALER
+	        }
+	    };
+	    file = file_text_open_write("test_ai_packages.json");
+		file_text_write_string(file, json_stringify(ai_data));
+		file_text_close(file);
+		
+	    // Definir funciones de IA
+	    Systemall.__functions[$ "AI_COND_Always_True"] = function(caster, context) { return true; };
+	    Systemall.__functions[$ "AI_COND_HP_Below_50"] = function(caster, context) {
+	        return (caster.StatGet("EN").current_value / caster.StatGet("EN").control_value) < 0.5;
+	    };
+	    Systemall.__functions[$ "AI_ACTION_Attack"] = function(caster, targets) { return "CMD_ATAQUE"; };
+	    Systemall.__functions[$ "AI_ACTION_Heal"] = function(caster, targets) { return "CMD_CURAR"; };
+	    Systemall.__functions[$ "AI_TARGET_Self"] = function(caster, context) { return [caster]; };
+    
+	    mall_init("test_master_ai.json");
+	});
+
+	suite_ai.onRunBegin(function() {
+	    // Crear instancias para las pruebas
+	    self.caster = party_entity_create_instance("ENEMY_TEST", 1);
+	    self.ally = party_entity_create_instance("ALLY_TEST", 1);
+	    self.context = { player_group: new PartyGroup("players"), enemy_group: new PartyGroup("enemies") };
+	    self.context.enemy_group.Add(self.caster);
+	    self.context.player_group.Add(self.ally);
+	});
+
+	suite_ai.tearDown(function() {
+	    // Limpiar archivos
+	    if (file_exists("test_master_ai.json")) file_delete("test_master_ai.json");
+	    if (file_exists("test_ai_stats.json")) file_delete("test_ai_stats.json");
+	    if (file_exists("test_ai_commands.json")) file_delete("test_ai_commands.json");
+	    if (file_exists("test_ai_entities.json")) file_delete("test_ai_entities.json");
+	    if (file_exists("test_ai_packages.json")) file_delete("test_ai_packages.json");
+	});
+
+	// --- Casos de Prueba ---
+
+	var test_ai_simple_action = new TestCase("Test Selección de Acción Simple", function() {
+	    // Arrange
+	    parent.caster.ai_instance = new EntityAIInstance(parent.caster, "AI_SIMPLE");
+    
+	    // Act
+	    var action = parent.caster.SelectAction(parent.context);
+    
+	    // Assert
+	    assertIsNotUndefined(action, "La IA debería haber seleccionado una acción.");
+	    assertEqual(action.source.key, "CMD_ATAQUE", "La acción seleccionada debe ser el ataque por defecto.");
+	});
+	suite_ai.addTestCase(test_ai_simple_action);
+
+	var test_ai_priority = new TestCase("Test Prioridad de Reglas", function() {
+	    // Arrange
+	    parent.caster.ai_instance = new EntityAIInstance(parent.caster, "AI_HEALER");
+	    parent.caster.StatSet("EN", 4); // Bajar la vida para activar la condición de curación
+    
+	    // Act
+	    var action = parent.caster.SelectAction(parent.context);
+    
+	    // Assert
+	    assertEqual(action.source.key, "CMD_CURAR", "La IA debería priorizar la curación sobre el ataque.");
+	});
+	suite_ai.addTestCase(test_ai_priority);
+
+	var test_ai_inheritance = new TestCase("Test Herencia de Paquetes de IA", function() {
+	    // Arrange
+	    parent.caster.ai_instance = new EntityAIInstance(parent.caster, "AI_BOSS");
+	    parent.caster.StatSet("EN", 4); // Bajar la vida para activar la condición de curación heredada
+    
+	    // Act
+	    var action = parent.caster.SelectAction(parent.context);
+    
+	    // Assert
+	    assertEqual(action.source.key, "CMD_CURAR", "La IA del jefe debería heredar y usar la regla de curación.");
+	});
+	suite_ai.addTestCase(test_ai_inheritance);	
+}
+
+function __mall_test_wate(_runner)
+{
+	var suite_wate = new TestSuite("Pruebas del Gestor de Combate");
+	_runner.addTestSuite(suite_wate);
+
+	// --- Configuración de la Suite de Combate ---
+	suite_wate.setUp(function() {
+	    // Arrange: Crear un set de datos completo para un escenario de batalla
+	    var master = {
+	        "Stats": ["./test_w_stats.json"],
+	        "Commands": ["./test_w_commands.json"],
+	        "Party": ["./test_w_entities.json"],
+	        "Wate": ["./test_w_encounters.json"]
+	    };
+	    var file = file_text_open_write("test_master_wate.json");
+	    file_text_write_string(file, json_stringify(master));
+	    file_text_close(file);
+    
+	    var stats = { "type": "Stats", "EN": {}, "VELOCIDAD": {} };
+	    file = file_text_open_write("test_w_stats.json");
+	    file_text_write_string(file, json_stringify(stats));
+	    file_text_close(file);
+    
+	    var commands = { "type": "Commands", "CMD_ATAQUE": { "event_execute": "EVT_WATE_BasicDamage" } };
+	    file = file_text_open_write("test_w_commands.json");
+	    file_text_write_string(file, json_stringify(commands));
+	    file_text_close(file);
+    
+	    var entities = { 
+	        "type": "Party", 
+	        "HERO": { "stats": { "EN": 100, "VELOCIDAD": 20 }, "commands": { "default": ["CMD_ATAQUE"] } },
+	        "ENEMY": { "stats": { "EN": 50, "VELOCIDAD": 10 }, "commands": { "default": ["CMD_ATAQUE"] } }
+	    };
+	    file = file_text_open_write("test_w_entities.json");
+	    file_text_write_string(file, json_stringify(entities));
+	    file_text_close(file);
+    
+	    var encounters = {
+	        "type": "Wate",
+	        "encounters": {
+	            "ENCOUNTER_TEST": {
+	                "event_on_turn_order_create": "EVT_WATE_OrderBySpeed",
+	                "groups": [
+	                    { "positions": [ { "template_key": "ENEMY", "level": 1 } ] }
+	                ]
+	            }
+	        }
+	    };
+	    file = file_text_open_write("test_w_encounters.json");
+	    file_text_write_string(file, json_stringify(encounters));
+	    file_text_close(file);
+    
+	    mall_system_cleanup();
+    
+	    // Funciones de evento para el combate
+	    Systemall.__functions[$ "EVT_WATE_OrderBySpeed"] = function(_entities) {
+	        array_sort(_entities, function(a, b) { return b.StatGet("VELOCIDAD").control_value - a.StatGet("VELOCIDAD").control_value; });
+	        return _entities;
+	    };
+	    Systemall.__functions[$ "EVT_WATE_BasicDamage"] = function(_caster, _target, _params) {
+	        _target.StatAdd("EN", -10);
+	        return new MallResult().Push(_target.StatGet("EN").current_value <= 0, 0, 10, 0, 0);
+	    };
+    
+	    mall_init("test_master_wate.json");
+	});
+
+	suite_wate.onRunBegin(function() {
+	    // Crear el grupo de jugadores y las instancias para cada prueba
+	    self.player_group = new PartyGroup("PLAYER_GROUP");
+	    var hero_inst = party_entity_create_instance("HERO", 1);
+	    self.player_group.Add(hero_inst);
+	});
+
+	suite_wate.tearDown(function() {
+	    // Limpiar archivos
+	    if (file_exists("test_master_wate.json")) file_delete("test_master_wate.json");
+	    if (file_exists("test_w_stats.json")) file_delete("test_w_stats.json");
+	    if (file_exists("test_w_commands.json")) file_delete("test_w_commands.json");
+	    if (file_exists("test_w_entities.json")) file_delete("test_w_entities.json");
+	    if (file_exists("test_w_encounters.json")) file_delete("test_w_encounters.json");
+	});
+
+	// --- Casos de Prueba ---
+
+	var test_wate_start = new TestCase("Test Inicio de Batalla y Creación de Instancias", function() {
+	    // Act
+	    wate_start_battle("ENCOUNTER_TEST", parent.player_group);
+    
+	    // Assert
+	    var manager = wate_get_manager();
+	    assertIsNotUndefined(manager, "El WateManager debería haber sido creado.");
+	    assertEqual(array_length(manager.enemy_groups), 1, "Debe haber 1 grupo de enemigos.");
+	    assertEqual(manager.enemy_groups[0].Size(), 1, "El grupo de enemigos debe contener 1 entidad.");
+	    assertEqual(manager.enemy_groups[0].Get(0).template_key, "ENEMY", "La entidad creada debe ser del template correcto.");
+	});
+	suite_wate.addTestCase(test_wate_start);
+
+	var test_wate_turn_order = new TestCase("Test Orden de Turno por Velocidad", function() {
+	    // Act
+	    wate_start_battle("ENCOUNTER_TEST", parent.player_group);
+	    var manager = wate_get_manager();
+	    var turn_queue = manager.turn_queue;
+    
+	    // Assert
+	    assertEqual(array_length(turn_queue), 2, "La cola de turnos debe tener 2 entidades.");
+	    assertEqual(turn_queue[0].template_key, "HERO", "El héroe (más rápido) debería actuar primero.");
+	    assertEqual(turn_queue[1].template_key, "ENEMY", "El enemigo (más lento) debería actuar segundo.");
+	});
+	suite_wate.addTestCase(test_wate_turn_order);
+
+	var test_wate_action_damage = new TestCase("Test Ejecución de Acción y Daño", function() {
+	    // Arrange
+	    wate_start_battle("ENCOUNTER_TEST", parent.player_group);
+	    var manager = wate_get_manager();
+	    var hero = manager.turn_queue[0];
+	    var enemy = manager.turn_queue[1];
+	    var enemy_hp_before = enemy.StatGet("EN").current_value;
+    
+	    var attack_command = hero.CommandGet("default", "CMD_ATAQUE");
+	    var action = new WateAction(hero, attack_command, [enemy]);
+    
+	    // Act
+	    manager.ExecuteAction(action);
+    
+	    // Assert
+	    var enemy_hp_after = enemy.StatGet("EN").current_value;
+	    assertEqual(enemy_hp_after, enemy_hp_before - 10, "El HP del enemigo debería haber disminuido en 10.");
+	});
+	suite_wate.addTestCase(test_wate_action_damage);
+
+	var test_wate_victory_condition = new TestCase("Test Condición de Victoria", function() {
+	    // Arrange
+	    wate_start_battle("ENCOUNTER_TEST", parent.player_group);
+	    var manager = wate_get_manager();
+	    var hero = manager.turn_queue[0];
+	    var enemy = manager.turn_queue[1];
+	    enemy.StatSet("EN", 5); // Dejar al enemigo con 5 HP
+    
+	    var attack_command = hero.CommandGet("default", "CMD_ATAQUE");
+	    var action = new WateAction(hero, attack_command, [enemy]);
+    
+	    // Act
+	    manager.ExecuteAction(action);
+    
+	    // Assert
+	    assertIsUndefined(wate_get_manager(), "La batalla debería haber terminado y el gestor debería ser undefined.");
+	});
+	suite_wate.addTestCase(test_wate_victory_condition);	
+}

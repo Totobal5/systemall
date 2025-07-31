@@ -27,3 +27,11 @@ function __mall_get_function_check_false(_key)
 	static __default = function() {return false; }
 	return variable_struct_get(Systemall.__functions, _key) ?? __default;
 }
+
+function __mall_get_function_stat_level_up(_key)
+{
+	static __default = function(_stat) {
+		return _stat.base_value + (level * 2);
+	};
+	return variable_struct_get(Systemall.__functions, _key) ?? __default;
+}

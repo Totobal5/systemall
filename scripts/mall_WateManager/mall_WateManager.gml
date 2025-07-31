@@ -139,7 +139,7 @@ function WateManager(_encounter_key, _player_group) constructor
             _new_enemy_group.Add(_enemy_inst);
 			
 			// Registrar la instancia globalmente
-            // party_register_instance(_enemy_inst); 
+            party_register_instance(_enemy_inst); 
         }
         
         array_push(enemy_groups, _new_enemy_group);
@@ -233,12 +233,12 @@ function WateManager(_encounter_key, _player_group) constructor
             
 			if (is_callable(event_on_end) ) event_on_end(self, _rewards);
         } 
-		else 
+		else
 		{
             mall_broadcast_post("BATTLE_DEFEAT", { encounter: self });
         }
         
-        Wate.manager = undefined;
+		Systemall.__wate_manager = undefined;
     }
     
     /// @desc (Privado) Calcula la EXP y el botín de todos los enemigos derrotados.
@@ -346,9 +346,9 @@ function WateManager(_encounter_key, _player_group) constructor
         var _command = _action.source;
         var _targets = _action.targets;
         
-        var _check_func = mall_get_function(_command.event_check);
+        var _check_func =	__mall_get_function_check_true(_command.event_check);
         var _execute_func = mall_get_function(_command.event_execute);
-        var _fail_func = mall_get_function(_command.event_fail);
+        var _fail_func =	mall_get_function(_command.event_fail);
         
         var _action_results = [];
         
@@ -372,6 +372,43 @@ function WateManager(_encounter_key, _player_group) constructor
             command: _command, 
             results: _action_results 
         });
+        
+        // --- LÓGICA CORREGIDA ---
+        // Comprobar si algún objetivo fue derrotado
+        for (var i = 0; i < array_length(_action_results); i++) {
+            var _res = _action_results[i];
+            if (_res.result.WasAnyDefeated()) {
+                var _defeated_entity = _res.target;
+                
+                // Encontrar el grupo al que pertenece la entidad derrotada
+                var _group_found = false;
+                if (array_contains(player_group.entities, _defeated_entity)) {
+                    player_group.MarkAsDefeated(_defeated_entity);
+                    _group_found = true;
+                } else {
+                    for (var j = 0; j < array_length(enemy_groups); j++) {
+                        if (array_contains(enemy_groups[j].entities, _defeated_entity)) {
+                            enemy_groups[j].MarkAsDefeated(_defeated_entity);
+                            _group_found = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // Si se encontró y movió, eliminar de la cola de turnos
+                if (_group_found) {
+                    var _turn_index = array_get_index(turn_queue, _defeated_entity);
+                    if (_turn_index > -1) {
+                        array_delete(turn_queue, _turn_index, 1);
+                        // Si la entidad derrotada era la actual o una anterior en la cola,
+                        // ajustar el índice del turno actual para no saltarse a nadie.
+                        if (_turn_index <= current_turn_index) {
+                            current_turn_index--;
+                        }
+                    }
+                }
+            }
+        }
         
         _caster.OnTurnEnd();
         current_turn_index++;

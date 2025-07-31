@@ -112,7 +112,7 @@ function Systemall()
 	
 	/// @ignore Base de datos donde se guardan todos los "Grupos" de batalla del sistema (Para enfrentamientos).
     static __wate_manager = undefined;
-	static __wate = {};
+	static __wate = { encounters: {} };
 	static __wate_keys = [];
 	
 	/// @ignore
@@ -130,12 +130,13 @@ function Systemall()
 function mall_init(_master_file_path)
 {
 	static _process_order = [
-        "STATS", "ITEMS", "SLOTS", "STATES", "EFFECTS", "COMMANDS", "AI", "PARTY", "GROUPS", "BAGS" 
+        "STATS", "ITEMS", "SLOTS", "STATES", "EFFECTS", "COMMANDS", "AI", "PARTY", "GROUPS", "BAGS", "WATE"
     ];
 	
     // --- FASE 1: RECOPILAR TODOS LOS DATOS ---
     
-    if (!file_exists(_master_file_path)) {
+    if (!file_exists(_master_file_path) )
+	{
         show_error($"[Systemall] ¡Error Crítico! El archivo maestro no existe: {_master_file_path}", true);
         return;
     }
@@ -198,6 +199,19 @@ function mall_init(_master_file_path)
         for (var j = 0; j < array_length(_data_array); j++) 
 		{
             var _data_struct = _data_array[j];
+			
+			// Saltar al siguiente archivo de IA
+			if (_current_type == "AI") 
+			{
+                mall_ai_create_from_data(_data_struct);
+                continue;
+            }
+			else if (_current_type == "WATE")
+			{
+				mall_wate_create_from_data(_data_struct);
+				continue;
+			}	
+			
             var _keys = variable_struct_get_names(_data_struct);
             
             for (var k = 0; k < array_length(_keys); k++) 
@@ -247,13 +261,18 @@ function mall_init(_master_file_path)
 						break;
 						
 					case "AI":
-						mall_ai_create_from_data(_key, _entry_data);
+						mall_ai_create_from_data(_entry_data);
 						
 						break;
 						
 						
                     case "BAGS":    
 						pocket_bag_create_from_data(_key, _entry_data);
+						
+						break;
+						
+					case "WATE":
+						mall_wate_create_from_data(_entry_data);
 						
 						break;
                 }
@@ -269,6 +288,8 @@ function mall_init(_master_file_path)
     Systemall.__dark_keys       = variable_struct_get_names(Systemall.__dark);
     Systemall.__entities_keys   = variable_struct_get_names(Systemall.__entities);
     Systemall.__groups_keys     = variable_struct_get_names(Systemall.__groups);
+	Systemall.__ai_keys			= variable_struct_get_names(Systemall.__ai_packages);
+	
     // ... etc.
     
     show_debug_message("[Systemall] Carga de la base de datos desde JSON completada.");
@@ -339,7 +360,7 @@ function mall_system_cleanup()
 	
 		/// @ignore Base de datos donde se guardan todos los "Grupos" de batalla del sistema (Para enfrentamientos).
 	    __wate_manager = undefined;
-		__wate = {};
+		__wate = { encounters: {} };
 		__wate_keys = [];
 	
 		/// @ignore

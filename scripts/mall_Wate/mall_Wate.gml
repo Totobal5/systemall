@@ -1,3 +1,34 @@
+/// @desc Crea las plantillas de encuentros y grupos desde un struct de datos.
+/// @param {Struct} data El struct de datos completo del archivo Wate.
+function mall_wate_create_from_data(_data)
+{
+    // Cargar Grupos de Enemigos Reutilizables
+    if (variable_struct_exists(_data, "groups"))
+    {
+        var _groups = _data.groups;
+        var _group_keys = variable_struct_get_names(_groups);
+        for (var i = 0; i < array_length(_group_keys); i++)
+        {
+            var _key = _group_keys[i];
+            // Se guarda la definición del grupo directamente en la base de datos de Wate
+            Systemall.__wate.groups[$ _key] = _groups[$ _key];
+        }
+    }
+    
+    // Cargar Encuentros de Batalla
+    if (variable_struct_exists(_data, "encounters"))
+    {
+        var _encounters = _data.encounters;
+        var _encounter_keys = variable_struct_get_names(_encounters);
+        for (var i = 0; i < array_length(_encounter_keys); i++)
+        {
+            var _key = _encounter_keys[i];
+            Systemall.__wate.encounters[$ _key] = _encounters[$ _key];
+            array_push(Systemall.__wate_keys, _key);
+        }
+    }
+}
+
 /// @desc Encapsula una acción de combate completa, estandarizando la comunicación
 ///      entre el selector de acción (IA o UI) y el gestor de combate.
 /// @param {Struct.PartyEntity} caster La entidad que realiza la acción.

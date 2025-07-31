@@ -47,26 +47,12 @@ function EntityStatInstance(_template, _entity) constructor
 	/// @desc Se ejecuta para calcular el peak_value de la estadística. Debe devolver el nuevo valor.
 	/// @context PartyEntity
 	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
-    if (struct_exists(template, "event_on_level_up") )
-	{
-		event_on_level_up =	method(parent_entity, mall_get_function( template[$ "event_on_level_up"] ) );	
-	}
-	else
-	{
-		event_on_level_up = "";
-	}
+	event_on_level_up =	method(parent_entity, __mall_get_function_stat_level_up( template[$ "event_on_level_up"] ) );	
 	
 	/// @desc (Para stats standalone) Comprueba si la estadística puede subir de nivel. Debe devolver bool.
 	/// @context PartyEntity
 	/// @param {Struct.EntityStatInstance} stat_instance La instancia actual.
-    if (struct_exists(template, "event_on_level_check") )
-	{
-		event_on_level_check =	method(parent_entity, __mall_get_function_check_true( template[$ "event_on_level_check"] ) );	
-	}
-	else
-	{
-		event_on_level_check = "";
-	}
+	event_on_level_check =	method(parent_entity, __mall_get_function_check_true( template[$ "event_on_level_check"] ) );	
 
 	/// @desc Se ejecuta cuando se equipa un objeto en CUALQUIER slot de la entidad.
 	/// @context PartyEntity
@@ -103,7 +89,7 @@ function EntityStatInstance(_template, _entity) constructor
 		// Si sube de nivel de manera independiente.
 		if (template.is_standalone_level)
 		{
-			if (is_callable(_level_up_check) && event_on_level_check(self) )
+			if (is_callable(event_on_level_check) && event_on_level_check(self) )
 			{
 				return;
 			}
@@ -973,12 +959,16 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	static __FinalizeStatValues = function()
 	{
 		var _stat_keys = variable_struct_get_names(stats);
-        for (var i = 0; i < array_length(_stat_keys); i++) {
+		var _stat_keys_length = array_length(_stat_keys);
+		
+        for (var i = 0; i < _stat_keys_length; i++) 
+		{
             var _stat_inst = stats[$ _stat_keys[i]];
-            _stat_inst.last_peak_value = _stat_inst.peak_value;
+			// Actualizar todos los valores.
+            _stat_inst.last_peak_value =	_stat_inst.peak_value;
             _stat_inst.last_current_value = _stat_inst.current_value;
-            _stat_inst.control_value = __MALL_STAT_ROUND(clamp(_stat_inst.control_value, _stat_inst.template.min_value, _stat_inst.template.max_value));
-            _stat_inst.current_value = min(_stat_inst.current_value, _stat_inst.control_value);
+            _stat_inst.control_value =		__MALL_STAT_ROUND(clamp(_stat_inst.control_value, _stat_inst.template.min_value, _stat_inst.template.max_value));
+            _stat_inst.current_value =		min(_stat_inst.current_value, _stat_inst.control_value);
         }
 	}
 	
@@ -1100,6 +1090,16 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 		
 		// Recalcular stats después de que todo esté cargado y equipado.
         RecalculateStats();
+
+		// Inicializar los valores actuales al máximo después del primer cálculo.
+		var _stat_keys = variable_struct_get_names(stats);
+		var _stat_keys_length = array_length(_stat_keys);
+		
+		for (var i = 0; i < _stat_keys_length; i++) 
+		{
+			var _stat_inst = stats[$ _stat_keys[i]];
+			_stat_inst.current_value = _stat_inst.control_value;
+		}
 		
         return self;
     }
@@ -1129,7 +1129,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
         level = clamp(level + _levels_to_add, __MALL_PARTY_LEVEL_MIN, __MALL_PARTY_LEVEL_MAX);
         
 		// Comprobar si se han aprendido nuevos comandos
-		for (var i = 0; i < array_length(learnset); i++) 
+		var i=0; repeat(array_length(learnset) )
 		{
 			var _learn_data = learnset[i];
 			// Si el nivel requerido está entre el nivel antiguo y el nuevo
@@ -1137,6 +1137,8 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 			{
 				CommandAdd(_learn_data.category, _learn_data.command);
 			}
+			
+			i++;	
 		}
 		
 		// Calcular las nuevas estadisticas.
