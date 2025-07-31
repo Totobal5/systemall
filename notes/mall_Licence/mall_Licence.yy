@@ -1,0 +1,11 @@
+{
+  "$GMNotes":"",
+  "%Name":"mall_Licence",
+  "name":"mall_Licence",
+  "parent":{
+    "name":"Systemall",
+    "path":"folders/Systemall.yy",
+  },
+  "resourceType":"GMNotes",
+  "resourceVersion":"2.0",
+}

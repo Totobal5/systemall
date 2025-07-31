@@ -1,6 +1,8 @@
 #macro __MALL_VERSION		"v2.8"
 #macro __MALL_VERSION_MINE	__MALL_VERSION+"::1.0"
+/// @desc Si Systemall debe hacer print.
 #macro __MALL_TRACE			true
+/// @desc Si Systemall debe entregar errores.
 #macro __MALL_ERROR			true
 #macro __MALL_SAFETY		true
 
@@ -362,12 +364,12 @@ function mall_system_cleanup()
 	    __wate_manager = undefined;
 		__wate = { encounters: {} };
 		__wate_keys = [];
-	
+		
 		/// @ignore
 		__ai_packages = {};
 		__ai_rules = {};
 		__ai_keys = [];
-	
+		
 		/// @ignore Sistema de Broadcast y Mensajes para el sistema.
 	    __broadcast = {};
 		__messages = [];
@@ -527,19 +529,34 @@ function mall_load_system(_filename)
     }
 }
 
+// -----------------------------------------------------------------------------
+// API DE LOG y DEBUG
+// -----------------------------------------------------------------------------
+function __mall_print(_message)
+{
+	if (__MALL_TRACE)
+	{
+		show_debug_message($"[Systemall]: {_message}");	
+	}
+}
 
-
+function __mall_error(_message, _bool=true)
+{
+	if (__MALL_ERROR)
+	{
+		show_error($"[Systemall Error]: {_message}", _bool);
+	}
+}
 
 // Generar statics
+// -- CORE --
 script_execute(Systemall);
 script_execute(Mall);
 script_execute(MallEvents);
 script_execute(MallIterator);
 
+// --  --
 script_execute(MallStat);
 script_execute(MallSlot);
 script_execute(MallState);
 script_execute(MallResult);
-
-// mall_init("mall_database.json");
-// var _entity = party_entity_create_instance("JON", 10);

@@ -4,9 +4,9 @@
 /// @param {Asset.Sprite} [icon]=undefined Un ícono opcional para el mensaje.
 function MallMessage(_text, _color = c_white, _icon = undefined) constructor
 {
-    text = _text;
-    color = _color;
-    icon = _icon;
+    text =	_text;
+    color =	_color;
+    icon =	_icon;
 }
 
 /// @desc Añade un nuevo mensaje a la cola de la UI.
@@ -23,14 +23,11 @@ function mall_message_add(_text, _color = c_white, _icon = undefined)
 /// @return {Struct.MallBroadcastMessage} El mensaje más antiguo, o undefined si la cola está vacía.
 function mall_message_get_next()
 {
-    if (mall_message_is_empty())
-    {
-        return undefined;
-    }
-    
+    if (mall_message_is_empty() ) return undefined;
+	
     var _message = Systemall.__messages[0];
     array_delete(Systemall.__messages, 0, 1);
-    
+	
     return _message;
 }
 

@@ -1170,7 +1170,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	static StatSet = function(_key, _value, _numtype=MALL_NUMTYPE.REAL, _numtarget=MALL_STAT_TARGET.CONTROL)
 	{
         var _stat = StatGet(_key);
-        if (is_undefined(_stat)) return 0;
+        if (is_undefined(_stat) ) return 0;
 		
 		_stat.last_current_value = _stat.current_value;
 		

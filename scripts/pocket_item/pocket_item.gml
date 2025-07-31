@@ -1,23 +1,25 @@
+// Feather ignore all
+
 /// @desc Define la plantilla de un objeto del inventario.
 /// @param {String} key
 function PocketItem(_key) : MallEvents(_key) constructor
 {
     // --- Propiedades del Item ---
-    item_type = "UNDEFINED";
-    is_stackable = true;    // Si el objeto se puede apilar.
-    stack_limit = 99;       // Límite de apilamiento.
-	vars = {};				// Variables únicas del objeto y que comparten todas las plantillas de este.
+    item_type = "UNDEFINED";	// El tipo de objeto. Es almacenado en los tipos globales de Systemall.
+    is_stackable = true;		// Si el objeto se puede apilar.
+    stack_limit = 99;			// Límite de apilamiento.
+	vars = {};					// Variables únicas del objeto y que comparten todas las plantillas de este.
 	
     // Capacidades de objetivo
-    can_target_self = false;
-    can_target_ally = true;
-    can_target_enemy = false;
+    can_target_self = false;	// ¿Se puede usar en el caster?
+    can_target_ally = true;		// ¿Se puede usar en un aliado?
+    can_target_enemy = false;	// ¿Se puede usar en un enemigo?  
     
     // Valores de comercio
-    buy_value = 0;
-    sell_value = 0;
-    can_sell = true;
-    can_buy = true;
+    buy_value =		0;			// El valor de compra.
+    sell_value =	0;			// El valor de venta.
+    can_sell =		true;		// ¿Se puede vender?
+    can_buy =		true;		// ¿Se puede comprar?
     
     // Estadísticas que el objeto otorga [valor, tipo]
     stats = {};
@@ -95,7 +97,9 @@ function PocketItem(_key) : MallEvents(_key) constructor
 	/// @context PocketItem (la plantilla)
 	/// @param {Struct.PartyEntity} entity La entidad que actualiza turno.
     event_on_turn_end =		"";
-
+	
+	#region PRIVATE
+	
     /// @desc (Privado) Carga las estadísticas desde el struct de datos.
     /// @param {Struct} data El struct con los datos del item.
     /// @ignore
@@ -130,6 +134,8 @@ function PocketItem(_key) : MallEvents(_key) constructor
         }
     }
 
+	/// @desc (Privado) Carga el string de los eventos desde el struct de datos.
+	/// @param {Struct} data El struct con los datos del item.
 	/// @ignore
 	static __LoadFunctions = function(_data)
 	{
@@ -159,7 +165,12 @@ function PocketItem(_key) : MallEvents(_key) constructor
 		event_on_defense =		method(self, mall_get_function( _data[$ "event_on_defense"] ) );
 	}
 
+	#endregion
+
+	#region API
+
     /// @desc Configura el item a partir de un struct de datos.
+	/// @param {Struct} data El struct con los datos del item.
     static FromData = function(_data)
     {
         item_type =		string_upper(_data[$ "item_type"] ?? "UNDEFINED");
@@ -169,18 +180,18 @@ function PocketItem(_key) : MallEvents(_key) constructor
 	  
         // Se lee el array "target_types" del JSON. Si no existe, por defecto es ["ally"].
         var _targets = _data[$ "target_types"] ?? ["ally"];
-        if (is_array(_targets))
+        if (is_array(_targets) )
         {
             // Se itera sobre el array y se activa cada booleano correspondiente.
-            for (var i = 0; i < array_length(_targets); i++)
-            {
-                switch (_targets[i])
+            var i=0; repeat(array_length(_targets) )
+			{
+                switch (_targets[ i++ ])
                 {
                     case "self":	can_target_self = true; break;
                     case "ally":	can_target_ally = true; break;
                     case "enemy":	can_target_enemy = true; break;
-                }
-            }
+                }					
+			}
         }
         
 		// Economia
@@ -195,18 +206,20 @@ function PocketItem(_key) : MallEvents(_key) constructor
 		
         return self;
     }
+	
+	#endregion
 }
 
 /// @desc Crea una plantilla de item desde data y la añade a la base de datos.
 function pocket_create_item_from_data(_key, _data)
 {
-    if (pocket_item_exists(_key) ) 
+    // Advertencia.
+	if (pocket_item_exists(_key) )
 	{
-		show_debug_message($"[Systemall] Advertencia: El objeto '{_key}' ya existe. Se omitirá el duplicado.");
-		return;
+		return __mall_print($"Advertencia: El objeto '{_key}' ya existe. Se omitirá el duplicado.");
 	}
 
-    var _item = (new PocketItem(_key)).FromData(_data);
+    var _item = (new PocketItem(_key) ).FromData(_data);
     Systemall.__items[$ _key] = _item;
     array_push(Systemall.__items_keys, _key);
     
@@ -215,7 +228,7 @@ function pocket_create_item_from_data(_key, _data)
 }
 
 /// @desc Devuelve la plantilla de un objeto.
-function pocket_item_get(_key) 
+function pocket_item_get(_key)
 { 
 	return Systemall.__items[$ _key]; 
 }

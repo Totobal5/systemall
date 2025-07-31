@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"mall_Component",
+  "%Name":"mall_Core",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"mall_Component",
+  "name":"mall_Core",
   "parent":{
     "name":"Components",
     "path":"folders/Systemall/Components.yy",

@@ -1154,3 +1154,72 @@ function __mall_test_wate(_runner)
 	});
 	suite_wate.addTestCase(test_wate_victory_condition);	
 }
+
+function __mall_test_broadcast(runner)
+{
+	var suite_broadcast = new TestSuite("Pruebas de Broadcast y Mensajes");
+	runner.addTestSuite(suite_broadcast);
+	
+	// --- Configuración de la Suite ---
+	suite_broadcast.setUp(function() {
+	    // Limpiar y reiniciar Systemall antes de cada prueba
+	    mall_system_cleanup();
+	});
+
+	suite_broadcast.onRunBegin(function() {
+	    // Usar una variable global para rastrear los eventos
+	    global.crispy_test_flags = {
+	        broadcast_fired: false,
+	        broadcast_data: undefined
+	    };
+	});
+
+	suite_broadcast.tearDown(function() {
+	    // Limpiar la variable global
+	    global.crispy_test_flags = undefined;
+	});
+
+	// --- Casos de Prueba ---
+
+	var test_broadcast_subscribe_post = new TestCase("Test Suscripción y Publicación de Broadcast", function() {
+	    // Arrange: Crear una función de callback que modifique el tracker global
+	    var _test_callback = function(_data) {
+	        global.crispy_test_flags.broadcast_fired = true;
+	        global.crispy_test_flags.broadcast_data = _data;
+	    };
+    
+	    mall_broadcast_subscribe("TEST_EVENT", _test_callback);
+    
+	    // Act
+	    var _event_data = { message: "hello world" };
+	    mall_broadcast_post("TEST_EVENT", _event_data);
+    
+	    // Assert
+	    assertTrue(global.crispy_test_flags.broadcast_fired, "El evento de broadcast debería haberse disparado.");
+	    assertIsNotUndefined(global.crispy_test_flags.broadcast_data, "Los datos del evento no deberían ser undefined.");
+	    assertEqual(global.crispy_test_flags.broadcast_data.message, "hello world", "Los datos del evento no coinciden.");
+	});
+	suite_broadcast.addTestCase(test_broadcast_subscribe_post);
+
+	var test_message_queue = new TestCase("Test Cola de Mensajes (Añadir y Obtener)", function() {
+	    // Arrange
+	    mall_message_add("Mensaje 1");
+	    mall_message_add("Mensaje 2", c_red);
+    
+	    // Act & Assert
+	    assertFalse(mall_message_is_empty(), "La cola de mensajes no debería estar vacía.");
+    
+	    var msg1 = mall_message_get_next();
+	    assertIsNotUndefined(msg1);
+	    assertEqual(msg1.text, "Mensaje 1");
+    
+	    var msg2 = mall_message_get_next();
+	    assertIsNotUndefined(msg2);
+	    assertEqual(msg2.text, "Mensaje 2");
+	    assertEqual(msg2.color, c_red);
+    
+	    assertTrue(mall_message_is_empty(), "La cola de mensajes debería estar vacía después de obtener todos los mensajes.");
+	});
+	suite_broadcast.addTestCase(test_message_queue);	
+	
+}

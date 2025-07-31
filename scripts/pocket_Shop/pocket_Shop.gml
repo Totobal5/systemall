@@ -4,7 +4,8 @@ function MallShop(_key) : Mall(_key) constructor
 {
     buy_multiplier = 1.0;
     sell_multiplier = 0.5;
-    inventory = []; // Array con las llaves de los items que vende
+    // Array con las llaves de los items que vende
+	inventory = [];
     condition_event = "";
     
     /// @desc Configura la tienda a partir de un struct de datos.
@@ -24,7 +25,7 @@ function mall_shop_create_from_data(_key, _data)
 {
     if (struct_exists(Systemall.__shops, _key) ) return;
     
-	var _shop = (new MallShop(_key)).FromData(_data);
+	var _shop = (new MallShop(_key) ).FromData(_data);
     Systemall.__shops[$ _key] = _shop;
     array_push(Systemall.__shops_keys, _key);
 }

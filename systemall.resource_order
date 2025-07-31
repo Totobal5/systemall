@@ -10,6 +10,7 @@
     {"name":"Wate","order":6,"path":"folders/Systemall/Wate.yy",},
   ],
   "ResourceOrderSettings":[
+    {"name":"mall_Licence","order":9,"path":"notes/mall_Licence/mall_Licence.yy",},
     {"name":"oTestSuite","order":3,"path":"objects/oTestSuite/oTestSuite.yy",},
     {"name":"rDemo","order":2,"path":"rooms/rDemo/rDemo.yy",},
     {"name":"__crispyStructUnpack","order":1,"path":"scripts/__crispyStructUnpack/__crispyStructUnpack.yy",},
@@ -75,6 +76,7 @@
     {"name":"pocket_database","order":3,"path":"scripts/pocket_database/pocket_database.yy",},
     {"name":"pocket_Item","order":3,"path":"scripts/pocket_Item/pocket_Item.yy",},
     {"name":"pocket_Shop","order":4,"path":"scripts/pocket_Shop/pocket_Shop.yy",},
+    {"name":"scr_init","order":4,"path":"scripts/scr_init/scr_init.yy",},
     {"name":"TestCase","order":10,"path":"scripts/TestCase/TestCase.yy",},
     {"name":"TestRunner","order":11,"path":"scripts/TestRunner/TestRunner.yy",},
     {"name":"TestSuite","order":12,"path":"scripts/TestSuite/TestSuite.yy",},

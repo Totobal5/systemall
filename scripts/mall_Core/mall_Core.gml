@@ -1,5 +1,5 @@
 // --- ENUM DE ESTADO ---
-// Para que el retorno de Tick() sea más legible.
+/// @desc Define los posibles estados de un MallIterator.
 enum MALL_ITERATOR_STATE 
 {
     INACTIVE,   // El iterador no está activo.
@@ -8,30 +8,37 @@ enum MALL_ITERATOR_STATE
     COMPLETED   // Se han completado todos los ciclos y repeticiones.
 }
 
-/// @desc Elemento basico de Mall
-/// @param {String} key
+/// @desc Elemento base para la mayoría de los componentes de Systemall.
+/// @param {String} key La llave de identificación del componente.
 /// @ignore
 function Mall(_key="") constructor 
 {
-	/// @ignore Referencia a su propio tipo.
+	/// @desc Una referencia al tipo de constructor de la instancia.
+	/// @type {String}
 	is = instanceof(self);
-	// LLave base de datos.
-	key = _key;
-	// Indice en donde esta (si esta en algun array)
+	
+	/// @desc La llave de la plantilla base del componente.
+	/// @type {String}
+	key =	_key;
+	
+    /// @desc El índice de la instancia dentro de un array, si aplica.
+	/// @type {Real}
     index = -1;
-	// Argumentos para eventos.
-	args = {};
+	
+	/// @desc Un struct para pasar argumentos personalizados a los eventos.
+	/// @type {Struct}
+	args =	{};
 	
 	#region API
 	
-    /// @desc Como guardar este componente.
-    /// @return {Struct}
+    /// @desc Exporta el estado base de la instancia a un struct para guardado.
+    /// @return {Struct} Un struct con los datos esenciales de la instancia.
     static Export = function()
     {
         var _this = self;
         with ({})
         {
-            version =   __MALL_MY_VERSION;
+            version =   __MALL_VERSION_MINE;
             is =        _this.is;
             key =       _this.key;
             index =     _this.index;
@@ -40,11 +47,11 @@ function Mall(_key="") constructor
         }
     };
     
-    /// @desc Como cargar este componente
-	/// @param {Struct}	import_struct
+    /// @desc Importa y restaura el estado base de la instancia desde un struct.
+	/// @param {Struct}	import_struct El struct con los datos guardados.
     static Import = function(_import)
     {
-        switch (__MALL_MY_VERSION) 
+        switch (__MALL_VERSION_MINE)
         {
             default:
                 is =    _import.is;
@@ -57,26 +64,36 @@ function Mall(_key="") constructor
 	#endregion
 }
 
-/// @desc Iterador simplificado para controlar duraciones y repeticiones.
+/// @desc Un temporizador simplificado para gestionar duraciones y repeticiones de ciclos.
 function MallIterator() : Mall() constructor
 {
     // --- ESTADO ---
+	
+    /// @desc Si el iterador está actualmente en funcionamiento.
+	/// @type {Bool}
     active = false;
 	
-	// Cuántos ticks dura un ciclo.
+    /// @desc Cuántos "ticks" o pasos dura un ciclo completo.
+	/// @type {Real}
     duration = 1;
-	// Ticks transcurridos en el ciclo actual.
+	
+    /// @desc El número de "ticks" que han transcurrido en el ciclo actual.
+	/// @type {Real}
     ticks_elapsed = 0;
-    
-	// Cuántas veces se repite. 0 = se ejecuta una vez y no se repite.
+	
+    /// @desc Cuántas veces se repetirá el ciclo. 0 = una sola ejecución. infinity = repetición infinita.
+	/// @type {Real}
     repeats = 0;
-	// Cuántas repeticiones se han completado.
+	
+    /// @desc El número de repeticiones que ya se han completado.
+	/// @type {Real}
     repeats_done = 0;
     	
-    // --- API ---
+    #region API
     
-    /// @desc Configura y activa el iterador a partir de un struct.
-    /// @param {Struct} config_struct Ejemplo: { duration: 5, repeats: 2 }
+    /// @desc Configura y activa el iterador.
+    /// @param {Real} [duration]=1 Cuántos ticks dura un ciclo.
+    /// @param {Real} [repeats]=0  Cuántas veces se repite el ciclo.
     static Configure = function(_duration=1, _repeats=0)
     {
         active = true;
@@ -95,8 +112,8 @@ function MallIterator() : Mall() constructor
         return self;
     }
     
-    /// @desc Avanza el iterador un paso y devuelve su estado actual.
-    /// @returns {Enum.MALL_ITERATOR_STATE}
+    /// @desc Avanza el iterador un paso ("tick") y devuelve su estado actual.
+    /// @returns {Enum.MALL_ITERATOR_STATE} El estado del iterador después del tick.
     static Tick = function()
     {
         if (!active) return MALL_ITERATOR_STATE.INACTIVE;
@@ -109,18 +126,13 @@ function MallIterator() : Mall() constructor
             // El ciclo terminó. Comprobar si debe repetirse.
             if (repeats_done < repeats)
             {
-                // Sí, se repite.
                 repeats_done++;
-				// Reiniciar para el siguiente ciclo.
-                ticks_elapsed = 0;
-				// Informar que un ciclo terminó (y se reinició).
+                ticks_elapsed = 0; // Reiniciar para el siguiente ciclo.
                 return MALL_ITERATOR_STATE.CYCLE_END;
             }
             else
             {
-                // No quedan más repeticiones. Se desactiva.
                 active = false;
-				// Informar que ha terminado por completo.
                 return MALL_ITERATOR_STATE.COMPLETED;
             }
         }
@@ -136,7 +148,7 @@ function MallIterator() : Mall() constructor
         return active;
     }
     
-    /// @desc Devuelve el progreso del ciclo actual como un valor de 0 a 1.
+    /// @desc Devuelve el progreso del ciclo actual como un valor normalizado de 0 a 1.
     /// @returns {Real}
     static GetProgress = function()
     {
@@ -144,16 +156,15 @@ function MallIterator() : Mall() constructor
         return ticks_elapsed / duration;
     }
     
-    /// @desc Crea una copia de la configuración del iterador (no de su estado actual).
+    /// @desc Crea una nueva instancia del iterador con la misma configuración (no el estado actual).
     /// @returns {Struct.MallIterator}
     static Copy = function()
     {
         return (new MallIterator() ).Configure(duration, repeats);
     }
     
-    // --- GUARDADO Y CARGA ---
-    
-    /// @desc
+    /// @desc Exporta el estado actual del iterador a un struct.
+    /// @return {Struct}
     static Export = function()
     {
 		var _this = self;
@@ -170,7 +181,8 @@ function MallIterator() : Mall() constructor
 		}
     }
     
-    /// @desc
+    /// @desc Importa el estado del iterador desde un struct.
+	/// @param {Struct} _import El struct con los datos guardados.
     static Import = function(_import)
     {
         // Llama al import del padre
@@ -183,25 +195,42 @@ function MallIterator() : Mall() constructor
         repeats =			_import.repeats;
         repeats_done =		_import.repeats_done;
     }
+	
+	#endregion
 }
 
-/// @desc Contenedor de resultados de una acción. Las propiedades internas son siempre arrays.
+/// @desc Contenedor estandarizado para los resultados de una acción de combate.
 function MallResult() constructor
 {
     // --- PROPIEDADES ---
-    // El éxito general de la operación. Puede fallar si, por ejemplo, no hay EPM suficiente.
+	
+    /// @desc El éxito general de la operación. Puede fallar si, por ejemplo, no hay EPM suficiente.
+	/// @type {Bool}
 	success = true;
 	
-    // Arrays para almacenar los resultados de cada objetivo afectado por la acción.
+    /// @desc Un array de booleanos que indica si cada objetivo fue derrotado.
+	/// @type {Array<Bool>}
 	defeated = [];
+	
+	/// @desc Un array de valores numéricos genéricos (ej: cantidad de curación).
+	/// @type {Array<Real>}
 	value = [];
+	
+	/// @desc Un array con el daño infligido a cada objetivo.
+	/// @type {Array<Real>}
 	damage = [];
+	
+	/// @desc Un array con el recurso consumido para cada objetivo (ej: coste de EPM).
+	/// @type {Array<Real>}
 	consumed = [];
+	
+	/// @desc Un array con la cantidad de un item usado para cada objetivo.
+	/// @type {Array<Real>}
 	used = [];
 	
-    // --- API ---
+    #region API
     
-    /// @desc Añade un nuevo set de resultados para un objetivo.
+    /// @desc Añade un nuevo set de resultados para un objetivo a todos los arrays.
     /// @param {Bool} defeated  Si el objetivo fue derrotado.
     /// @param {Real} value     Un valor genérico (ej: curación).
     /// @param {Real} damage    El daño infligido.
@@ -217,7 +246,7 @@ function MallResult() constructor
         return self;
     }
     
-    /// @desc Devuelve el número de objetivos que fueron afectados.
+    /// @desc Devuelve el número de objetivos que fueron afectados por la acción.
     /// @returns {Real}
     static Size = function()
     {
@@ -245,7 +274,7 @@ function MallResult() constructor
     }
     
     /// @desc Devuelve el daño infligido a un objetivo en un índice específico.
-    /// @param {Real} [index] El índice del objetivo (por defecto, el primero).
+    /// @param {Real} [index]=0 El índice del objetivo (por defecto, el primero).
     /// @returns {Real}
     static GetDamage = function(_index = 0)
     {
@@ -254,7 +283,7 @@ function MallResult() constructor
     }
     
     /// @desc Devuelve el valor de un objetivo en un índice específico.
-    /// @param {Real} [index] El índice del objetivo (por defecto, el primero).
+    /// @param {Real} [index]=0 El índice del objetivo (por defecto, el primero).
     /// @returns {Real}
     static GetValue = function(_index = 0)
     {
@@ -262,10 +291,12 @@ function MallResult() constructor
         return 0;
     }
     
-    /// @desc Comprueba si algún objetivo fue derrotado.
+    /// @desc Comprueba si al menos uno de los objetivos fue derrotado.
     /// @returns {Bool}
     static WasAnyDefeated = function()
     {
 		return (array_any(defeated, function(_value) { return _value } ) );
     }
+
+	#endregion
 }

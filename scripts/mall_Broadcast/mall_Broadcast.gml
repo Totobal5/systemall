@@ -19,16 +19,12 @@ function mall_broadcast_subscribe(_event_key, _callback)
 /// @param {Function} callback La misma referencia de función que se usó para suscribirse.
 function mall_broadcast_unsubscribe(_event_key, _callback)
 {
-    if (variable_struct_exists(Systemall.__broadcast, _event_key))
-    {
-        var _listeners = Systemall.__broadcast[$ _event_key];
-        var _index = array_get_index(_listeners, _callback);
+    if (!variable_struct_exists(Systemall.__broadcast, _event_key) ) exit;
+	
+    var _listeners = Systemall.__broadcast[$ _event_key];
+    var _index = array_get_index(_listeners, _callback);
         
-        if (_index > -1)
-        {
-            array_delete(_listeners, _index, 1);
-        }
-    }
+    if (_index > -1) { array_delete(_listeners, _index, 1); }
 }
 
 /// @desc Publica un evento, ejecutando todas las funciones suscritas.
@@ -36,20 +32,17 @@ function mall_broadcast_unsubscribe(_event_key, _callback)
 /// @param {Struct} [data] Un struct opcional con datos relevantes para el evento.
 function mall_broadcast_post(_event_key, _data = {})
 {
-    if (variable_struct_exists(Systemall.__broadcast, _event_key))
-    {
-        var _listeners = Systemall.__broadcast[$ _event_key];
+    if (!variable_struct_exists(Systemall.__broadcast, _event_key) ) exit;
+	
+    var _listeners = Systemall.__broadcast[$ _event_key];
         
-        // Iterar sobre una copia para evitar problemas si un listener se desuscribe a sí mismo
-        var _listeners_copy = array_clone(_listeners);
-        
-        for (var i = 0; i < array_length(_listeners_copy); i++)
-        {
-            var _callback = _listeners_copy[i];
-            if (is_callable(_callback))
-            {
-                _callback(_data);
-            }
-        }
-    }
+    // Iterar sobre una copia para evitar problemas si un listener se desuscribe a sí mismo
+    var _listeners_copy = [];
+	array_copy(_listeners_copy, 0, _listeners, 0, array_length(_listeners) );
+		
+	var i=0; repeat(array_length(_listeners_copy) )
+	{
+        var _callback = _listeners_copy[i++];
+		if (is_callable(_callback) ) { _callback(_data); }			
+	}
 }

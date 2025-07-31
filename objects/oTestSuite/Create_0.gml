@@ -51,6 +51,11 @@ __mall_test_ai(runner);
 // =============================================================================
 __mall_test_wate(runner);
 
+// =============================================================================
+// SUITE 9: PRUEBAS DEL SISTEMA DE BROADCAST Y MENSAJES
+// =============================================================================
+__mall_test_broadcast(runner);
+
 
 // --- EJECUTAR TODAS LAS PRUEBAS ---
 runner.run();
