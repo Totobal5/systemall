@@ -223,7 +223,7 @@ function mall_init(_master_file_path)
                 
                 switch (_current_type) {
                     case "STATS":
-						mall_create_stat_from_data(_key, _entry_data);   
+						mall_stat_create_from_data(_key, _entry_data);   
 						
 						break;
 
