@@ -31,17 +31,18 @@ function EntityAIInstance(_parent_entity, _ai_package_key) constructor
         {
             var _key = _rules_array[i];
             
-            if (variable_struct_exists(Systemall.__ai_rules, _key))
+            if (struct_exists(Systemall.__ai_rules, _key))
             {
                 array_push(_flat_list, Systemall.__ai_rules[$ _key]);
             }
-            else if (variable_struct_exists(Systemall.__ai_packages, _key))
+            else if (struct_exists(Systemall.__ai_packages, _key))
             {
                 var _nested_package = Systemall.__ai_packages[$ _key];
                 var _nested_rules = __ResolveRules(_nested_package.rules);
                 array_copy(_flat_list, array_length(_flat_list), _nested_rules, 0, array_length(_nested_rules));
             }
         }
+        
         return _flat_list;
     }
 	
@@ -68,7 +69,8 @@ function EntityAIInstance(_parent_entity, _ai_package_key) constructor
                         var _command_key = _action_func(parent_entity, _targets);
                         var _command_template = mall_get_dark(_command_key);
                         
-                        if (!is_undefined(_command_template)) {
+                        if (!is_undefined(_command_template) )
+                        {
                             // Devolver una instancia de WateAction
                             return new WateAction(parent_entity, _command_template, _targets);
                         }
@@ -85,10 +87,10 @@ function EntityAIInstance(_parent_entity, _ai_package_key) constructor
 function mall_ai_create_from_data(_data)
 {
     // Cargar Reglas Reutilizables
-    if (variable_struct_exists(_data, "rules") )
+    if (struct_exists(_data, "rules") )
     {
         var _rules = _data.rules;
-        var _rule_keys = variable_struct_get_names(_rules);
+        var _rule_keys = struct_get_names(_rules);
         for (var i = 0; i < array_length(_rule_keys); i++)
         {
             var _key = _rule_keys[i];
@@ -97,10 +99,10 @@ function mall_ai_create_from_data(_data)
     }
     
     // Cargar Paquetes de IA
-    if (variable_struct_exists(_data, "packages") )
+    if (struct_exists(_data, "packages") )
     {
         var _packages = _data.packages;
-        var _package_keys = variable_struct_get_names(_packages);
+        var _package_keys = struct_get_names(_packages);
         for (var i = 0; i < array_length(_package_keys); i++)
         {
             var _key = _package_keys[i];

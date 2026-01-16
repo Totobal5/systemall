@@ -55,12 +55,12 @@ function DarkEffect(_key) : MallEvents(_key) constructor
     /// @desc Configura el efecto a partir de un struct de datos.
     static FromData = function(_data)
     {
-        state_key =			_data[$ "state_key"] ?? "";
-        state_set_value =	_data[$ "state_set_value"] ?? true;
-        value =				_data[$ "value"] ?? 0;
-        num_type =			(_data[$ "num_type"] == "percent") ? MALL_NUMTYPE.PERCENT : MALL_NUMTYPE.REAL;
+        state_key = _data[$ "state_key"] ?? "";
+        state_set_value = _data[$ "state_set_value"] ?? true;
+        value =	_data[$ "value"] ?? 0;
+        num_type = (_data[$ "num_type"] == "percent") ? MALL_NUMTYPE.PERCENT : MALL_NUMTYPE.REAL;
 
-		// Cargar parámetros
+		// Cargar parámetros.
 		params = _data[$ "params"] ?? {};
 		
         var _tt = _data[$ "turn_type"] ?? "start";
@@ -72,17 +72,10 @@ function DarkEffect(_key) : MallEvents(_key) constructor
         }
         
 		// Cargar iteradores.
-        if (variable_struct_exists(_data, "iterator_start_config")) 
-		{
-            iterator_start_config = _data.iterator_start_config;
-        }
-		
-        if (variable_struct_exists(_data, "iterator_end_config") ) 
-		{
-            iterator_end_config = _data.iterator_end_config;
-        }
+        if (struct_exists(_data, "iterator_start_config") ) { iterator_start_config = _data.iterator_start_config; }
+        if (struct_exists(_data, "iterator_end_config") )  { iterator_end_config = _data.iterator_end_config; }
         
-		// Cargar estadisticas
+		// Cargar estadisticas.
         __LoadStats(_data);
 		
 		// Cargar llaves de eventos...
@@ -95,12 +88,12 @@ function DarkEffect(_key) : MallEvents(_key) constructor
 	static __LoadFunction = function(_data)
 	{
 		/// @desc Evento al ser añadido
-        event_on_start =		_data[$ "event_on_start"]	?? "";
+        event_on_start = _data[$ "event_on_start"] ?? "";
 		// Al ser eliminado
-        event_on_end =			_data[$ "event_on_end"]		?? "";
+        event_on_end = _data[$ "event_on_end"] ?? "";
 		
-        event_on_turn_start =	_data[$ "event_on_turn_start"]	?? "";
-        event_on_turn_end =		_data[$ "event_on_turn_end"]	?? "";			
+        event_on_turn_start = _data[$ "event_on_turn_start"] ?? "";
+        event_on_turn_end = _data[$ "event_on_turn_end"] ?? "";
 	}
 	
     /// @desc (Privado) Carga y estandariza las estadísticas desde el struct de datos.
@@ -108,10 +101,10 @@ function DarkEffect(_key) : MallEvents(_key) constructor
     /// @ignore
     static __LoadStats = function(_data)
     {
-        if (variable_struct_exists(_data, "stats") )
+        if (struct_exists(_data, "stats") )
         {
             var _source_stats = _data.stats;
-            var _mod_keys = variable_struct_get_names(_source_stats);
+            var _mod_keys = struct_get_names(_source_stats);
             var _mod_keys_length = array_length(_mod_keys);
 			
             for (var i = 0; i < _mod_keys_length; i++)

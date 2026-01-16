@@ -29,6 +29,17 @@ function EntityStatInstance(_template, _entity) constructor
 	last_peak_value = peak_value;
 	last_current_value = current_value;
 	
+	// --- Configuración de Crecimiento ---
+    
+    // Crecimiento por nivel
+	growth = 0;
+    
+    // Nombre de la curva (ej: "linear")
+	curve_name = "";
+    
+	// Referencia a AnimationCurveChannel
+    growth_curve = undefined;
+	
 	// --- Eventos ---
 	
 	/// @desc Se ejecuta una vez cuando la instancia es creada para una entidad.
@@ -140,6 +151,24 @@ function EntityStatInstance(_template, _entity) constructor
 		current_value = _data[$ "current_value"] ?? 0;
 		base_value =	_data[$ "base_value"] ?? template.base_value;
 	}
+
+    /// @desc Evalúa una curva de animación en una posición normalizada (0-1).
+	/// @param {Real} _position La posición en la curva (0 a 1).
+	/// @return {Real} El valor evaluado en esa posición.
+	static Curve = function(_position)
+	{
+		if (curve_name == "") return 0;
+		
+		// Si es un AnimationCurve asset
+		if (mall_asset_exists(curve_name) )
+		{
+            var _curve = mall_asset_get(curve_name);
+			return animcurve_channel_evaluate(_curve, clamp(_position, 0, 1) );
+		}
+		
+		return 0;
+    }
+    
 }
 
 /// @desc Representa la instancia de un slot de equipo para una entidad.
@@ -156,7 +185,7 @@ function EntitySlotInstance(_template, _entity) constructor
     last_equipped_items = equipped_items;
 	
 	// Crear nueva lista de objetos permitidos para equipar.
-	permited = variable_clone(template.permited);
+	permitted = variable_clone(template.permitted);
 	
 	is_active = !template.is_disabled;
 	is_damaged = template.is_damaged;
@@ -242,23 +271,23 @@ function EntitySlotInstance(_template, _entity) constructor
 		var _result = { success: false };
 		var _item_to_equip = pocket_item_get(_item_key);
 		
-		// 1. Validar que el item exista, sea permitido y que el slot no esté lleno.
-		if (is_undefined(_item_to_equip) || !struct_exists(permited, _item_key) || array_length(equipped_items) >= template.max_items) 
+		// Validar que el item exista, sea permitido y que el slot no esté lleno.
+		if (is_undefined(_item_to_equip) || !struct_exists(permitted, _item_key) || array_length(equipped_items) >= template.max_items) 
 		{
 			return _result;
 		}
 		
-		// 2. Comprobar si el nuevo objeto se puede equipar.
+		// Comprobar si el nuevo objeto se puede equipar.
 		var _can_equip_slot = event_can_equip(self, _item_to_equip);
 		var _can_equip_item = _item_to_equip.event_can_equip(parent_entity, self);
 		
 		if (_can_equip_slot && _can_equip_item)
 		{
-			// --- Todas las comprobaciones pasaron, proceder con el equipamiento ---
+			// Todas las comprobaciones pasaron, proceder con el equipamiento.
 			array_copy(last_equipped_items, 0, equipped_items, 0, array_length(equipped_items) );
 			array_push(equipped_items, _item_key);
 			
-			// Disparar eventos de equipamiento
+			// Disparar eventos de equipamiento.
 			event_on_equip(self, _item_to_equip);
 			_item_to_equip.event_on_equip(parent_entity, self);
 			
@@ -277,26 +306,26 @@ function EntitySlotInstance(_template, _entity) constructor
 		var _item_to_remove = pocket_item_get(_item_key);
 		var _item_index = array_get_index(equipped_items, _item_key);
  
-		// 1. Validar que el objeto exista y esté en este slot.
+		// Validar que el objeto exista y esté en este slot.
 		if (is_undefined(_item_to_remove) || _item_index == -1)
 		{
 			return _result;
 		}
 
-		// 2. Comprobar si el objeto se puede desequipar.
+		// Comprobar si el objeto se puede desequipar.
 		var _can_desequip_slot = event_can_desequip(self, _item_to_remove);
 		var _can_desequip_item = _item_to_remove.event_can_desequip(parent_entity, self);
 
 		if (_can_desequip_slot && _can_desequip_item)
 		{
-			// --- Todas las comprobaciones pasaron, proceder con el desequipamiento ---
+			// Todas las comprobaciones pasaron, proceder con el desequipamiento.
 			_result.unequipped_item = _item_key;
 			
-			// Disparar eventos de desequipamiento
+			// Disparar eventos de desequipamiento.
 			event_on_desequip(self, _item_to_remove);
 			_item_to_remove.event_on_desequip(parent_entity, self);
 			
-			// Limpiar el slot
+			// Limpiar el slot.
 			array_copy(last_equipped_items, 0, equipped_items, 0, array_length(equipped_items) );
 			array_delete(equipped_items, _item_index, 1);
 			
@@ -656,10 +685,10 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
         }
 		
 		// Cargar valores base.
-		if (variable_struct_exists(_template, "stats") ) 
+		if (struct_exists(_template, "stats") ) 
 		{
 			var _template_stats =		_template.stats;
-			var _template_stat_keys =	variable_struct_get_names(_template_stats);
+			var _template_stat_keys =	struct_get_names(_template_stats);
 			var _template_stat_length =	array_length(_template_stat_keys);
 			
 			for (var i = 0; i < _template_stat_length; i++) 
@@ -667,7 +696,34 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 				var _stat_key = _template_stat_keys[i];
 				if (struct_exists(stats, _stat_key) ) 
 				{
-					stats[$ _stat_key].base_value = _template_stats[$ _stat_key];
+					var _stat_data = _template_stats[$ _stat_key];
+					
+					// --- NORMALIZAR: Si es array, convertir a struct ---
+					if (is_numeric(_stat_data) )
+					{
+						_stat_data = {
+							base: _stat_data,
+							growth: 0,
+							curve: "linear"
+						};
+					}
+					
+					// --- Asignar propiedades individuales ---
+					stats[$ _stat_key].base_value = _stat_data.base;
+					stats[$ _stat_key].growth = _stat_data.growth ?? 0;
+					stats[$ _stat_key].curve_name = _stat_data.curve ?? "linear";
+					
+					// Obtener referencia a la curva
+					if (mall_asset_exists(stats[$ _stat_key].curve_name) )
+					{
+						stats[$ _stat_key].growth_curve = mall_asset_get(stats[$ _stat_key].curve_name);
+					}
+					else
+					{
+						// Si la curva no existe, usar linear por defecto
+						stats[$ _stat_key].growth_curve = mall_asset_get("linear");
+						stats[$ _stat_key].curve_name = "linear";
+					}
 				}
 			}
 		}
@@ -693,10 +749,10 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 			if (is_callable(_start_event) ) _start_event(_slot_instance);			
         }
 		
-        if (variable_struct_exists(_template, "slots") ) 
+        if (struct_exists(_template, "slots") ) 
 		{
             var _template_slots = _template.slots;
-            var _template_slot_keys = variable_struct_get_names(_template_slots);
+            var _template_slot_keys = struct_get_names(_template_slots);
 			var _template_slot_keys_length = array_length(_template_slot_keys);
 			
             for (var i = 0; i < _template_slot_keys_length; i++) 
@@ -707,32 +763,32 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
                 if (is_struct(_slot_data) ) 
 				{
                     // Configurar los objetos permitidos en cada slot por instancia.
-					if (variable_struct_exists(_slot_data, "permited") )
+					if (struct_exists(_slot_data, "permitted") )
 					{
-                        var _permited_mods = _slot_data.permited;
-						var _permited_mods_length = array_length(_permited_mods);
+                        var _permitted_mods = _slot_data.permitted;
+						var _permitted_mods_length = array_length(_permitted_mods);
 						
-                        for (var j = 0; j < _permited_mods_length; j++)
+                        for (var j = 0; j < _permitted_mods_length; j++)
 						{
 							// Obtener ultimo caracter al final de la llave.
-                            var _mod_string = _permited_mods[j];
+                            var _mod_string = _permitted_mods[j];
 			                var _mod_len = string_length(_mod_string);
 			                var _prefix = string_char_at(_mod_string, _mod_len);
                             var _key = string_delete(_mod_string, _mod_len, 1);
 							
                             if (_prefix == "+")
 							{ 
-								SlotPermitedAdd(_slot_key, _key); 
+								SlotpermittedAdd(_slot_key, _key); 
 							} 
 							else if (_prefix == "-") 
 							{ 
-								SlotPermitedRemove(_slot_key, _key); 
+								SlotpermittedRemove(_slot_key, _key); 
 							}
                         }
                     }
 					
 					// Configurar equipo inicial por instancia
-                    if (variable_struct_exists(_slot_data, "equip") )
+                    if (struct_exists(_slot_data, "equip") )
 					{
                         var _to_equip = _slot_data.equip;
                         if (is_array(_to_equip) ) 
@@ -779,15 +835,15 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	static __LoadCommands = function(_template)
 	{
         commands = new EntityCommandsInstance();
-        if (variable_struct_exists(_template, "commands") ) 
+        if (struct_exists(_template, "commands") ) 
 		{
-            var _categories = variable_struct_get_names(_template.commands);
+            var _categories = struct_get_names(_template.commands);
             for (var i = 0; i < array_length(_categories); i++)
             {
                 var _category_name = _categories[i];
                 var _command_keys_array = _template.commands[$ _category_name];
-
-                // Usar la API pública para añadir los comandos, asegurando la creación de categorías
+                
+                // Usar la API pública para añadir los comandos, asegurando la creación de categorías.
                 for (var j = 0; j < array_length(_command_keys_array); j++)
                 {
                     var _command_key = _command_keys_array[j];
@@ -802,7 +858,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @ignore
 	static __LoadAI = function(_template)
 	{
-		if (variable_struct_exists(_template, "ai_package") )
+		if (struct_exists(_template, "ai_package") )
 		{
 			ai_instance = new EntityAIInstance(self, _template.ai_package);
 		}
@@ -812,7 +868,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @ignore
 	static __CalculatePeakValues = function()
 	{
-		var _stat_keys = variable_struct_get_names(stats);
+		var _stat_keys = struct_get_names(stats);
         for (var i = 0; i < array_length(_stat_keys); i++)
 		{
             var _stat_inst = stats[$ _stat_keys[i]];
@@ -824,7 +880,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @ignore
 	static __ApplyStateModifiers = function()
 	{
-		var _stat_keys = variable_struct_get_names(stats);
+		var _stat_keys = struct_get_names(stats);
 		var _stat_keys_length = array_length(_stat_keys)
 		
         for (var i = 0; i < _stat_keys_length; i++) 
@@ -833,7 +889,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
             _stat_inst.control_value = _stat_inst.equipment_value;
         }
         
-        var _state_keys = variable_struct_get_names(states);
+        var _state_keys = struct_get_names(states);
         var _state_keys_length = array_length(_state_keys);
 		
 		for (var i = 0; i < _state_keys_length; i++) 
@@ -842,9 +898,9 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
             if (!_state_inst.boolean_value) continue;
 
             // Aplicar modificadores de la plantilla del ESTADO
-            var _state_modifiers =			_state_inst.stats;
-            var _state_mod_keys =			variable_struct_get_names(_state_modifiers);
-            var _state_mod_keys_length =	array_length(_state_mod_keys);
+            var _state_modifiers = _state_inst.stats;
+            var _state_mod_keys = struct_get_names(_state_modifiers);
+            var _state_mod_keys_length = array_length(_state_mod_keys);
 			
 			for (var j = 0; j < _state_mod_keys_length; j++) 
 			{
@@ -861,7 +917,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 				{
                     _stat_to_mod.control_value += (_stat_to_mod.equipment_value * _mod_value) / 100;
                 } 
-				else 
+				else
 				{
                     _stat_to_mod.control_value += _mod_value;
                 }
@@ -873,7 +929,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 			{
                 var _effect_inst = _state_inst.effects[eff_idx];
                 var _effect_modifiers = _effect_inst.stats;
-                var _effect_mod_keys = variable_struct_get_names(_effect_modifiers);
+                var _effect_mod_keys = struct_get_names(_effect_modifiers);
                 var _effect_mod_keys_length = array_length(_effect_mod_keys);
 				
                 for (var j = 0; j < _effect_mod_keys_length; j++) 
@@ -905,7 +961,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @ignore
 	static __ApplyEquipmentModifiers = function()
 	{
-		var _stat_keys = variable_struct_get_names(stats);
+		var _stat_keys = struct_get_names(stats);
 		var _stat_keys_length = array_length(_stat_keys);
 		
         for (var i = 0; i < _stat_keys_length; i++) 
@@ -914,7 +970,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
             _stat_inst.equipment_value = _stat_inst.peak_value;
         }
         
-        var _slot_keys = variable_struct_get_names(slots);
+        var _slot_keys = struct_get_names(slots);
 		var _slot_keys_length = array_length(_slot_keys);
 		
         for (var i = 0; i < _slot_keys_length; i++) 
@@ -926,9 +982,9 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
             for (var k = 0; k < _equipped_items_length; k++) 
 			{
                 var _item = pocket_item_get(_slot_inst.equipped_items[k]);
-                if (is_undefined(_item) || !variable_struct_exists(_item, "stats") ) continue;
+                if (is_undefined(_item) || !struct_exists(_item, "stats") ) continue;
                     
-                var _item_stat_keys = variable_struct_get_names(_item.stats);
+                var _item_stat_keys = struct_get_names(_item.stats);
 				var _item_stat_keys_length = array_length(_item_stat_keys);
 					
                 for (var j = 0; j < _item_stat_keys_length; j++) 
@@ -958,7 +1014,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @ignore
 	static __FinalizeStatValues = function()
 	{
-		var _stat_keys = variable_struct_get_names(stats);
+		var _stat_keys = struct_get_names(stats);
 		var _stat_keys_length = array_length(_stat_keys);
 		
         for (var i = 0; i < _stat_keys_length; i++) 
@@ -976,7 +1032,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @ignore
 	static __DispatchStatEvent = function(_event_name, _arg1 = undefined, _arg2 = undefined)
 	{
-		var _keys = variable_struct_get_names(stats);
+		var _keys = struct_get_names(stats);
 		var _keys_length = array_length(_keys);
 		
 		for (var i = 0; i < _keys_length; i++)
@@ -994,7 +1050,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @ignore
 	static __DispatchSlotEvent = function(_event_name, _arg1 = undefined, _arg2 = undefined)
 	{
-		var _keys = variable_struct_get_names(slots);
+		var _keys = struct_get_names(slots);
 		var _keys_length = array_length(_keys);
 		
 		for (var i = 0; i < _keys_length; i++)
@@ -1012,7 +1068,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @ignore
 	static __DispatchStateEvent = function(_event_name, _arg1 = undefined, _arg2 = undefined)
 	{
-		var _keys = variable_struct_get_names(states);
+		var _keys = struct_get_names(states);
 		var _keys_length = array_length(_keys);
 		
 		for (var i = 0; i < _keys_length; i++)
@@ -1092,7 +1148,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
         RecalculateStats();
 
 		// Inicializar los valores actuales al máximo después del primer cálculo.
-		var _stat_keys = variable_struct_get_names(stats);
+		var _stat_keys = struct_get_names(stats);
 		var _stat_keys_length = array_length(_stat_keys);
 		
 		for (var i = 0; i < _stat_keys_length; i++) 
@@ -1155,8 +1211,9 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @return {Struct.EntityStatInstance}
     static StatGet = function(_key)
     {
-	    if (!mall_exists_stat(_key) ) {
-	        show_error($"[Systemall] Advertencia: El stat '{_key}' no existe.", true);
+	    if (!mall_exists_stat(_key) ) 
+        {
+            __mall_error_system($"El stat '{_key}' no existe.", true);
 		}
 		return (struct_get(stats, _key));
 	}
@@ -1217,8 +1274,9 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @return {Struct.EntitySlotInstance}
     static SlotGet = function(_key)
     {
-	    if (!mall_exists_slot(_key) ) {
-	        show_error($"[Systemall] Advertencia: El slot '{_key}' no existe.", true);
+	    if (!mall_exists_slot(_key) )
+        {
+	        __mall_error_system($"El slot '{_key}' no existe.", true);
 	    }		
         return (struct_get(slots, _key) );
     }
@@ -1226,36 +1284,44 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @desc Añade objetos/tipos permitidos para equipar en el Slot.
 	/// @param {String} slotKey La llave del slot.
 	/// @param {String, Array} itemOrTypeKey La llave del objeto o tipo a añadir.
-    static SlotPermitedAdd = function(_slotKey, _itemOrTypeKey)
+    static SlotpermittedAdd = function(_slotKey, _itemOrTypeKey)
     {
         var _slot = SlotGet(_slotKey);
         if (is_undefined(_slot)) return;
         
-        if (mall_exists_type(_itemOrTypeKey)) {
+        if (mall_exists_type(_itemOrTypeKey) ) 
+        {
             var _type_items = mall_get_type(_itemOrTypeKey);
-            for (var i = 0; i < array_length(_type_items); i++) {
-                _slot.permited[$ _type_items[i]] = 0;
+            for (var i = 0; i < array_length(_type_items); i++)
+            {
+                _slot.permitted[$ _type_items[i]] = 0;
             }
-        } else {
-            _slot.permited[$ _itemOrTypeKey] = 0;
+        } 
+        else 
+        {
+            _slot.permitted[$ _itemOrTypeKey] = 0;
         }
     }
     
 	/// @desc Elimina objetos/tipos permitidos.
 	/// @param {String} slotKey La llave del slot.
 	/// @param {String, Array} itemOrTypeKey La llave del objeto o tipo a eliminar.
-    static SlotPermitedRemove = function(_slotKey, _itemOrTypeKey)
+    static SlotpermittedRemove = function(_slotKey, _itemOrTypeKey)
     {
         var _slot = SlotGet(_slotKey);
         if (is_undefined(_slot)) return;
         
-        if (mall_exists_type(_itemOrTypeKey)) {
+        if (mall_exists_type(_itemOrTypeKey) )
+        {
             var _type_items = mall_get_type(_itemOrTypeKey);
-            for (var i = 0; i < array_length(_type_items); i++) {
-                struct_remove(_slot.permited, _type_items[i]);
+            for (var i = 0; i < array_length(_type_items); i++)
+            {
+                struct_remove(_slot.permitted, _type_items[i]);
             }
-        } else {
-            struct_remove(_slot.permited, _itemOrTypeKey);
+        } 
+        else 
+        {
+            struct_remove(_slot.permitted, _itemOrTypeKey);
         }
     }
     
@@ -1316,10 +1382,10 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
     /// @param {String} key La llave del slot.
     /// @param {String} ikey La llave del objeto a comprobar.
 	/// @return {Bool}
-    static SlotIsPermited = function(_key, _ikey)
+    static SlotIspermitted = function(_key, _ikey)
     {
         var _slot = SlotGet(_key);
-        return (struct_exists(_slot.permited, _ikey));
+        return (struct_exists(_slot.permitted, _ikey));
     }
     
 	/// @desc Comprueba si un slot no tiene objetos equipados.
@@ -1335,7 +1401,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	/// @param {Function} fn La función a ejecutar. Recibe (slot_instance, slot_key).
 	static SlotForeach = function(_fn)
 	{
-		var _keys = variable_struct_get_names(slots);
+		var _keys = struct_get_names(slots);
 		var i=0; repeat(array_length(_keys) )
 		{
 			var _key = _keys[i++];
@@ -1360,7 +1426,8 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	static StateIsActive = function(_key)
 	{
 		var _state = StateGet(_key);
-		if (is_undefined(_state)) return false;
+		if (is_undefined(_state) ) return false;
+        
 		return _state.boolean_value;
 	}
 	
@@ -1393,7 +1460,7 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 		var _state_template = _state_inst.template;
 		
 		// Comprobar inmunidades y prioridades
-		var _state_keys = variable_struct_get_names(states);
+		var _state_keys = struct_get_names(states);
 		var _state_keys_length = array_length(_state_keys);
 		
 		for (var i = 0; i < _state_keys_length; i++)
@@ -2061,17 +2128,120 @@ function PartyEntity(_template_key, _instance_id) : MallEvents(_template_key) co
 	}
 	
 	#endregion
+
+    #region API DEBUG
+    /// @desc Devuelve una representación en texto del estado actual de la entidad para depuración.
+	/// @return {String} Una cadena formateada con el resumen de la entidad.
+	static toString = function()
+	{
+		var _str = $"[ENTITY: {template_key} (Lvl {level})]";
+		
+		// Stats
+		_str += "\n- Stats:";
+		var _stat_keys = variable_struct_get_names(stats);
+        // Ordenar alfabéticamente para facilitar la lectura
+		array_sort(_stat_keys, true);
+		
+		for (var i = 0; i < array_length(_stat_keys); i++) 
+		{
+			var _k = _stat_keys[i];
+			var _s = stats[$ _k];
+			// Formato: NOMBRE: Actual/Máximo
+			_str += $"\n  * {_k}: {_s.current_value}/{_s.control_value}";
+		}
+		
+		// Slots (Solo mostrar los que tienen items)
+		_str += "\n- Slots:";
+		var _slot_keys = variable_struct_get_names(slots);
+		array_sort(_slot_keys, true);
+		var _has_items = false;
+		
+		for (var i = 0; i < array_length(_slot_keys); i++) 
+		{
+			var _k = _slot_keys[i];
+			var _s = slots[$ _k];
+			if (array_length(_s.equipped_items) > 0) 
+			{
+				_str += $"\n  * {_k}: {string(_s.equipped_items)}";
+				_has_items = true;
+			}
+		}
+		if (!_has_items) _str += " None";
+		
+		// States (Solo mostrar los activos)
+		_str += "\n- States:";
+		var _state_keys = variable_struct_get_names(states);
+		array_sort(_state_keys, true);
+		var _has_states = false;
+		
+		for (var i = 0; i < array_length(_state_keys); i++) 
+		{
+			var _k = _state_keys[i];
+			var _s = states[$ _k];
+			if (_s.boolean_value) 
+			{
+				var _duration_text = (_s.iterator.duration == infinity) ? "Inf" : string(_s.iterator.duration - _s.iterator.ticks_elapsed);
+				_str += $"\n  * {_k} ({_duration_text} trn)";
+				_has_states = true;
+			}
+		}
+		if (!_has_states) _str += " None";
+		
+		return _str;
+	}
+    
+    #endregion
 }
 
 /// @desc Crea una plantilla de entidad desde data y la añade a la base de datos.
 function party_create_entity_template(_key, _data)
 {
+    static __merge = function(_dest, _source) 
+    {
+		var _keys = variable_struct_get_names(_source);
+		var _len = array_length(_keys);
+		
+		for (var i = 0; i < _len; i++)
+		{
+			var _key = _keys[i];
+			var _val = _source[$ _key];
+			
+			if (is_struct(_val) && variable_struct_exists(_dest, _key) && is_struct(_dest[$ _key]))
+			{
+				__merge(_dest[$ _key], _val);
+			}
+			else
+			{
+				_dest[$ _key] = variable_clone(_val);
+			}
+		}
+    }
+    
     if (struct_exists(Systemall.__entities, _key))
     {
         show_debug_message($"[Systemall] Advertencia: El entity template '{_key}' ya existe. Se omitirá la duplicada.", true);
         return undefined;
     }
 	
+	// Añadir parent si existe.
+	if (struct_exists(_data, "parent") )
+	{
+		var _parent_key = _data.parent;
+		if (party_exists_entity_template(_parent_key) )
+		{
+			// Clonar.
+			var _parent_data = variable_clone(Systemall.__entities[$ _parent_key]);
+			
+			// Juntar la informacion.
+			__merge(_parent_data, _data);
+			
+			// Eliminar parent para limpieza.
+			struct_remove(_parent_data, "parent");
+			
+			_data = _parent_data;
+		}
+	}
+    
     // Guardamos el struct de datos directamente como plantilla.
 	Systemall.__entities[$ _key] = _data;
     array_push(Systemall.__entities_keys, _key);

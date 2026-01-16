@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"mall_CoreAI",
+  "%Name":"mall_Core_AI",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"mall_CoreAI",
+  "name":"mall_Core_AI",
   "parent":{
     "name":"Databases",
     "path":"folders/Systemall/Databases.yy",

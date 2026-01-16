@@ -44,6 +44,37 @@ function EVT_CORE_ApplyEffect(_caster, _target, _params)
     return new MallResult(); // Aplicar un efecto no hace daño directo
 }
 
+/// @desc Script estándar para el crecimiento de stats usando AnimationCurves.
+/// Se usa como event_on_level_up en las estadísticas que tengan configuración de crecimiento.
+/// 
+/// @param {Struct.EntityStatInstance} stat_inst La instancia de la estadística.
+/// @return {Real} El nuevo valor de peak_value calculado.
+function EVT_Standard_GrowthWithCurve(stat_inst)
+{
+    // Obtener valores base
+    var _base = stat_inst.base_value;
+    var _growth = stat_inst.growth;
+    var _curve = stat_inst.growth_curve;
+    var _level = stat_inst.level;
+    
+    // Si no hay crecimiento configurado, devolver el valor base
+    if (_growth == 0 || is_undefined(_curve))
+    {
+        return _base;
+    }
+    
+    // Normalizar el nivel a un rango 0-1 (asumiendo nivel máximo 100)
+    var _normalized_level = clamp(_level / __MALL_PARTY_LEVEL_MAX, 0, 1);
+    
+    // Evaluar la curva en la posición normalizada
+    var _curve_value = stat_inst.Curve(_normalized_level);
+    
+    // Fórmula: base + (growth * curve_value)
+    var _total = _base + (_growth * _curve_value);
+    
+    return round(_total);
+}
 
-mall_create_function("EVT_CORE_PhysicalDamage", EVT_CORE_PhysicalDamage)
-mall_create_function("EVT_CORE_ApplyEffect", EVT_CORE_ApplyEffect)
+mall_create_function("EVT_CORE_PhysicalDamage", EVT_CORE_PhysicalDamage);
+mall_create_function("EVT_CORE_ApplyEffect", EVT_CORE_ApplyEffect);
+mall_create_function("EVT_Standard_GrowthWithCurve", EVT_Standard_GrowthWithCurve);

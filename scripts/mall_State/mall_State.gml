@@ -130,17 +130,17 @@ function MallState(_key) : MallEvents(_key) constructor
     static FromData = function(_data)
     {
 		// Cargar nuevas propiedades
-		state_type =		string_upper(_data.state_type ?? "AILMENT");
-		priority =			_data.priority ?? 0;
-		clears_states =		_data.clears_states ?? [];
-		prevents_states =	_data.prevents_states ?? [];
-		restricts_action =	_data.restricts_action ?? false;
+		state_type =		string_upper(_data[$ "state_type"] ?? "AILMENT");
+		priority =			_data[$ "priority"] ?? 0;
+		clears_states =		_data[$ "clears_states"] ?? [];
+		prevents_states =	_data[$ "prevents_states"] ?? [];
+		restricts_action =	_data[$ "restricts_action"] ?? false;
 		
 		// Cargar propiedades existentes
-        boolean_value =		_data.boolean_value ?? false;
-        reset_value =		_data.reset_value ?? false;
-        allow_multiple =	_data.allow_multiple ?? false;
-        max_effects =		_data.max_effects ?? 1;
+        boolean_value =		_data[$ "boolean_value"] ?? false;
+        reset_value =		_data[$ "reset_value"] ?? false;
+        allow_multiple =	_data[$ "allow_multiple"] ?? false;
+        max_effects =		_data[$ "max_effects"] ?? 1;
         
         if (struct_exists(_data, "stats") ) { stats = variable_clone(_data.stats); }
         
@@ -168,7 +168,8 @@ function mall_state_create_from_data(_key, _data)
 {
     if (mall_exists_state(_key) ) 
 	{
-		return __mall_print($"Advertencia: El state '{_key}' ya existe. Se omitirá el duplicada.");
+		__mall_print($"Advertencia: El state '{_key}' ya existe. Se omitirá el duplicada.");
+        exit;
 	}
 	
     var _state = (new MallState(_key) ).FromData(_data);
@@ -187,7 +188,8 @@ function mall_create_state(_key, _component)
 {
     if (mall_exists_state(_key) )
 	{
-		return __mall_print($"Advertencia: El state '{_key}' ya existe. Se omitirá el duplicada.");
+		__mall_print($"Advertencia: El state '{_key}' ya existe. Se omitirá el duplicada.");
+        exit;
 	}
 	
     Systemall.__states[$ _key] = _component;

@@ -465,7 +465,7 @@ function __mall_test_party_entity(_runner)
 	    var slots = { 
 			"type": "Slots", 
 			"SLOT_ARMA": { 
-				"permited": ["WEAPON"],
+				"permitted": ["WEAPON"],
 				"event_on_equip": "EVT_SLOT_OnEquip_Test"
 			} 
 		};
@@ -735,7 +735,7 @@ function __mall_test_party_entity_events(_runner)
 		file_text_write_string(file, json_stringify(items));
 		file_text_close(file);
     
-	    var slots = { "type": "Slots", "SLOT_TEST": { "permited": ["WEAPON"], "event_on_equip": "EVT_SlotOnEquip", "event_on_turn_start": "EVT_SlotOnTurnStart" } };
+	    var slots = { "type": "Slots", "SLOT_TEST": { "permitted": ["WEAPON"], "event_on_equip": "EVT_SlotOnEquip", "event_on_turn_start": "EVT_SlotOnTurnStart" } };
 	    file = file_text_open_write("test_e_slots.json");
 		file_text_write_string(file, json_stringify(slots));
 		file_text_close(file);

@@ -6,7 +6,9 @@ function mall_create_type(_key, _value)
     if (mall_exists_type(_key) )
     {
 		array_push(Systemall.__types[$ _key], _value);
-		return __mall_print($"Advertencia: El tipo '{_key}' ya existe. El valor se añadirá al final.");
+		__mall_print($"Advertencia: El tipo '{_key}' ya existe. El valor se añadirá al final.");
+        
+        exit;
     }
 	
 	// Crear array y añadir a la lista de tipos.

@@ -72,7 +72,8 @@ function PocketBag(_key) : Mall(_key) constructor
     /// @param {String} instance_key La llave para la nueva instancia de mochila.
     static CreateInstance = function(_instance_key)
     {
-		return (__mall_error("[Systemall] El método CreateInstance debe ser implementado por un constructor hijo.") );
+		__mall_error_system("[Systemall] El método CreateInstance debe ser implementado por un constructor hijo.");
+        exit;
     }
 	
 	#endregion
@@ -94,8 +95,8 @@ function PocketBagSimple(_key) : PocketBag(_key) constructor
 	/// @ignore
 	static __CompareVars = function(struct1, struct2)
 	{
-		var _keys1 = variable_struct_get_names(struct1);
-		var _keys2 = variable_struct_get_names(struct2);
+		var _keys1 = struct_get_names(struct1);
+		var _keys2 = struct_get_names(struct2);
 		
 		if (array_length(_keys1) != array_length(_keys2) ) return false;
 		
@@ -107,7 +108,7 @@ function PocketBagSimple(_key) : PocketBag(_key) constructor
 			if (!struct_exists(struct2, _key) || struct1[$ _key] != struct2[$ _key] ) 
 			{
 				return false;
-			}				
+			}		
 			
 			i++;
 		}
@@ -154,7 +155,7 @@ function PocketBagSimple(_key) : PocketBag(_key) constructor
 			while (_amount_to_add > 0 && array_length(order) < slot_limit)
 			{
 				var _to_add_here =	min(_amount_to_add, _item_template.stack_limit);
-				var _new_instance = new BagItemInstance(_item_key, _to_add_here, _vars);
+				var _new_instance = new BagItemInstance(_item_key, _to_add_here, variable_clone(_vars));
 				array_push(order, _new_instance);
 				
 				_result.added	+= _to_add_here;
@@ -183,7 +184,7 @@ function PocketBagSimple(_key) : PocketBag(_key) constructor
                 if (_already_exists) break;
                 
                 // Si no existe, añadir una nueva instancia.
-                var _new_instance = new BagItemInstance(_item_key, 1, _vars);
+                var _new_instance = new BagItemInstance(_item_key, 1, variable_clone(_vars) );
                 array_push(order, _new_instance);
                 _result.added++;
                 _amount_to_add--;

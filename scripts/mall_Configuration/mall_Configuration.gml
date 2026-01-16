@@ -1,4 +1,4 @@
-#macro __MALL_VERSION		"v2.8"
+#macro __MALL_VERSION		"3.0.1"
 #macro __MALL_VERSION_MINE	__MALL_VERSION+"::1.0"
 /// @desc Si Systemall debe hacer print.
 #macro __MALL_TRACE			true
@@ -125,6 +125,9 @@ function Systemall()
 	/// @ignore Sistema de Broadcast y Mensajes para el sistema.
     static __broadcast = {};
 	static __messages = [];
+    
+    /// @ignore Assets publicos que el sistema puede acceder.
+    static __assets = {};
 }
 
 /// @desc Carga un archivo maestro y procesa los datos en un orden garantizado.
@@ -135,11 +138,11 @@ function mall_init(_master_file_path)
         "STATS", "ITEMS", "SLOTS", "STATES", "EFFECTS", "COMMANDS", "AI", "PARTY", "GROUPS", "BAGS", "WATE"
     ];
 	
-    // --- FASE 1: RECOPILAR TODOS LOS DATOS ---
+    #region RECOPILAR TODOS LOS DATOS
     
     if (!file_exists(_master_file_path) )
 	{
-        show_error($"[Systemall] ¡Error Crítico! El archivo maestro no existe: {_master_file_path}", true);
+        __mall_error_system($"¡Error Crítico! El archivo maestro no existe: {_master_file_path}");
         return;
     }
     
@@ -149,23 +152,30 @@ function mall_init(_master_file_path)
     file_text_close(_file);
     
     var _master_data = json_parse(_json_string);
-    if (!is_struct(_master_data)) {
-        show_error("[Systemall] ¡Error Crítico! El archivo maestro no es un JSON válido.", true);
+    if (!is_struct(_master_data) ) 
+    {
+        __mall_error_system("[Systemall] ¡Error Crítico! El archivo maestro no es un JSON válido.");
         return;
     }
     
     Systemall.__master = _master_data;
-    var _temp_data_pool = {}; // Struct para agrupar datos por tipo
     
+    // Struct para agrupar datos por tipo
+    var _temp_data_pool = {};
     var _categories = variable_struct_get_names(_master_data);
-    for (var i = 0; i < array_length(_categories); i++) {
+    
+    for (var i = 0; i < array_length(_categories); i++)
+    {
         var _category_name = _categories[i];
         var _file_paths = _master_data[$ _category_name];
         
-        for (var j = 0; j < array_length(_file_paths); j++) {
+        // Leer cada archivo establecido en el master.
+        for (var j = 0; j < array_length(_file_paths); j++)
+        {
             var _data_file_path = _file_paths[j];
-            if (!file_exists(_data_file_path)) {
-                show_debug_message($"[Systemall] Advertencia: Archivo no encontrado '{_data_file_path}'.");
+            if (!file_exists(_data_file_path) ) 
+            {
+                __mall_print_system($"[Systemall] Advertencia: Archivo no encontrado '{_data_file_path}'.");
                 continue;
             }
             
@@ -175,34 +185,36 @@ function mall_init(_master_file_path)
             file_text_close(_data_file);
             
             var _loaded_data = json_parse(_data_json_string);
-            
-            if (is_struct(_loaded_data) && variable_struct_exists(_loaded_data, "type")) {
+            if (is_struct(_loaded_data) && variable_struct_exists(_loaded_data, "type") )
+            {
                 var _type = string_upper(_loaded_data.type);
-                if (!variable_struct_exists(_temp_data_pool, _type)) {
-                    _temp_data_pool[$ _type] = [];
-                }
+                if (!variable_struct_exists(_temp_data_pool, _type) ) { _temp_data_pool[$ _type] = []; }
                 variable_struct_remove(_loaded_data, "type");
                 array_push(_temp_data_pool[$ _type], _loaded_data);
-            } else {
-                show_debug_message($"[Systemall] Error: Archivo '{_data_file_path}' no tiene un campo 'type' válido.");
+            }
+            else 
+            {
+                __mall_print_system($"[Systemall] Error: Archivo '{_data_file_path}' no tiene un campo 'type' válido.");
             }
         }
     }
     
-    // --- FASE 2: PROCESAR LOS DATOS EN ORDEN --- 
+    #endregion
+    
+    #region PROCESAR LOS DATOS EN ORDEN
     for (var i = 0; i < array_length(_process_order); i++) 
 	{
         var _current_type = _process_order[i];
         
-        if (!variable_struct_exists(_temp_data_pool, _current_type)) continue;
+        if (!variable_struct_exists(_temp_data_pool, _current_type) ) continue;
         
         var _data_array = _temp_data_pool[$ _current_type];
         
         for (var j = 0; j < array_length(_data_array); j++) 
 		{
             var _data_struct = _data_array[j];
-			
-			// Saltar al siguiente archivo de IA
+            
+            // Saltar al siguiente archivo de IA
 			if (_current_type == "AI") 
 			{
                 mall_ai_create_from_data(_data_struct);
@@ -212,8 +224,8 @@ function mall_init(_master_file_path)
 			{
 				mall_wate_create_from_data(_data_struct);
 				continue;
-			}	
-			
+			}	            
+            
             var _keys = variable_struct_get_names(_data_struct);
             
             for (var k = 0; k < array_length(_keys); k++) 
@@ -282,7 +294,9 @@ function mall_init(_master_file_path)
         }
     }
     
-    // --- FASE 3: POBLAR LAS LISTAS DE LLAVES ---
+    #endregion
+    
+    #region POBLAR LAS LISTAS DE LLAVES
     Systemall.__stats_keys      = variable_struct_get_names(Systemall.__stats);
     Systemall.__items_keys      = variable_struct_get_names(Systemall.__items);
     Systemall.__slots_keys      = variable_struct_get_names(Systemall.__slots);
@@ -292,9 +306,12 @@ function mall_init(_master_file_path)
     Systemall.__groups_keys     = variable_struct_get_names(Systemall.__groups);
 	Systemall.__ai_keys			= variable_struct_get_names(Systemall.__ai_packages);
 	
-    // ... etc.
+    #endregion
     
-    show_debug_message("[Systemall] Carga de la base de datos desde JSON completada.");
+    // Inicializar las curvas de animación
+    __mall_init_curves();
+    
+    __mall_print_system("[Systemall] Carga de la base de datos desde JSON completada.");
 }
 
 function mall_system_cleanup()
@@ -373,6 +390,8 @@ function mall_system_cleanup()
 		/// @ignore Sistema de Broadcast y Mensajes para el sistema.
 	    __broadcast = {};
 		__messages = [];
+        
+        __assets = {};
 	}		
 }
 
@@ -547,6 +566,115 @@ function __mall_error(_message, _bool=true)
 		show_error($"[Systemall Error]: {_message}", _bool);
 	}
 }
+
+function __mall_error_system(_message)
+{
+    show_error($"[Systemall Error]: {_message}", true);
+}
+
+function __mall_print_system(_message)
+{ 
+    show_debug_message($"[Systemall]: {_message}");
+}
+
+function __mall_init_curves()
+{
+	// --- CURVA LINEAR ---
+	var _linear = animcurve_create();
+	_linear.name = "linear";
+	var _linear_channel = animcurve_channel_new();
+	_linear_channel.name = "linear";
+	_linear_channel.type = animcurvetype_linear;
+	var _linear_points = array_create(2);
+	_linear_points[0] = animcurve_point_new();
+	_linear_points[0].posx = 0;
+	_linear_points[0].value = 0;
+	_linear_points[1] = animcurve_point_new();
+	_linear_points[1].posx = 1;
+	_linear_points[1].value = 1;
+	_linear_channel.points = _linear_points;
+	_linear.channels = [_linear_channel];
+	mall_add_asset("linear", _linear);
+	
+	// --- CURVA EXPONENTIAL (x²) ---
+	var _exponential = animcurve_create();
+	_exponential.name = "exponential";
+	var _exp_channel = animcurve_channel_new();
+	_exp_channel.name = "exponential";
+	_exp_channel.type = animcurvetype_catmullrom;
+	_exp_channel.iterations = 16;
+	var _exp_points = array_create(5);
+	_exp_points[0] = animcurve_point_new();
+	_exp_points[0].posx = 0;
+	_exp_points[0].value = 0;
+	_exp_points[1] = animcurve_point_new();
+	_exp_points[1].posx = 0.25;
+	_exp_points[1].value = 0.0625;
+	_exp_points[2] = animcurve_point_new();
+	_exp_points[2].posx = 0.5;
+	_exp_points[2].value = 0.25;
+	_exp_points[3] = animcurve_point_new();
+	_exp_points[3].posx = 0.75;
+	_exp_points[3].value = 0.5625;
+	_exp_points[4] = animcurve_point_new();
+	_exp_points[4].posx = 1;
+	_exp_points[4].value = 1;
+	_exp_channel.points = _exp_points;
+	_exponential.channels = [_exp_channel];
+	mall_add_asset("exponential", _exponential);
+	
+	// --- CURVA EASE_OUT (suavizado final) ---
+	var _ease_out = animcurve_create();
+	_ease_out.name = "ease_out";
+	var _ease_channel = animcurve_channel_new();
+	_ease_channel.name = "ease_out";
+	_ease_channel.type = animcurvetype_catmullrom;
+	_ease_channel.iterations = 16;
+	var _ease_points = array_create(4);
+	_ease_points[0] = animcurve_point_new();
+	_ease_points[0].posx = 0;
+	_ease_points[0].value = 0;
+	_ease_points[1] = animcurve_point_new();
+	_ease_points[1].posx = 0.33;
+	_ease_points[1].value = 0.8;
+	_ease_points[2] = animcurve_point_new();
+	_ease_points[2].posx = 0.66;
+	_ease_points[2].value = 0.95;
+	_ease_points[3] = animcurve_point_new();
+	_ease_points[3].posx = 1;
+	_ease_points[3].value = 1;
+	_ease_channel.points = _ease_points;
+	_ease_out.channels = [_ease_channel];
+	mall_add_asset("ease_out", _ease_out);
+	
+	// --- CURVA SQUARE (x^1.5) ---
+	var _square = animcurve_create();
+	_square.name = "square";
+	var _square_channel = animcurve_channel_new();
+	_square_channel.name = "square";
+	_square_channel.type = animcurvetype_catmullrom;
+	_square_channel.iterations = 16;
+	var _square_points = array_create(5);
+	_square_points[0] = animcurve_point_new();
+	_square_points[0].posx = 0;
+	_square_points[0].value = 0;
+	_square_points[1] = animcurve_point_new();
+	_square_points[1].posx = 0.25;
+	_square_points[1].value = 0.125;
+	_square_points[2] = animcurve_point_new();
+	_square_points[2].posx = 0.5;
+	_square_points[2].value = 0.35;
+	_square_points[3] = animcurve_point_new();
+	_square_points[3].posx = 0.75;
+	_square_points[3].value = 0.65;
+	_square_points[4] = animcurve_point_new();
+	_square_points[4].posx = 1;
+	_square_points[4].value = 1;
+	_square_channel.points = _square_points;
+	_square.channels = [_square_channel];
+	mall_add_asset("square", _square);
+}
+
 
 // Generar statics
 // -- CORE --

@@ -27,6 +27,28 @@ function mall_exists_function(_key)
 	return (struct_exists(Systemall.__functions, _key) );
 }
 
+function mall_add_asset(_key, _asset)
+{
+	if (mall_asset_exists(_key) )
+	{
+		__mall_print($"Advertencia: El asset '{_key}' ya existe. El valor será re-escrito.");
+	}
+	
+	Systemall.__assets[$ _key] = _asset;
+}
+
+function mall_asset_get(_key)
+{
+	static __default = undefined;
+	return (struct_get(Systemall.__assets, _key) ?? __default);
+}
+
+function mall_asset_exists(_key)
+{
+	return (struct_exists(Systemall.__assets, _key) );
+}
+
+
 #region PRIVATE
 
 /// @ignore

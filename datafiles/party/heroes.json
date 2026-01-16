@@ -16,7 +16,7 @@
 		"slots": {
 			"SLOT_ARMA": {
 				"equip": "IRON_SWORD"
-				"permited": ["+IRON_SWORD", "-IRON_GOLD"]
+				"permitted": ["+IRON_SWORD", "-IRON_GOLD"]
 			}
 		},
 		

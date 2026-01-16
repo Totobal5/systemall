@@ -39,7 +39,8 @@ function mall_broadcast_post(_event_key, _data = {})
 {
     if (!struct_exists(Systemall.__broadcast, _event_key) )
 	{
-		return __mall_print($"(Broadcast) Advertencia: No existe la funcion '{_event_key}'.");
+		__mall_print($"(Broadcast) Advertencia: No existe la funcion '{_event_key}'.");
+        exit;
 	}
 	
     var _listeners = Systemall.__broadcast[$ _event_key];

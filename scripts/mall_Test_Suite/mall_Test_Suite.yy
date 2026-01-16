@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"mall_CoreFunctions",
+  "%Name":"mall_Test_Suite",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"mall_CoreFunctions",
+  "name":"mall_Test_Suite",
   "parent":{
-    "name":"Databases",
-    "path":"folders/Systemall/Databases.yy",
+    "name":"Systemall",
+    "path":"folders/Systemall.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

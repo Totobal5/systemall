@@ -180,7 +180,8 @@ function mall_stat_create_from_data(_key, _data)
 {
     if (mall_exists_stat(_key) )
     {
-		return __mall_print($"Advertencia: La estadística '{_key}' ya existe. Se omitirá la duplicada.");
+		__mall_print($"Advertencia: La estadística '{_key}' ya existe. Se omitirá la duplicada.");
+        exit;
     }
     
     // Se crea una instancia vacía y luego se configura con los datos.
@@ -197,7 +198,8 @@ function mall_create_stat(_key, _component)
 {
     if (mall_exists_stat(_key) )
     {
-		return __mall_print($"Advertencia: La estadística '{_key}' ya existe. Se omitirá la duplicada.");
+		__mall_print($"Advertencia: La estadística '{_key}' ya existe. Se omitirá la duplicada.");
+        exit;
     }
 	
 	Systemall.__stats[$ _key] = _component;

@@ -22,7 +22,7 @@ function MallSlot(_key) : MallEvents(_key) constructor
 	
     /// @desc Un struct con las llaves de los objetos/tipos permitidos. Si está vacío, se aceptan todos.
 	/// @type {Struct}
-    permited = {};
+    permitted = {};
 	
     // --- Llaves de Eventos ---
 	
@@ -101,22 +101,22 @@ function MallSlot(_key) : MallEvents(_key) constructor
     /// @desc (Privado) Método auxiliar para poblar la lista de objetos permitidos.
     /// @param {String, Array} data La llave o array de llaves a añadir.
     /// @ignore
-    static __PopulatePermited = function(_data)
+    static __PopulatePermitted = function(_data)
     {
         if (is_array(_data) )
         {
-			var i=0; repeat(array_length(_data) ) { __PopulatePermited( _data[i++] ); }
+			var i=0; repeat(array_length(_data) ) { __PopulatePermitted( _data[i++] ); }
         }
         else if (is_string(_data) )
         {
             if (mall_exists_type(_data) )
             {
                 var _type_items = mall_get_type(_data);
-				var i=0; repeat(array_length(_type_items) ) { permited[$ _type_items[i++] ] = 0; }
+				var i=0; repeat(array_length(_type_items) ) { permitted[$ _type_items[i++] ] = 0; }
             }
             else
             {
-                permited[$ _data] = 0;
+                permitted[$ _data] = 0;
             }
         }
     }
@@ -134,7 +134,7 @@ function MallSlot(_key) : MallEvents(_key) constructor
 	    event_on_turn_end =		_data[$ "event_on_turn_end"]	?? "";
 	    event_on_equip =		_data[$ "event_on_equip"]		?? "";
 	    event_on_desequip =		_data[$ "event_on_desequip"]	?? "";
-		event_can_equip =		_data[$ "event_on_item_check"]	?? "";
+		event_can_equip =		_data[$ "event_can_equip"]	?? "";
 		event_can_desequip =	_data[$ "event_can_desequip"]	?? "";
 	    event_on_attack =		_data[$ "event_on_attack"]		?? "";
 	    event_on_defend =		_data[$ "event_on_defend"]		?? "";
@@ -154,7 +154,7 @@ function MallSlot(_key) : MallEvents(_key) constructor
         depends_on_slot =	_data[$ "depends_on_slot"]	?? "";
         
 		// Cargar objetos permitidos.
-		if (struct_exists(_data, "permited") ) { __PopulatePermited(_data.permited); }
+		if (struct_exists(_data, "permitted") ) { __PopulatePermitted(_data.permitted); }
 		
 		// Cargar eventos.
 		__LoadFunctions(_data);
@@ -172,7 +172,8 @@ function mall_create_slot_from_data(_key, _data)
 {
     if (mall_exists_slot(_key) )
     {
-		return __mall_print($"Advertencia: El slot '{_key}' ya existe. Se omitirá la duplicada.");
+		__mall_print($"Advertencia: El slot '{_key}' ya existe. Se omitirá la duplicada.");
+        exit;
 	}	
 
     var _slot = (new MallSlot(_key) ).FromData(_data);
@@ -188,7 +189,8 @@ function mall_create_slot(_key, _component)
 {
     if (mall_exists_slot(_key) )
     {
-		return __mall_print($"Advertencia: El slot '{_key}' ya existe. Se omitirá la duplicada.");
+		__mall_print($"Advertencia: El slot '{_key}' ya existe. Se omitirá la duplicada.");
+        exit;
 	}
 	
     Systemall.__slots[$ _key] = _component;
