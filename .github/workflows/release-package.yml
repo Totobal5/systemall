@@ -23,8 +23,7 @@ jobs:
                 with:
                     node-version: "20"
 
-            - name: Build and attach YYMPS
-                uses: tinkerer-red/GML-Actions/actions/package@v2
+            - uses: tinkerer-red/GML-Actions/actions/package@v2
                 with:
                     project-file: "systemall.yyp"
                     package-id: "Systemall"

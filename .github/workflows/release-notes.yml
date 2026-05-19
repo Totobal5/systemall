@@ -17,8 +17,7 @@ jobs:
     notes-header:
         runs-on: ubuntu-latest
         steps:
-            - name: Release notes header
-                uses: tinkerer-red/GML-Actions/actions/release-notes/header@v2
+            - uses: tinkerer-red/GML-Actions/actions/release-notes/header@v2
 
     notes-issues:
         needs: notes-header
@@ -28,8 +27,7 @@ jobs:
                 uses: actions/checkout@v4
                 with:
                     fetch-depth: 0
-            - name: Append issues closed
-                uses: tinkerer-red/GML-Actions/actions/release-notes/issues@v2
+            - uses: tinkerer-red/GML-Actions/actions/release-notes/issues@v2
 
     notes-commits:
         needs: notes-issues
@@ -39,5 +37,4 @@ jobs:
                 uses: actions/checkout@v4
                 with:
                     fetch-depth: 0
-            - name: Append commits
-                uses: tinkerer-red/GML-Actions/actions/release-notes/commits@v2
+            - uses: tinkerer-red/GML-Actions/actions/release-notes/commits@v2
