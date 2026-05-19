@@ -3,17 +3,7 @@ name: Generate Docs
 on:
 release:
     types: [published]
-workflow_dispatch:
-    inputs:
-    release_tag:
-        description: >-
-        Docs version to generate. Leave empty to refresh the current version
-        from gh-pages
-        required: false
-        default: ""
 
-permissions:
-contents: write
 issues: write
 
 jobs:
@@ -25,11 +15,25 @@ generate-docs:
         with:
             fetch-depth: 0
 
-    - name: Generate and publish docs
-        uses: tinkerer-red/GML-Actions/actions/generate-docs@v2
-        with:
+
+permissions:
+    contents: write
+    issues: write
             project-file: "systemall.yyp"
             release-tag: ${{ github.event.inputs.release_tag }}
-            output-path: "C:/tome-output"
-            create-issue-on-failure: "false"
-            verbose: "false"
+    generate-docs:
+        runs-on: windows-latest
+        steps:
+            - name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    fetch-depth: 0
+
+            - name: Generate and publish docs
+                uses: tinkerer-red/GML-Actions/actions/generate-docs@v2
+                with:
+                    project-file: "systemall.yyp"
+                    release-tag: ${{ github.event.inputs.release_tag }}
+                    output-path: "C:/tome-output"
+                    create-issue-on-failure: "false"
+                    verbose: "false"
