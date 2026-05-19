@@ -1,35 +1,35 @@
 name: Release Package
 
 on:
-    push:
-        tags:
-            - "[0-9]*.[0-9]*"
-            - "v[0-9]*.[0-9]*"
-            - "[0-9]*.[0-9]*.[0-9]*"
-            - "v[0-9]*.[0-9]*.[0-9]*"
+  push:
+    tags:
+      - "[0-9]*.[0-9]*"
+      - "v[0-9]*.[0-9]*"
+      - "[0-9]*.[0-9]*.[0-9]*"
+      - "v[0-9]*.[0-9]*.[0-9]*"
 
 permissions:
-    contents: write
+  contents: write
 
 jobs:
-    package:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-                uses: actions/checkout@v4
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Set up Node.js
-                uses: actions/setup-node@v5
-                with:
-                    node-version: "20"
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
 
-            - uses: tinkerer-red/GML-Actions/actions/package@v2
-                with:
-                    project-file: "systemall.yyp"
-                    package-id: "Systemall"
-                    include-folders: "Systemall"
-                    package-name: "Systemall"
-                    package-publisher: "Toto"
-                    append-version-to-filename: "true"
-                    project-tool-version: "2024.14.160"
-                    gmpm-registry: "https://gmpm.gamemaker.io"
+      - uses: tinkerer-red/GML-Actions/actions/package@v2
+        with:
+          project-file: "systemall.yyp"
+          package-id: "Systemall"
+          include-folders: "Systemall"
+          package-name: "Systemall"
+          package-publisher: "Toto"
+          append-version-to-filename: "true"
+          project-tool-version: "2024.14.160"
+          gmpm-registry: "https://gmpm.gamemaker.io"
