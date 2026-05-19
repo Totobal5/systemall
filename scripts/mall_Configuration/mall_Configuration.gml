@@ -1,5 +1,5 @@
 /// @ignore Core library semantic version.
-#macro __MALL_VERSION		"3.0.1"
+#macro __MALL_VERSION		"4.0.0"
 /// @ignore Build/version suffix used in save payload metadata.
 #macro __MALL_VERSION_MINE	__MALL_VERSION+"::1.0"
 /// @ignore Enables Systemall trace logging.
