@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mall_Behavior",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_Behavior",
+  "parent":{
+    "name":"Components",
+    "path":"folders/Systemall/Components.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

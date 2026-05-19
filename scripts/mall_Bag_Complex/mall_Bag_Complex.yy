@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mall_Bag_Complex",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_Bag_Complex",
+  "parent":{
+    "name":"Items",
+    "path":"folders/Systemall/Items.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

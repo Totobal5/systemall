@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mall_Entity_AI",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_Entity_AI",
+  "parent":{
+    "name":"Entities",
+    "path":"folders/Systemall/Entities.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mall_Core_Events_AI",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_Core_Events_AI",
+  "parent":{
+    "name":"Defaults",
+    "path":"folders/Systemall/Defaults.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

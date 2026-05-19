@@ -1,230 +1,178 @@
-#macro __MALL_STAT_ROUND        round
-#macro __MALL_STAT_MIN          0
-#macro __MALL_STAT_MAX          9999
-
-#macro __MALL_STAT_LEVEL_MIN    1
-#macro __MALL_STAT_LEVEL_MAX    100
-
-/// @desc Define la plantilla base para una estadística del juego.
+/// @desc Defines the base template for a game stat.
 /// @param {String} key
-function MallStat(_key) : MallEvents(_key) constructor 
+function MallStat(_key) : MallBehavior(_key) constructor 
 {
-    // --- Propiedades de la Estadística ---
-    
-    /// @desc El tipo de valor que utiliza la estadística (REAL o PERCENT).
+	/// @desc The type of value used by the stat (REAL or PERCENT).
 	/// @type {Enum.MALL_NUMTYPE}
-    num_type = MALL_NUMTYPE.REAL;
-    
-    /// @desc Si la entidad puede tener múltiples efectos que afecten esta stat.
-	/// @type {Bool}
-    allow_multiple_effects = false;
-    
-    /// @desc Cuántos efectos de esta stat puede tener una entidad. -1 para infinitos.
-	/// @type {Real}
-    max_effects = -1;
-    
-    /// @desc Si el valor actual se restaura al máximo al equipar algo que lo modifique.
-	/// @type {Bool}
-    restore_on_equip = false;
+	num_type = MALL_NUMTYPE.REAL;
 	
-    /// @desc El límite mínimo que puede alcanzar el valor de la estadística.
-	/// @type {Real}
-    min_value = __MALL_STAT_MIN;
-    
-    /// @desc El límite máximo que puede alcanzar el valor de la estadística.
-	/// @type {Real}
-    max_value = __MALL_STAT_MAX;
-    
-    /// @desc El nivel mínimo de la estadística.
-	/// @type {Real}
-    min_level = __MALL_STAT_LEVEL_MIN;
-    
-    /// @desc El nivel máximo de la estadística.
-	/// @type {Real}
-    max_level = __MALL_STAT_LEVEL_MAX;
-    
-    /// @desc Si esta estadística sube de nivel de forma independiente al nivel de la entidad.
+	/// @desc Whether the entity can have multiple effects affecting this stat.
 	/// @type {Bool}
-    is_standalone_level = false;
-    
-    /// @desc Un iterador para efectos pasivos o degenerativos (ej: regeneración por turno).
+	allow_multiple_effects = false;
+	
+	/// @desc How many effects of this stat an entity can have. -1 for infinite.
+	/// @type {Real}
+	max_effects = -1;
+	
+	/// @desc Whether the current value is restored to maximum when equipping something that modifies it.
+	/// @type {Bool}
+	restore_on_equip = false;
+	
+	/// @desc The minimum limit the stat value can reach.
+	/// @type {Real}
+	min_value = __MALL_STAT_MIN;
+	
+	/// @desc The maximum limit the stat value can reach.
+	/// @type {Real}
+	max_value = __MALL_STAT_MAX;
+	
+	/// @desc The minimum level of the stat.
+	/// @type {Real}
+	min_level = __MALL_STAT_LEVEL_MIN;
+	
+	/// @desc The maximum level of the stat.
+	/// @type {Real}
+	max_level = __MALL_STAT_LEVEL_MAX;
+	
+	/// @desc Whether this stat levels up independently of the entity's level.
+	/// @type {Bool}
+	is_standalone_level = false;
+	
+	/// @desc An iterator for passive or degenerative effects (e.g., regeneration per turn).
 	/// @type {Struct.MallIterator}
-    iterator = new MallIterator();
-    
-    // --- Llaves de Eventos ---
+	iterator = new MallIterator();
 	
-	/// @desc Se ejecuta una vez cuando la instancia es creada para una entidad.
-	/// @context EntityStatInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_start =		"";
+	#region EVENTS
 	
-	/// @desc (Sin implementación actual en el motor)
-    event_on_end =			"";
+	/// @desc Runs once when the instance is created for an entity.
+	/// @context Struct.MallStatInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @returns {undefined}
+	event_on_start = "";
 	
-	/// @desc Se ejecuta en cada llamada a RecalculateStats, después de calcular el peak_value.
-	/// @context EntityStatInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_update =		"";
+	/// @desc (Not currently implemented by the engine.)
+	/// @returns {undefined}
+	event_on_end = "";
 	
-	/// @desc Se ejecuta para calcular el peak_value de la estadística. Debe devolver el nuevo valor.
-	/// @context EntityStatInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_level_up =		"";
+	/// @desc Runs on each RecalculateStats call after peak_value is calculated.
+	/// @context Struct.MallStatInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @returns {undefined}
+	event_on_update = "";
 	
-	/// @desc (Para stats standalone) Comprueba si la estadística puede subir de nivel. Debe devolver bool.
-	/// @context EntityStatInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_level_check =	"";
+	/// @desc Runs to calculate the stat peak_value. Must return the new value.
+	/// @context Struct.MallStatInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @returns {Real}
+	event_on_level_up = "";
 	
-	/// @desc Se ejecuta cuando se equipa un objeto en CUALQUIER slot de la entidad.
-	/// @context EntityStatInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-	/// @param {Struct.EntitySlotInstance} slot_instance El slot donde se equipó el objeto.
-    event_on_equip =		"";
+	/// @desc (For standalone stats.) Checks whether the stat can level up. Must return a boolean.
+	/// @context Struct.MallStatInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @returns {Bool}
+	event_on_level_check = "";
 	
-	/// @desc Se ejecuta cuando se desequipa un objeto de CUALQUIER slot de la entidad.
-	/// @context EntityStatInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-	/// @param {Struct.EntitySlotInstance} slot_instance El slot de donde se desequipó el objeto.
-    event_on_desequip =		"";
+	/// @desc Runs when an item is equipped in any entity slot.
+	/// @context Struct.MallStatInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @param {Struct.MallSlotInstance} slot_instance The slot where the item was equipped.
+	/// @returns {undefined}
+	event_on_equip = "";
+	
+	/// @desc Runs when an item is unequipped from any entity slot.
+	/// @context Struct.MallStatInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @param {Struct.MallSlotInstance} slot_instance The slot from which the item was unequipped.
+	/// @returns {undefined}
+	event_on_desequip = "";
 
-    // Eventos de Turno
+	// Turn events.
 	
-	/// @desc Se ejecuta en cada actualización de turno del WateManager.
-	/// @context EntityStatInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_turn_update =	"";
+	/// @desc Runs on each turn update of the WateManager.
+	/// @context Struct.MallStatInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @returns {undefined}
+	event_on_turn_update = "";
 	
-	/// @desc Se ejecuta al inicio del turno de la entidad.
-	/// @context EntityStatInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_turn_start =	"";
+	/// @desc Runs at the start of the entity turn.
+	/// @context Struct.MallStatInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @returns {undefined}
+	event_on_turn_start = "";
 	
-	/// @desc Se ejecuta al final del turno de la entidad.
-	/// @context EntityStatInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_turn_end =		"";
+	/// @desc Runs at the end of the entity turn.
+	/// @context Struct.MallStatInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @returns {undefined}
+	event_on_turn_end = "";
 
+	#endregion
 
 	#region PRIVATE
 
-	/// @desc (Privado) Cargar string de eventos para ser usados más adelante.
-	/// @param {Struct} data El struct con los datos de la estadística.
 	/// @ignore
+	/// @desc Loads event strings to be used later.
+	/// @param {Struct} data The struct containing the stat data.
+	/// @returns {undefined}
 	static __LoadFunctions = function(_data)
 	{
-		// Asignar las llaves de los eventos.
-        event_on_start =		_data[$ "event_on_start"]		?? "";
-        event_on_end =			_data[$ "event_on_end"]			?? "";
-        event_on_update =		_data[$ "event_on_update"]		?? "";
-        event_on_level_up =		_data[$ "event_on_level_up"]	?? "";
-        event_on_level_check =	_data[$ "event_on_level_check"]	?? "";
-        event_on_equip =		_data[$ "event_on_equip"]		?? "";
-        event_on_desequip =		_data[$ "event_on_desequip"]	?? "";
-	  
-		// Eventos de Turno.
-		event_on_turn_update =	_data[$ "event_on_turn_update"]	?? "";
-	    event_on_turn_start =	_data[$ "event_on_turn_start"]	?? "";
-	    event_on_turn_end =		_data[$ "event_on_turn_end"]	?? "";
+		// Assign event keys.
+		event_on_start =		_data[$ "event_on_start"]			?? "";
+		event_on_end =			_data[$ "event_on_end"]				?? "";
+		event_on_update =		_data[$ "event_on_update"]			?? "";
+		event_on_level_up =		_data[$ "event_on_level_up"]		?? "";
+		event_on_level_check =	_data[$ "event_on_level_check"]		?? "";
+		event_on_equip =		_data[$ "event_on_equip"]			?? "";
+		event_on_desequip =		_data[$ "event_on_desequip"]		?? "";
+		
+		// Turn events.
+		event_on_turn_update =	_data[$ "event_on_turn_update"]		?? "";
+		event_on_turn_start =	_data[$ "event_on_turn_start"]		?? "";
+		event_on_turn_end =		_data[$ "event_on_turn_end"]		?? "";
 	}
 	
 	#endregion
 	
-	
 	#region API
 	
-    /// @desc Configura la estadística a partir de un struct de datos (leído del JSON).
-    /// @param {Struct} data El struct con los datos de la estadística.
-    static FromData = function(_data)
-    {
-        // Tipo de dato.
-        num_type = (_data[$ "num_type"] == "percent") ? MALL_NUMTYPE.PERCENT : MALL_NUMTYPE.REAL;
+	/// @desc Configures the stat from a data struct (read from JSON).
+	/// @param {Struct} data The struct containing the stat data.
+	/// @returns {MallStat}
+	static FromData = function(_data)
+	{
+		// Data type.
+		num_type = (_data[$ "num_type"] == "percent") ? MALL_NUMTYPE.PERCENT : MALL_NUMTYPE.REAL;
 		
-        allow_multiple_effects = _data[$ "allow_multiple_effects"] ?? false;
-        max_effects = _data[$ "max_effects"] ?? -1;
-        
-        restore_on_equip = _data[$ "restore_on_equip"] ?? false;
-        
-        base_value = _data[$ "base_value"] ?? 0;
-        min_value = _data[$ "min_value"] ?? __MALL_STAT_MIN;
-        max_value = _data[$ "max_value"] ?? __MALL_STAT_MAX;
-        
-        base_level = _data[$ "base_level"] ?? 1;
-        min_level = _data[$ "min_level"] ?? __MALL_STAT_LEVEL_MIN;
-        max_level = _data[$ "max_level"] ?? __MALL_STAT_LEVEL_MAX;
-        
-        is_standalone_level = _data[$ "is_standalone_level"] ?? false;
-        
-        // Configurar el iterador si existe la data para ello.
-        if (variable_struct_exists(_data, "iterator"))
-        {
-            iterator.Configure(
-                _data.iterator[$ "duration"] ?? 1,
-                _data.iterator[$ "repeats"]	 ?? 0
-            );
-        }
-        
-		// Cargar eventos
+		allow_multiple_effects = _data[$ "allow_multiple_effects"] ?? false;
+		max_effects = _data[$ "max_effects"] ?? -1;
+		
+		restore_on_equip = _data[$ "restore_on_equip"] ?? false;
+		
+		base_value = _data[$ "base_value"] ?? 0;
+		min_value = _data[$ "min_value"] ?? __MALL_STAT_MIN;
+		max_value = _data[$ "max_value"] ?? __MALL_STAT_MAX;
+		
+		base_level = _data[$ "base_level"] ?? 1;
+		min_level = _data[$ "min_level"] ?? __MALL_STAT_LEVEL_MIN;
+		max_level = _data[$ "max_level"] ?? __MALL_STAT_LEVEL_MAX;
+		
+		is_standalone_level = _data[$ "is_standalone_level"] ?? false;
+		
+		// Configure iterator if iterator data exists.
+		if (struct_exists(_data, "iterator") )
+		{
+			var _iterator_data = struct_get(_data, "iterator");
+			iterator.Configure(
+				_iterator_data[$ "duration"] ?? 1,
+				_iterator_data[$ "repeats"] ?? 0
+			);
+		}
+		
+		// Load event keys.
 		__LoadFunctions(_data);
 
-        return self;
-    }
+		return self;
+	}
 	
 	#endregion
-}
-
-/// @desc Crea una nueva plantilla de estadística desde data y la añade a la base de datos.
-/// @param {String} key La llave de la estadística (ej: "EN").
-/// @param {Struct} data El struct de datos leído del JSON.
-function mall_stat_create_from_data(_key, _data)
-{
-    if (mall_exists_stat(_key) )
-    {
-		__mall_print($"Advertencia: La estadística '{_key}' ya existe. Se omitirá la duplicada.");
-        exit;
-    }
-    
-    // Se crea una instancia vacía y luego se configura con los datos.
-    var _stat = new MallStat(_key).FromData(_data);
-	
-    Systemall.__stats[$ _key] = _stat;
-    array_push(Systemall.__stats_keys, _key);
-}
-
-/// @desc Crea una estadística en tiempo de ejecución.
-/// @param {String} key La llave de la estadística.
-/// @param {Struct.MallStat} component La instancia del constructor de la estadística.
-function mall_create_stat(_key, _component) 
-{
-    if (mall_exists_stat(_key) )
-    {
-		__mall_print($"Advertencia: La estadística '{_key}' ya existe. Se omitirá la duplicada.");
-        exit;
-    }
-	
-	Systemall.__stats[$ _key] = _component;
-	array_push(Systemall.__stats_keys, _key);
-}
-
-/// @desc Devuelve la plantilla de una estadística.
-/// @param {String} statKey La llave de la estadística.
-/// @return {Struct.MallStat}
-function mall_get_stat(_statKey) 
-{
-	return (Systemall.__stats[$ _statKey] ); 
-}
-
-/// @desc Comprueba si una estadística existe en la base de datos.
-/// @param {String} statKey La llave de la estadística.
-/// @return {Bool}
-function mall_exists_stat(_statKey) 
-{ 
-	return (struct_exists(Systemall.__stats, _statKey) ); 
-}
-
-/// @desc Devuelve un array con las llaves de todas las estadísticas creadas.
-/// @return {Array<String>}
-function mall_get_stat_keys() 
-{
-	return (Systemall.__stats_keys); 
 }

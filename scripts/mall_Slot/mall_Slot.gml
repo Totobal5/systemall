@@ -1,221 +1,168 @@
-/// @desc Define la plantilla base para un "espacio" en una entidad donde se pueden equipar objetos.
+/// @desc Defines the base template for a "slot" in an entity where items can be equipped.
 /// @param {String} key
-function MallSlot(_key) : MallEvents(_key) constructor
+function MallSlot(_key) : MallBehavior(_key) constructor
 {
-    // --- Propiedades del Slot ---
-	
-    /// @desc Cuántos objetos se pueden equipar en este slot.
+	/// @desc How many items can be equipped in this slot.
 	/// @type {Real}
-    max_items = 1;
+	max_items = 1;
 	
-    /// @desc Si el slot está desactivado por defecto.
+	/// @desc Whether the slot is disabled by default.
 	/// @type {Bool}
-    is_disabled = false;
+	is_disabled = false;
 	
-    /// @desc Si el slot está dañado (puede tener efectos negativos).
+	/// @desc Whether the slot is damaged (can have negative effects).
 	/// @type {Bool}
-    is_damaged = false;
+	is_damaged = false;
 	
-    /// @desc La llave de otro slot del que depende para estar activo.
+	/// @desc The key of another slot it depends on to be active.
 	/// @type {String}
-    depends_on_slot = "";
+	depends_on_slot = "";
 	
-    /// @desc Un struct con las llaves de los objetos/tipos permitidos. Si está vacío, se aceptan todos.
+	/// @desc A struct with the keys of permitted items/types. If empty, all are accepted.
 	/// @type {Struct}
-    permitted = {};
+	permitted = {};
 	
-    // --- Llaves de Eventos ---
+	#region EVENTS
+	/// @desc Runs once when the slot instance is created for an entity.
+	/// @context Struct.MallSlotInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	event_on_start = "";
 	
-	/// @desc Se ejecuta una vez cuando la instancia del slot es creada para una entidad.
-	/// @context EntitySlotInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_start = "";
+	/// @desc (Not currently implemented by the engine.)
+	event_on_end = "";
 	
-	/// @desc (Sin implementación actual en el motor)
-    event_on_end = "";
+	/// @desc Runs on each RecalculateStats call.
+	/// @context Struct.MallSlotInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	event_on_update = "";
 	
-	/// @desc Se ejecuta en cada llamada a RecalculateStats.
-	/// @context EntitySlotInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_update = "";
-    
-    // Eventos de Turno
+	// Turn events.
 	
-	/// @desc Se ejecuta en cada actualización de turno del WateManager.
-	/// @context EntitySlotInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_turn_update = "";
+	/// @desc Runs on each turn update of the WateManager.
+	/// @context Struct.MallSlotInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	event_on_turn_update = "";
 	
-	/// @desc Se ejecuta al inicio del turno de la entidad.
-	/// @context EntitySlotInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_turn_start = "";
+	/// @desc Runs at the start of the entity turn.
+	/// @context Struct.MallSlotInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	event_on_turn_start = "";
 	
-	/// @desc Se ejecuta al final del turno de la entidad.
-	/// @context EntitySlotInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-    event_on_turn_end = "";
-    
-    // Eventos de Equipamiento
+	/// @desc Runs at the end of the entity turn.
+	/// @context Struct.MallSlotInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	event_on_turn_end = "";
 	
-	/// @desc Se ejecuta después de que un objeto ha sido equipado exitosamente en este slot.
-	/// @context EntitySlotInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-	/// @param {Struct.PocketItem} item_template El objeto que fue equipado.
-    event_on_equip = "";
+	// Equipment events.
 	
-	/// @desc Se ejecuta después de que un objeto ha sido desequipado exitosamente de este slot.
-	/// @context EntitySlotInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-	/// @param {Struct.PocketItem} item_template El objeto que fue desequipado.
-    event_on_desequip = "";
+	/// @desc Runs after an item has been successfully equipped in this slot.
+	/// @context Struct.MallSlotInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @param {Struct.MallItem} item_template The item that was equipped.
+	event_on_equip = "";
+	
+	/// @desc Runs after an item has been successfully unequipped from this slot.
+	/// @context Struct.MallSlotInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @param {Struct.MallItem} item_template The item that was unequipped.
+	event_on_desequip = "";
 
-	/// @desc Valida si un objeto se puede equipar. Debe devolver bool.
-	/// @context EntitySlotInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-	/// @param {Struct.PocketItem} item_template El objeto a comprobar.
+	/// @desc Validates whether an item can be equipped. Must return a boolean.
+	/// @context Struct.MallSlotInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @param {Struct.MallItem} item_template The item to check.
+	/// @returns {Bool}
 	event_can_equip = "";
 	
-	/// @desc Valida si el objeto actual se puede desequipar. Debe devolver bool.
-	/// @context EntitySlotInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-	/// @param {Struct.PocketItem} item_template El objeto a comprobar.
+	/// @desc Validates whether the current item can be unequipped. Must return a boolean.
+	/// @context Struct.MallSlotInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @param {Struct.MallItem} item_template The item to check.
+	/// @returns {Bool}
 	event_can_desequip = "";
 	
-	// Evento al atacar
+	// Attack events.
 	
-	/// @desc Se ejecuta cuando la entidad ataca.
-	/// @context EntitySlotInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-	/// @param {Struct.PartyEntity} target El objetivo del ataque.
-    event_on_attack = "";
+	/// @desc Runs when the entity attacks.
+	/// @context Struct.MallSlotInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @param {Struct.MallEntity} target The attack target.
+	event_on_attack = "";
 	
-	/// @desc Se ejecuta cuando la entidad es atacada.
-	/// @context EntitySlotInstance
-	/// @param {Struct.PartyEntity} entity La entidad dueña.
-	/// @param {Struct.PartyEntity} attacker El atacante.
-    event_on_defend = "";
+	/// @desc Runs when the entity is attacked.
+	/// @context Struct.MallSlotInstance
+	/// @param {Struct.MallEntity} entity The owning entity.
+	/// @param {Struct.MallEntity} attacker The attacker.
+	event_on_defend = "";
+
+	#endregion
 
 	#region PRIVATE
 
-    /// @desc (Privado) Método auxiliar para poblar la lista de objetos permitidos.
-    /// @param {String, Array} data La llave o array de llaves a añadir.
-    /// @ignore
-    static __PopulatePermitted = function(_data)
-    {
-        if (is_array(_data) )
-        {
-			var i=0; repeat(array_length(_data) ) { __PopulatePermitted( _data[i++] ); }
-        }
-        else if (is_string(_data) )
-        {
-            if (mall_exists_type(_data) )
-            {
-                var _type_items = mall_get_type(_data);
-				var i=0; repeat(array_length(_type_items) ) { permitted[$ _type_items[i++] ] = 0; }
-            }
-            else
-            {
-                permitted[$ _data] = 0;
-            }
-        }
-    }
-	
-	/// @desc (Privado) Cargar string de eventos para ser usados más adelante.
-	/// @param {Struct} data El struct con los datos del slot.
 	/// @ignore
+	/// @desc Helper method to populate the list of permitted items.
+	/// @param {String|Array} data The key or array of keys to add.
+	static __PopulatePermitted = function(_data)
+	{
+		if (is_array(_data) )
+		{
+			var i=0; repeat(array_length(_data) ) { __PopulatePermitted( _data[i++] ); }
+		}
+		else if (is_string(_data) )
+		{
+			if (mall_exists_type(_data) )
+			{
+				var _type_items = mall_get_type(_data);
+				var i=0; repeat(array_length(_type_items) ) { permitted[$ _type_items[i++] ] = 0; }
+			}
+			else
+			{
+				permitted[$ _data] = 0;
+			}
+		}
+	}
+	
+	/// @ignore
+	/// @desc Loads event strings to be used later.
+	/// @param {Struct} data The struct containing the slot data.
 	static __LoadFunctions = function(_data)
 	{
-	    event_on_start =		_data[$ "event_on_start"]	?? "";
-	    event_on_end =			_data[$ "event_on_end"]		?? "";
-	    event_on_update =		_data[$ "event_on_update"]	?? "";
-	    event_on_turn_update =	_data[$ "event_on_turn_update"] ?? "";
-	    event_on_turn_start =	_data[$ "event_on_turn_start"]	?? "";
-	    event_on_turn_end =		_data[$ "event_on_turn_end"]	?? "";
-	    event_on_equip =		_data[$ "event_on_equip"]		?? "";
-	    event_on_desequip =		_data[$ "event_on_desequip"]	?? "";
-		event_can_equip =		_data[$ "event_can_equip"]	?? "";
-		event_can_desequip =	_data[$ "event_can_desequip"]	?? "";
-	    event_on_attack =		_data[$ "event_on_attack"]		?? "";
-	    event_on_defend =		_data[$ "event_on_defend"]		?? "";
+		event_on_start =        _data[$ "event_on_start"]    ?? "";
+		event_on_end =          _data[$ "event_on_end"]      ?? "";
+		event_on_update =       _data[$ "event_on_update"]   ?? "";
+		event_on_turn_update =  _data[$ "event_on_turn_update"] ?? "";
+		event_on_turn_start =   _data[$ "event_on_turn_start"]  ?? "";
+		event_on_turn_end =     _data[$ "event_on_turn_end"]    ?? "";
+		event_on_equip =        _data[$ "event_on_equip"]      ?? "";
+		event_on_desequip =     _data[$ "event_on_desequip"]    ?? "";
+		event_can_equip =       _data[$ "event_can_equip"]    ?? "";
+		event_can_desequip =    _data[$ "event_can_desequip"]  ?? "";
+		event_on_attack =       _data[$ "event_on_attack"]      ?? "";
+		event_on_defend =       _data[$ "event_on_defend"]      ?? "";
 	}
 	
 	#endregion
 	
 	#region API
 	
-    /// @desc Configura el slot a partir de un struct de datos.
-    /// @param {Struct} data El struct con los datos del slot.
-    static FromData = function(_data)
-    {
-        max_items =			_data[$ "max_items"]		?? 1;
-        is_disabled =		_data[$ "is_disabled"]		?? false;
-        is_damaged =		_data[$ "is_damaged"]		?? false;
-        depends_on_slot =	_data[$ "depends_on_slot"]	?? "";
-        
-		// Cargar objetos permitidos.
-		if (struct_exists(_data, "permitted") ) { __PopulatePermitted(_data.permitted); }
+	/// @desc Configures the slot from a data struct.
+	/// @param {Struct} data The struct containing the slot data.
+	/// @returns {Struct.MallSlot}
+	static FromData = function(_data)
+	{
+		max_items =         _data[$ "max_items"]        ?? 1;
+		is_disabled =       _data[$ "is_disabled"]      ?? false;
+		is_damaged =        _data[$ "is_damaged"]       ?? false;
+		depends_on_slot =   _data[$ "depends_on_slot"]  ?? "";
 		
-		// Cargar eventos.
+		// Load permitted item/type keys.
+		if (struct_exists(_data, "permitted") ) { __PopulatePermitted(_data[$ "permitted"]); }
+		
+		// Load event keys.
 		__LoadFunctions(_data);
 		
-        return self;
-    }
-	
-	#endregion
-}
-
-/// @desc Crea una plantilla de slot desde data y la añade a la base de datos.
-/// @param {String} key La llave del slot (ej: "SLOT_ARMA").
-/// @param {Struct} data El struct de datos leído del JSON.
-function mall_create_slot_from_data(_key, _data)
-{
-    if (mall_exists_slot(_key) )
-    {
-		__mall_print($"Advertencia: El slot '{_key}' ya existe. Se omitirá la duplicada.");
-        exit;
-	}	
-
-    var _slot = (new MallSlot(_key) ).FromData(_data);
-	
-    Systemall.__slots[$ _key] = _slot;
-    array_push(Systemall.__slots_keys, _key);
-}
-
-/// @desc Crea un slot en tiempo de ejecución.
-/// @param {String} key La llave del slot (ej: "SLOT_ARMA").
-/// @param {Struct.MallSlot} component La instancia del constructor del slot.
-function mall_create_slot(_key, _component)
-{
-    if (mall_exists_slot(_key) )
-    {
-		__mall_print($"Advertencia: El slot '{_key}' ya existe. Se omitirá la duplicada.");
-        exit;
+		return self;
 	}
 	
-    Systemall.__slots[$ _key] = _component;
-    array_push(Systemall.__slots_keys, _key);
-}
-
-/// @desc Devuelve la plantilla de un slot.
-/// @param {String} key La llave del slot.
-/// @return {Struct.MallSlot}
-function mall_get_slot(_key) 
-{
-	return Systemall.__slots[$ _key]; 
-}
-
-/// @desc Comprueba si un slot existe en la base de datos.
-/// @param {String} key La llave del slot.
-/// @return {Bool}
-function mall_exists_slot(_key) 
-{
-	return struct_exists(Systemall.__slots, _key); 
-}
-
-/// @desc Devuelve un array con las llaves de todos los slots creados.
-/// @return {Array<String>}
-function mall_get_slot_keys() 
-{
-	return Systemall.__slots_keys; 
+	#endregion
 }

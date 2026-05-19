@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mall_Item_Instance",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_Item_Instance",
+  "parent":{
+    "name":"Items",
+    "path":"folders/Systemall/Items.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

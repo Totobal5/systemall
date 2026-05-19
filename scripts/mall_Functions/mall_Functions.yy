@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"mall_Functions",
   "parent":{
-    "name":"Components",
-    "path":"folders/Systemall/Components.yy",
+    "name":"Systemall",
+    "path":"folders/Systemall.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

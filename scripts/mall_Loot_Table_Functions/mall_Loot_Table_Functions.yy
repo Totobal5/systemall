@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mall_Loot_Table_Functions",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_Loot_Table_Functions",
+  "parent":{
+    "name":"Battle",
+    "path":"folders/Systemall/Battle.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,689 +1,416 @@
+/// @ignore Core library semantic version.
 #macro __MALL_VERSION		"3.0.1"
+/// @ignore Build/version suffix used in save payload metadata.
 #macro __MALL_VERSION_MINE	__MALL_VERSION+"::1.0"
-/// @desc Si Systemall debe hacer print.
-#macro __MALL_TRACE			true
-/// @desc Si Systemall debe entregar errores.
+/// @ignore Enables Systemall trace logging.
+#macro __MALL_ALERT			true
+/// @ignore Enables Systemall error logging.
 #macro __MALL_ERROR			true
+/// @ignore Aborts execution on critical Systemall errors. Keep false when running the test-suite.
+#macro __MALL_STRICT_MODE	false
+/// @ignore Enables additional runtime safety checks.
 #macro __MALL_SAFETY		true
 
-#region PARTY
-// Indicar procesos realizados
-#macro __MALL_PARTY_TRACE           true
-#macro __MALL_PARTY_TRACE_LEVELUP   true
+#region STATS
+/// @ignore Rounding method used for stat values.
+#macro __MALL_STAT_ROUNDING_METHOD	round
+/// @ignore Minimum stat value.
+#macro __MALL_STAT_MIN	0
+/// @ignore Maximum stat value.
+#macro __MALL_STAT_MAX	9999
 
-// Comprobar por errores
-#macro __MALL_PARTY_SAFETY          false
-#macro __MALL_PARTY_LEVEL_MIN       1
-#macro __MALL_PARTY_LEVEL_MAX       100
-
-#endregion
-
-#region POCKET
-#macro __MALL_POCKET_TRACE      true
-#macro __MALL_POCKET_BAG_MIN    0
-#macro __MALL_POCKET_BAG_MAX    99
+/// @ignore Minimum standalone stat level (when is_standalone_level is true).
+#macro __MALL_STAT_LEVEL_MIN	1
+/// @ignore Maximum standalone stat level (when is_standalone_level is true).
+#macro __MALL_STAT_LEVEL_MAX	100
 
 #endregion
 
-#region DARK
-#macro __MALL_DARK_TRACE        true
-#macro __MALL_DARK_SAFETY       false
+#region ENTITIES & GROUP
 
-/*	0: Inicio del turno
-	1: Final  del turno
-    2: En el inicio y final del turno */	
-enum MALL_EFFECT_TURN 
+/// @ignore Enables trace logs for groups and entities.
+#macro __MALL_ENTITIES_ALERT			__MALL_ALERT && true
+/// @ignore Enables level-up trace logs for entities.
+#macro __MALL_ENTITIES_ALERT_LEVELUP	__MALL_ENTITIES_ALERT && true
+/// @ignore Enables additional safety checks for groups and entities.
+#macro __MALL_ENTITIES_SAFETY			__MALL_SAFETY && true
+/// @ignore Minimum allowed entity level.
+#macro __MALL_ENTITIES_LEVEL_MIN		1
+/// @ignore Maximum allowed entity level.
+#macro __MALL_ENTITIES_LEVEL_MAX		100
+
+#endregion
+
+#region BAG & ITEMS
+/// @ignore Enables trace logs for bag operations.
+#macro __MALL_BAG_ALERT   __MALL_ALERT && true
+/// @ignore 
+#macro __MALL_BAG_SAFETY  __MALL_SAFETY && true
+/// @ignore Minimum allowed bag size.
+#macro __MALL_BAG_MIN    0
+/// @ignore Maximum allowed bag size.
+#macro __MALL_BAG_MAX    99
+
+#endregion
+
+#region COMMAND & EFFECTS
+/// @ignore Enables trace logs for command systems.
+#macro __MALL_COMMAND_ALERT       __MALL_ALERT && true
+/// @ignore Enables extra runtime validation for command systems.
+#macro __MALL_COMMAND_SAFETY      __MALL_SAFETY && true
+/// @ignore Enables trace logs for effect systems.
+#macro __MALL_EFFECT_ALERT        __MALL_ALERT && true
+/// @ignore Enables extra runtime validation for effect systems.
+#macro __MALL_EFFECT_SAFETY       __MALL_SAFETY && true
+
+#endregion
+
+#region BATTLE
+/// @ignore Enables trace logs for Battle encounter flow.
+#macro __MALL_BATTLE_ALERT        __MALL_ALERT && true
+/// @ignore Enables extra runtime validation for Battle systems.
+#macro __MALL_BATTLE_SAFETY       __MALL_SAFETY && true
+
+#endregion
+
+#region BROADCAST
+/// @ignore Enables trace logs for broadcast and message systems.
+#macro __MALL_BROADCAST_ALERT      __MALL_ALERT && true
+
+#endregion
+
+/// @ignore
+/// @desc Internal global runtime container used by the Mall systems.
+function __Systemall()
 {
-	START, 
-	END, 
-	BOTH
-}
-
-#endregion
-
-#region WATE
-#macro __MALL_WATE_TRACE        true
-#macro __MALL_WATE_SAFETY       false
-
-#endregion
-
-enum MALL_NUMTYPE   {REAL,  PERCENT}
-
-enum MALL_NUMVAL    {VALUE, TYPE}
-
-/// @desc Donde se guardan todos los datos que se utilizarán por Systemall.
-function Systemall()
-{
-	/// @ignore Struct con todos los archivos cargados.
+	/// @ignore Struct with all loaded data files.
 	static __master = {};
-	/// @ignore Struct con todas las funciones accesibles por Systemall.
-	static __functions = {};
-	/// @ignore Struct con todas las instancias "vivas" de entidades en el juego.
+	/// @ignore Struct with all functions exposed to __Systemall.
+	static __events = {};
+	/// @ignore Struct with all live entity instances in the current game session.
 	static __instances = {};
 
-	// -- Componentes --
-	/// @ignore Base de datos donde se guardan todos los constructors de estadisticas del sistema.
+	// -- Components --
+	/// @ignore Stat template database.
 	static __stats = {};
+	/// @ignore
 	static __stats_keys = [];
 
-	/// @ignore Base de datos donde se guardan los "Estados" del sistema.
+	/// @ignore State template database.
 	static __states = {}
+	/// @ignore
 	static __states_keys = [];
 	
-	/// @ignore Base de datos donde se guardan todos los constructors de slots del sistema.
+	/// @ignore Slot template database.
 	static __slots = {};
+	/// @ignore
 	static __slots_keys = [];
 	
-	/// @ignore Base de datos donde se guardan todos los items del sistema.
+	/// @ignore Item template database.
 	static __items = {};
+	/// @ignore
 	static __items_keys = [];
 	
-	/// @ignore Base de datos donde se guardan todas las mochilas del sistema.
+	/// @ignore Bag template database.
 	static __bags = {};
+	/// @ignore
 	static __bags_keys = [];
+	/// @ignore
 	static __persistent_bags = [];	
 	
-	/// @ignore Base de datos donde se guardan las tiendas.
+	/// @ignore Shop template database.
 	static __shops = {};
+	/// @ignore
 	static __shops_keys = [];
 	
-	/// @ignore Base de datos donde se guardan todos los grupos del sistema.
+	/// @ignore Group template database.
 	static __groups = {};
+	/// @ignore
 	static __groups_keys = [];
+	/// @ignore
 	static __persistent_groups = [];
-	/// @ignore El grupo principal del jugador.
-    static __player_group = undefined;
+	/// @ignore Primary player group instance.
+	static __player_group = undefined;
 
-	/// @ignore Base de datos donde se guardan todas las entidades del sistema.
+	/// @ignore Entity template database.
 	static __entities = {};
+	/// @ignore
 	static __entities_keys = [];	
 	
-	/// @ignore Base de datos para las loottable.
+	/// @ignore Loot table database.
 	static __loot_tables = {};
+	/// @ignore
 	static __loot_tables_keys = [];
 	
-	/// @ignore Base de datos donde se guardan todos los comandos y efectos del sistema.
-	static __dark = {};
-	static __dark_keys = [];	
+	/// @ignore Shared database for commands and effects.
+	static __commands = {};
+	/// @ignore
+	static __commands_keys = [];	
 	
-	/// @ignore Base de datos donde se guardan todos los "Tipos" del sistema.
-    static __types = {
-		// tipo: [valor 1, valor 2, valor 3]
-	};
+	/// @ignore Effects database.
+	static __effects = {};
+	/// @ignore
+	static __effects_keys = [];
+	
+	/// @ignore Runtime type database.
+	static __types = { /* type: [value1, value2, value3] */ };
+	/// @ignore
 	static __types_keys = [];
 	
-	/// @ignore Base de datos donde se guardan todos los "Grupos" de batalla del sistema (Para enfrentamientos).
-    static __wate_manager = undefined;
-	static __wate = { encounters: {} };
-	static __wate_keys = [];
+	/// @ignore Battle encounter database.
+	static __battle_manager = undefined;
+	/// @ignore
+	static __battle = { encounters: {} };
+	/// @ignore
+	static __battle_keys = [];
 	
 	/// @ignore
 	static __ai_packages = {};
+	/// @ignore
 	static __ai_rules = {};
+	/// @ignore
 	static __ai_keys = [];
 	
-	/// @ignore Sistema de Broadcast y Mensajes para el sistema.
-    static __broadcast = {};
+	/// @ignore Broadcast and message subsystem state.
+	static __broadcast = {};
+	/// @ignore
 	static __messages = [];
-    
-    /// @ignore Assets publicos que el sistema puede acceder.
-    static __assets = {};
+	
+	/// @ignore Public assets accessible by __Systemall.
+	static __assets = {};
 }
 
-/// @desc Carga un archivo maestro y procesa los datos en un orden garantizado.
-/// @param {String} master_file_path La ruta al archivo JSON maestro.
+/// @desc Loads a master file and processes data in a deterministic order.
+/// @param {String} master_file_path Master JSON file path.
 function mall_init(_master_file_path)
 {
-	static _process_order = [
-        "STATS", "ITEMS", "SLOTS", "STATES", "EFFECTS", "COMMANDS", "AI", "PARTY", "GROUPS", "BAGS", "WATE"
-    ];
+	/// @ignore
+	static __process_order = [
+		"STATS", "ITEMS", "SLOTS", "STATES", "EFFECTS", "COMMANDS", "AI", "ENTITIES", "GROUPS", "BAGS", "BATTLE"
+	];
+
+	// Ensure built-in core callbacks are available before loading data files.
+	__mall_register_core_events_commands();
 	
-    #region RECOPILAR TODOS LOS DATOS
-    
-    if (!file_exists(_master_file_path) )
+	#region COLLECT_ALL_DATA
+	
+	if (!file_exists(_master_file_path) )
 	{
-        __mall_error_system($"¡Error Crítico! El archivo maestro no existe: {_master_file_path}");
-        return;
-    }
-    
-    var _file = file_text_open_read(_master_file_path);
-    var _json_string = "";
-    while (!file_text_eof(_file)) { _json_string += file_text_readln(_file); }
-    file_text_close(_file);
-    
-    var _master_data = json_parse(_json_string);
-    if (!is_struct(_master_data) ) 
-    {
-        __mall_error_system("[Systemall] ¡Error Crítico! El archivo maestro no es un JSON válido.");
-        return;
-    }
-    
-    Systemall.__master = _master_data;
-    
-    // Struct para agrupar datos por tipo
-    var _temp_data_pool = {};
-    var _categories = variable_struct_get_names(_master_data);
-    
-    for (var i = 0; i < array_length(_categories); i++)
-    {
-        var _category_name = _categories[i];
-        var _file_paths = _master_data[$ _category_name];
-        
-        // Leer cada archivo establecido en el master.
-        for (var j = 0; j < array_length(_file_paths); j++)
-        {
-            var _data_file_path = _file_paths[j];
-            if (!file_exists(_data_file_path) ) 
-            {
-                __mall_print_system($"[Systemall] Advertencia: Archivo no encontrado '{_data_file_path}'.");
-                continue;
-            }
-            
-            var _data_file = file_text_open_read(_data_file_path);
-            var _data_json_string = "";
-            while (!file_text_eof(_data_file)) { _data_json_string += file_text_readln(_data_file); }
-            file_text_close(_data_file);
-            
-            var _loaded_data = json_parse(_data_json_string);
-            if (is_struct(_loaded_data) && variable_struct_exists(_loaded_data, "type") )
-            {
-                var _type = string_upper(_loaded_data.type);
-                if (!variable_struct_exists(_temp_data_pool, _type) ) { _temp_data_pool[$ _type] = []; }
-                variable_struct_remove(_loaded_data, "type");
-                array_push(_temp_data_pool[$ _type], _loaded_data);
-            }
-            else 
-            {
-                __mall_print_system($"[Systemall] Error: Archivo '{_data_file_path}' no tiene un campo 'type' válido.");
-            }
-        }
-    }
-    
-    #endregion
-    
-    #region PROCESAR LOS DATOS EN ORDEN
-    for (var i = 0; i < array_length(_process_order); i++) 
+		__mall_error($"Master file not found: '{_master_file_path}'.");
+		exit;
+	}
+
+	var _master_file = file_text_open_read(_master_file_path);
+	var _master_json = "";
+	while (!file_text_eof(_master_file) ) { _master_json += file_text_readln(_master_file); }
+	file_text_close(_master_file);
+
+	var _master_data = json_parse(_master_json);
+	if (!is_struct(_master_data) ) 
 	{
-        var _current_type = _process_order[i];
-        
-        if (!variable_struct_exists(_temp_data_pool, _current_type) ) continue;
-        
-        var _data_array = _temp_data_pool[$ _current_type];
-        
-        for (var j = 0; j < array_length(_data_array); j++) 
+		__mall_error("Master file is not valid JSON.");
+		exit;
+	}
+	
+	__Systemall.__master = _master_data;
+	
+	// Struct grouping loaded payloads by type.
+	var _temp_data_pool = {};
+	var _categories = struct_get_names(_master_data);
+	var _categories_size = array_length(_categories);
+	for (var i = 0; i < _categories_size; i++)
+	{
+		var _category_name = _categories[i];
+		var _file_paths = _master_data[$ _category_name];
+		var _file_paths_size = array_length(_file_paths);
+
+		// Read each file listed in the master entry.
+		for (var j = 0; j < _file_paths_size; j++)
 		{
-            var _data_struct = _data_array[j];
-            
-            // Saltar al siguiente archivo de IA
+			var _data_file_path = _file_paths[j];
+			if (!file_exists(_data_file_path) ) 
+			{
+				__mall_alert($"File not found '{_data_file_path}'.");
+				continue;
+			}
+
+			var _data_file = file_text_open_read(_data_file_path);
+			var _data_json = "";
+			while (!file_text_eof(_data_file) ) { _data_json += file_text_readln(_data_file); }
+			file_text_close(_data_file);
+			
+			var _loaded_data = json_parse(_data_json);
+			if (is_struct(_loaded_data) && struct_exists(_loaded_data, "type") )
+			{
+				var _type = string_upper(_loaded_data.type);
+				if (!struct_exists(_temp_data_pool, _type) ) { _temp_data_pool[$ _type] = []; }
+				struct_remove(_loaded_data, "type");
+
+				array_push(_temp_data_pool[$ _type], _loaded_data);
+			}
+			else 
+			{
+				__mall_alert($"File '{_data_file_path}' has no valid 'type' field.");
+			}
+		}
+	}
+	
+	#endregion
+	
+	#region PROCESS_DATA_IN_ORDER
+	var _order_length = array_length(__process_order);
+	for (var i = 0; i < _order_length; i++) 
+	{
+		var _current_type = __process_order[i];
+		
+		if (!struct_exists(_temp_data_pool, _current_type) ) continue;
+		
+		var _data_array = _temp_data_pool[$ _current_type];
+		var _data_array_length = array_length(_data_array);
+		for (var j = 0; j < _data_array_length; j++) 
+		{
+			var _data_struct = _data_array[j];
+			
+			// AI and BATTLE files are consumed as full payloads.
 			if (_current_type == "AI") 
 			{
-                mall_ai_create_from_data(_data_struct);
-                continue;
-            }
-			else if (_current_type == "WATE")
+				mall_create_ai_from_data(_data_struct);
+				continue;
+			}
+			else if (_current_type == "BATTLE")
 			{
-				mall_wate_create_from_data(_data_struct);
+				mall_create_battle_from_data(_data_struct);
 				continue;
 			}	            
-            
-            var _keys = variable_struct_get_names(_data_struct);
-            
-            for (var k = 0; k < array_length(_keys); k++) 
+			
+			var _keys = struct_get_names(_data_struct);
+			var _keys_length = array_length(_keys);
+
+			for (var k = 0; k < _keys_length; k++) 
 			{
-                var _key = _keys[k];
-                var _entry_data = _data_struct[$ _key];
-                
-                switch (_current_type) {
-                    case "STATS":
-						mall_stat_create_from_data(_key, _entry_data);   
+				var _key = _keys[k];
+				var _entry_data = _data_struct[$ _key];
+				
+				switch (_current_type) {
+					case "STATS":
+						mall_create_stat_from_data(_key, _entry_data);   
 						
 						break;
 
-                    case "ITEMS":
-						pocket_create_item_from_data(_key, _entry_data); 
+					case "ITEMS":
+						mall_create_item_from_data(_key, _entry_data); 
 						
 						break;
 
-                    case "SLOTS":
+					case "SLOTS":
 						mall_create_slot_from_data(_key, _entry_data);   
 						
 						break;
 
-                    case "STATES":
-						mall_state_create_from_data(_key, _entry_data);  
+					case "STATES":
+						mall_create_state_from_data(_key, _entry_data);  
 						
 						break;
 
-                    case "EFFECTS":
-						mall_effect_create_from_data(_key, _entry_data); 
+					case "EFFECTS":
+						mall_create_effect_from_data(_key, _entry_data); 
 						
 						break;
 
-                    case "COMMANDS":
-						mall_command_create_from_data(_key, _entry_data);
+					case "COMMANDS":
+						mall_create_command_from_data(_key, _entry_data);
 						
 						break;
 
-                    case "PARTY":
-						party_create_entity_template(_key, _entry_data); 
+					case "ENTITIES":
+						mall_create_entity_template(_key, _entry_data); 
 						
 						break;
 						
-                    case "GROUPS":	
-						party_create_group_from_data(_key, _entry_data); 
-						
-						break;
-						
-					case "AI":
-						mall_ai_create_from_data(_entry_data);
+					case "GROUPS":	
+						mall_create_group_from_data(_key, _entry_data); 
 						
 						break;
 						
 						
-                    case "BAGS":    
-						pocket_bag_create_from_data(_key, _entry_data);
+					case "BAGS":    
+						mall_create_bag_from_data(_key, _entry_data);
 						
 						break;
 						
-					case "WATE":
-						mall_wate_create_from_data(_entry_data);
-						
-						break;
-                }
-            }
-        }
-    }
-    
-    #endregion
-    
-    #region POBLAR LAS LISTAS DE LLAVES
-    Systemall.__stats_keys      = variable_struct_get_names(Systemall.__stats);
-    Systemall.__items_keys      = variable_struct_get_names(Systemall.__items);
-    Systemall.__slots_keys      = variable_struct_get_names(Systemall.__slots);
-    Systemall.__states_keys     = variable_struct_get_names(Systemall.__states);
-    Systemall.__dark_keys       = variable_struct_get_names(Systemall.__dark);
-    Systemall.__entities_keys   = variable_struct_get_names(Systemall.__entities);
-    Systemall.__groups_keys     = variable_struct_get_names(Systemall.__groups);
-	Systemall.__ai_keys			= variable_struct_get_names(Systemall.__ai_packages);
+				}
+			}
+		}
+	}
 	
-    #endregion
-    
-    // Inicializar las curvas de animación
-    __mall_init_curves();
-    
-    __mall_print_system("[Systemall] Carga de la base de datos desde JSON completada.");
+	#endregion
+	
+	#region REBUILD_KEY_CACHES
+	__Systemall.__stats_keys		= struct_get_names(__Systemall.__stats);
+	__Systemall.__items_keys		= struct_get_names(__Systemall.__items);
+	__Systemall.__slots_keys		= struct_get_names(__Systemall.__slots);
+	__Systemall.__states_keys		= struct_get_names(__Systemall.__states);
+	__Systemall.__bags_keys			= struct_get_names(__Systemall.__bags);
+	__Systemall.__shops_keys		= struct_get_names(__Systemall.__shops);
+	__Systemall.__groups_keys		= struct_get_names(__Systemall.__groups);
+	__Systemall.__entities_keys		= struct_get_names(__Systemall.__entities);
+	__Systemall.__commands_keys		= struct_get_names(__Systemall.__commands);
+	__Systemall.__effects_keys		= struct_get_names(__Systemall.__effects);
+	__Systemall.__types_keys		= struct_get_names(__Systemall.__types);
+	__Systemall.__battle_keys		= struct_get_names(__Systemall.__battle.encounters);
+	__Systemall.__ai_keys			= struct_get_names(__Systemall.__ai_packages);
+	
+	#endregion
+	
+	// Initialize default animation curves.
+	__mall_init_curves();
+	
+	__mall_alert("JSON database load completed.");
 }
 
+/// @desc Resets all runtime databases and caches inside __Systemall.
 function mall_system_cleanup()
 {
-	static _mall = static_get(Systemall);
-	with (_mall)
+	var _mall = static_get(__Systemall);
+	var _keys = struct_get_names(_mall);
+	var _count = array_length(_keys);
+
+	for (var i = 0; i < _count; i++)
 	{
-		/// @ignore Struct con todos los archivos cargados.
-		__master = {};
-		/// @ignore Struct con todas las funciones accesibles por Systemall.
-		__functions = {};
-		/// @ignore Struct con todas las instancias "vivas" de entidades en el juego.
-		__instances = {};
+		var _key = _keys[i];
+		var _value = _mall[$ _key];
 
-		// -- Componentes --
-		/// @ignore Base de datos donde se guardan todos los constructors de estadisticas del sistema.
-		__stats = {};
-		__stats_keys = [];
+		if (_key == "__battle")
+		{
+			// Preserve expected battle payload shape.
+			_mall[$ _key] = { encounters: {} };
+			continue;
+		}
 
-		/// @ignore Base de datos donde se guardan los "Estados" del sistema.
-		__states = {}
-		__states_keys = [];
-	
-		/// @ignore Base de datos donde se guardan todos los constructors de slots del sistema.
-		__slots = {};
-		__slots_keys = [];
-	
-		/// @ignore Base de datos donde se guardan todos los items del sistema.
-		__items = {};
-		__items_keys = [];
-	
-		/// @ignore Base de datos donde se guardan todas las mochilas del sistema.
-		__bags = {};
-		__bags_keys = [];
-		__persistent_bags = [];	
-	
-		/// @ignore Base de datos donde se guardan las tiendas.
-		__shops = {};
-		__shops_keys = [];
-	
-		/// @ignore Base de datos donde se guardan todos los grupos del sistema.
-		__groups = {};
-		__groups_keys = [];
-		__persistent_groups = [];
-		/// @ignore El grupo principal del jugador.
-	    __player_group = undefined;
-
-		/// @ignore Base de datos donde se guardan todas las entidades del sistema.
-		__entities = {};
-		__entities_keys = [];	
-	
-		/// @ignore Base de datos para las loottable.
-		__loot_tables = {};
-		__loot_tables_keys = [];
-	
-		/// @ignore Base de datos donde se guardan todos los comandos y efectos del sistema.
-		__dark = {};
-		__dark_keys = [];	
-	
-		/// @ignore Base de datos donde se guardan todos los "Tipos" del sistema.
-	    __types = {
-			// tipo: [valor 1, valor 2, valor 3]
-		};
-		__types_keys = [];
-	
-		/// @ignore Base de datos donde se guardan todos los "Grupos" de batalla del sistema (Para enfrentamientos).
-	    __wate_manager = undefined;
-		__wate = { encounters: {} };
-		__wate_keys = [];
-		
-		/// @ignore
-		__ai_packages = {};
-		__ai_rules = {};
-		__ai_keys = [];
-		
-		/// @ignore Sistema de Broadcast y Mensajes para el sistema.
-	    __broadcast = {};
-		__messages = [];
-        
-        __assets = {};
-	}		
-}
-
-// -----------------------------------------------------------------------------
-// API DE GUARDADO Y CARGA
-// -----------------------------------------------------------------------------
-
-/// @desc Guarda el estado completo del juego en un archivo.
-/// @param {String} filename El nombre del archivo de guardado (ej: "savegame1.sav").
-/// @return {Bool} Devuelve true si el guardado fue exitoso.
-function mall_save_system(_filename)
-{
-    try
-    {
-        var _save_data = {
-            version:	__MALL_VERSION_MINE,
-            instances:	[],
-            bags:		{},
-            groups:		{}
-        };
-        
-        // --- 1. Guardar Instancias de Entidades ---
-        var _instance_keys = variable_struct_get_names(Systemall.__instances);
-        for (var i = 0; i < array_length(_instance_keys); i++)
-        {
-            var _inst = Systemall.__instances[$ _instance_keys[i]];
-            array_push(_save_data.instances, _inst.Export());
-        }
-        
-        // --- 2. Guardar Mochilas Persistentes ---
-        for (var i = 0; i < array_length(Systemall.__persistent_bags); i++)
-        {
-            var _bag_key = Systemall.__persistent_bags[i];
-            if (pocket_bag_exists(_bag_key))
-            {
-                var _bag = pocket_bag_get(_bag_key);
-                _save_data.bags[$ _bag_key] = _bag.Export();
-            }
-        }
-        
-        // --- 3. Guardar Grupos Persistentes ---
-        for (var i = 0; i < array_length(Systemall.__persistent_groups); i++)
-        {
-            var _group_key = Systemall.__persistent_groups[i];
-            if (party_exists_group(_group_key))
-            {
-                var _group = party_get_group(_group_key);
-                _save_data.groups[$ _group_key] = _group.Export();
-            }
-        }
-        
-        // --- 4. Convertir a JSON y Guardar en Archivo ---
-        var _json_string = json_stringify(_save_data);
-        
-        var _file = file_text_open_write(_filename);
-        file_text_write_string(_file, _json_string);
-        file_text_close(_file);
-        
-        show_debug_message($"[Systemall] Partida guardada exitosamente en '{_filename}'.");
-        return true;
-    }
-    catch (_ex)
-    {
-        show_error($"[Systemall] Error al guardar la partida: " + exception_get_string(_ex), true);
-        return false;
-    }
-}
-
-/// @desc Carga el estado completo del juego desde un archivo.
-/// @param {String} filename El nombre del archivo de guardado.
-/// @return {Bool} Devuelve true si la carga fue exitosa.
-function mall_load_system(_filename)
-{
-    if (!file_exists(_filename))
-    {
-        show_debug_message($"[Systemall] Archivo de guardado no encontrado: '{_filename}'.");
-        return false;
-    }
-    
-    try
-    {
-        // --- 1. Cargar y Parsear el Archivo ---
-        var _file = file_text_open_read(_filename);
-        var _json_string = "";
-        while (!file_text_eof(_file)) { _json_string += file_text_readln(_file); }
-        file_text_close(_file);
-        
-        var _load_data = json_parse(_json_string);
-        
-        // --- 2. Limpiar el Estado Actual del Juego ---
-        Systemall.__instances = {};
-        
-        // Limpiar grupos persistentes antes de cargar
-        for (var i = 0; i < array_length(Systemall.__persistent_groups); i++) {
-            var _group = party_get_group(Systemall.__persistent_groups[i]);
-            if (!is_undefined(_group)) _group.Clean();
-        }
-        
-        // --- 3. Cargar Instancias de Entidades ---
-        var _saved_instances = _load_data.instances ?? [];
-        for (var i = 0; i < array_length(_saved_instances); i++)
-        {
-            var _inst_data = _saved_instances[i];
-            var _template_key = _inst_data.template_key;
-            
-            // Crear una nueva instancia (se registra automáticamente)
-            var _new_inst = party_entity_create_instance(_template_key, 1);
-            
-            // Importar el estado guardado
-            _new_inst.Import(_inst_data);
-        }
-        
-        // --- 4. Cargar Grupos Persistentes ---
-        // Esto debe hacerse DESPUÉS de cargar las instancias, para que las entidades existan.
-        if (variable_struct_exists(_load_data, "groups"))
-        {
-            var _saved_groups = _load_data.groups;
-            var _group_keys = variable_struct_get_names(_saved_groups);
-            for (var i = 0; i < array_length(_group_keys); i++)
-            {
-                var _key = _group_keys[i];
-                if (party_exists_group(_key)) {
-                    var _group = party_get_group(_key);
-                    _group.Import(_saved_groups[$ _key]);
-                }
-            }
-        }
-        
-        // --- 5. Cargar Mochilas Persistentes ---
-        if (variable_struct_exists(_load_data, "bags"))
-        {
-            var _saved_bags = _load_data.bags;
-            var _bag_keys = variable_struct_get_names(_saved_bags);
-            for (var i = 0; i < array_length(_bag_keys); i++)
-            {
-                var _key = _bag_keys[i];
-                if (pocket_bag_exists(_key)) {
-                    var _bag = pocket_bag_get(_key);
-                    _bag.Import(_saved_bags[$ _key]);
-                }
-            }
-        }
-        
-        // --- 6. Notificar al resto del juego ---
-        mall_broadcast_post("ON_GAME_LOADED", { success: true });
-        show_debug_message("[Systemall] Partida cargada exitosamente.");
-        return true;
-    }
-    catch (_ex)
-    {
-        show_error($"[Systemall] Error al cargar la partida: " + exception_get_string(_ex), true);
-        mall_broadcast_post("ON_GAME_LOADED", { success: false });
-        return false;
-    }
-}
-
-// -----------------------------------------------------------------------------
-// API DE LOG y DEBUG
-// -----------------------------------------------------------------------------
-function __mall_print(_message)
-{
-	if (__MALL_TRACE)
-	{
-		show_debug_message($"[Systemall]: {_message}");	
+		if (is_struct(_value))
+		{
+			_mall[$ _key] = {};
+		}
+		else if (is_array(_value))
+		{
+			_mall[$ _key] = [];
+		}
+		else
+		{
+			_mall[$ _key] = undefined;
+		}
 	}
 }
 
-function __mall_error(_message, _bool=true)
-{
-	if (__MALL_ERROR)
-	{
-		show_error($"[Systemall Error]: {_message}", _bool);
-	}
-}
+// Initialize statics
 
-function __mall_error_system(_message)
-{
-    show_error($"[Systemall Error]: {_message}", true);
-}
-
-function __mall_print_system(_message)
-{ 
-    show_debug_message($"[Systemall]: {_message}");
-}
-
-function __mall_init_curves()
-{
-	// --- CURVA LINEAR ---
-	var _linear = animcurve_create();
-	_linear.name = "linear";
-	var _linear_channel = animcurve_channel_new();
-	_linear_channel.name = "linear";
-	_linear_channel.type = animcurvetype_linear;
-	var _linear_points = array_create(2);
-	_linear_points[0] = animcurve_point_new();
-	_linear_points[0].posx = 0;
-	_linear_points[0].value = 0;
-	_linear_points[1] = animcurve_point_new();
-	_linear_points[1].posx = 1;
-	_linear_points[1].value = 1;
-	_linear_channel.points = _linear_points;
-	_linear.channels = [_linear_channel];
-	mall_add_asset("linear", _linear);
-	
-	// --- CURVA EXPONENTIAL (x²) ---
-	var _exponential = animcurve_create();
-	_exponential.name = "exponential";
-	var _exp_channel = animcurve_channel_new();
-	_exp_channel.name = "exponential";
-	_exp_channel.type = animcurvetype_catmullrom;
-	_exp_channel.iterations = 16;
-	var _exp_points = array_create(5);
-	_exp_points[0] = animcurve_point_new();
-	_exp_points[0].posx = 0;
-	_exp_points[0].value = 0;
-	_exp_points[1] = animcurve_point_new();
-	_exp_points[1].posx = 0.25;
-	_exp_points[1].value = 0.0625;
-	_exp_points[2] = animcurve_point_new();
-	_exp_points[2].posx = 0.5;
-	_exp_points[2].value = 0.25;
-	_exp_points[3] = animcurve_point_new();
-	_exp_points[3].posx = 0.75;
-	_exp_points[3].value = 0.5625;
-	_exp_points[4] = animcurve_point_new();
-	_exp_points[4].posx = 1;
-	_exp_points[4].value = 1;
-	_exp_channel.points = _exp_points;
-	_exponential.channels = [_exp_channel];
-	mall_add_asset("exponential", _exponential);
-	
-	// --- CURVA EASE_OUT (suavizado final) ---
-	var _ease_out = animcurve_create();
-	_ease_out.name = "ease_out";
-	var _ease_channel = animcurve_channel_new();
-	_ease_channel.name = "ease_out";
-	_ease_channel.type = animcurvetype_catmullrom;
-	_ease_channel.iterations = 16;
-	var _ease_points = array_create(4);
-	_ease_points[0] = animcurve_point_new();
-	_ease_points[0].posx = 0;
-	_ease_points[0].value = 0;
-	_ease_points[1] = animcurve_point_new();
-	_ease_points[1].posx = 0.33;
-	_ease_points[1].value = 0.8;
-	_ease_points[2] = animcurve_point_new();
-	_ease_points[2].posx = 0.66;
-	_ease_points[2].value = 0.95;
-	_ease_points[3] = animcurve_point_new();
-	_ease_points[3].posx = 1;
-	_ease_points[3].value = 1;
-	_ease_channel.points = _ease_points;
-	_ease_out.channels = [_ease_channel];
-	mall_add_asset("ease_out", _ease_out);
-	
-	// --- CURVA SQUARE (x^1.5) ---
-	var _square = animcurve_create();
-	_square.name = "square";
-	var _square_channel = animcurve_channel_new();
-	_square_channel.name = "square";
-	_square_channel.type = animcurvetype_catmullrom;
-	_square_channel.iterations = 16;
-	var _square_points = array_create(5);
-	_square_points[0] = animcurve_point_new();
-	_square_points[0].posx = 0;
-	_square_points[0].value = 0;
-	_square_points[1] = animcurve_point_new();
-	_square_points[1].posx = 0.25;
-	_square_points[1].value = 0.125;
-	_square_points[2] = animcurve_point_new();
-	_square_points[2].posx = 0.5;
-	_square_points[2].value = 0.35;
-	_square_points[3] = animcurve_point_new();
-	_square_points[3].posx = 0.75;
-	_square_points[3].value = 0.65;
-	_square_points[4] = animcurve_point_new();
-	_square_points[4].posx = 1;
-	_square_points[4].value = 1;
-	_square_channel.points = _square_points;
-	_square.channels = [_square_channel];
-	mall_add_asset("square", _square);
-}
-
-
-// Generar statics
 // -- CORE --
-script_execute(Systemall);
+script_execute(__Systemall);
 script_execute(Mall);
-script_execute(MallEvents);
+script_execute(MallBehavior);
 script_execute(MallIterator);
 
-// --  --
+// -- Core Data Types --
 script_execute(MallStat);
 script_execute(MallSlot);
 script_execute(MallState);

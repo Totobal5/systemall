@@ -1,0 +1,153 @@
+{
+    "cSpell.enabledFileTypes": [
+        "yarnspinner"
+    ],
+    "cSpell.language": "es",
+    "cSpell.ignoreWords": [
+        "AGGGRHGGG",
+        "AGGHH",
+        "AHHH",
+        "AHHHHH",
+        "AHHHHHH",
+        "AHHHHHHH",
+        "ARGHH",
+        "ARGHHHHHH",
+        "ARGHHU",
+        "ARGHHU_HHGYEJH",
+        "AUGHRGGHHHHHHHHHHHHHHH",
+        "AYUDAAA",
+        "Aburrrriiiiiddddddoooooooo",
+        "Bueeenoo",
+        "Draw",
+        "Emotion",
+        "Feña",
+        "Font",
+        "Gabi",
+        "Intro",
+        "JAJAJAJAJJAJAJAJAJAJAJAJAJAJAJAJAJAJAJAJAJAJAJAJAJAJA",
+        "Jajjajaj",
+        "Jeje",
+        "Jonsito",
+        "Loop",
+        "Mati",
+        "Matias",
+        "Mmhh",
+        "Mmhhh",
+        "Mmmhhh",
+        "Mode",
+        "Multiple",
+        "Nooo",
+        "Outline",
+        "Ponki",
+        "QUÉÉ",
+        "SOFÍA",
+        "Screen",
+        "Sound",
+        "Speed",
+        "Spirit",
+        "Typical",
+        "Wenaaaa",
+        "always",
+        "aname",
+        "andaí",
+        "arghh",
+        "blue",
+        "bluheven",
+        "ción",
+        "delay",
+        "ehhh",
+        "equi",
+        "equirat",
+        "erta",
+        "fernando",
+        "feña",
+        "gabi",
+        "jaajjaja",
+        "jaja",
+        "jajaja",
+        "jeje",
+        "lakitopaki",
+        "lechita",
+        "lesera",
+        "loquendero",
+        "mejorcito",
+        "milky",
+        "mmhh",
+        "mmmhhhh",
+        "never",
+        "particle",
+        "quee",
+        "tannn",
+        "uuhh",
+        "visited",
+        "white",
+        "yellow"
+    ],
+    "cSpell.words": [
+        "ectoplasma"
+    ],
+    "sarif-viewer.connectToGithubCodeScanning": "off",
+    "cSpell.languageSettings": [
+        {
+            "languageId": "yarnspinner",
+            "patterns": [
+                {
+                    "name": "yarn-commands",
+                    "pattern": "/<<[^>]*>>/g"
+                },
+                {
+                    "name": "yarn-expressions",
+                    "pattern": "/\\{[^}]*\\}/g"
+                },
+                {
+                    "name": "yarn-variables",
+                    "pattern": "/\\$[a-zA-Z_][a-zA-Z0-9_]*/g"
+                },
+                {
+                    "name": "yarn-markup",
+                    "pattern": "/\\[[^\\]]*\\]/g"
+                },
+                {
+                    "name": "yarn-hashtags",
+                    "pattern": "/#[a-zA-Z_][a-zA-Z0-9_:-]*/g"
+                },
+                {
+                    "name": "yarn-node-markers",
+                    "pattern": "/^(---|===)$/gm"
+                },
+                {
+                    "name": "yarn-headers",
+                    "pattern": "/^(title|tags|position|color|colorID|tracking|custom|style):.*/gm"
+                },
+                {
+                    "name": "yarn-character-names",
+                    "pattern": "/^\\s*[A-Za-z_][A-Za-z0-9_]*(?=:)/gm"
+                },
+                {
+                    "name": "yarn-comments",
+                    "pattern": "/\\/\\/.*$/gm"
+                }
+            ],
+            "ignoreRegExpList": [
+                "yarn-commands",
+                "yarn-expressions",
+                "yarn-variables",
+                "yarn-markup",
+                "yarn-hashtags",
+                "yarn-node-markers",
+                "yarn-headers",
+                "yarn-character-names",
+                "yarn-comments"
+            ]
+        }
+    ],
+    "[gml]": {
+        "editor.insertSpaces": false,
+        "editor.detectIndentation": false,
+        "editor.tabSize": 4
+    },
+    "cSpell.enableFiletypes": [
+        "yarnspinner"
+    ],
+    "cmake.sourceDirectory": "C:/Users/xtoba/Documents/Github/Game Maker/gm-ghost-seed/Build"
+}

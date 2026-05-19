@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mall_Slot_Functions",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_Slot_Functions",
+  "parent":{
+    "name":"Components",
+    "path":"folders/Systemall/Components.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
