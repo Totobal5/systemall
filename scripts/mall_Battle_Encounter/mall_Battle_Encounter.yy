@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mall_Battle_Encounter",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mall_Battle_Encounter",
+  "parent":{
+    "name":"Battle",
+    "path":"folders/Systemall/Battle.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

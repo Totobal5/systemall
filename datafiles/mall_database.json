@@ -4,21 +4,21 @@
 		"components/states.json",
 		"components/slots.json"
     ],
-    "Party": [
-        "party/heroes.json",
-        "party/groups.json",
-        "party/jefes.json"
+    "Entities": [
+        "entities/heroes.json",
+        "entities/groups.json",
+        "entities/jefes.json"
     ],
-    "Pocket": [
-        "pocket/general_items.json",
-        "pocket/bags.json"
+    "Items": [
+        "bag/general_items.json",
+        "bag/bags.json"
     ],
-    "Dark": [
-        "dark/comandos.json",
-        "dark/efectos.json"
+    "Commands": [
+        "commands/commands.json",
+        "commands/efectos.json"
     ],
 	
 	"AI": [
-		"party/ai.json"
+		"entities/ai.json"
 	]
 }

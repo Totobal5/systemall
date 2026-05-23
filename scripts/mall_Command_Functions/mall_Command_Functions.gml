@@ -6,7 +6,7 @@ function mall_create_command_from_data(_key, _data)
 {
 	if (!__mall_validate_registry_args("mall_create_command_from_data", _key, _data, mall_exists_command, "Command") ) return;
 
-    var _command = (new MallCommand(_key)).FromData(_data);
+    var _command = (new MallCommand(_key) ).Import(_data);
     mall_create_command(_key, _command);
 }
 
@@ -27,6 +27,7 @@ function mall_create_command(_key, _template)
 	}
 	
 	__Systemall.__commands[$ _key] = _template;
+	array_push(__Systemall.__commands_keys, _key);
 }
 
 /// @desc Gets a command template by key. Returns undefined if not found.
@@ -35,6 +36,13 @@ function mall_create_command(_key, _template)
 function mall_get_command(_key)
 {
 	return struct_get(__Systemall.__commands, _key);
+}
+
+/// @desc Returns an array with all registered command keys.
+/// @returns {Array<String>}
+function mall_get_command_keys()
+{
+	return (__Systemall.__commands_keys);
 }
 
 /// @desc Checks whether a command template exists.

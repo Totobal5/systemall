@@ -1,0 +1,4 @@
+function MallBattleEncounter() : Mall() constructor
+{
+    
+}

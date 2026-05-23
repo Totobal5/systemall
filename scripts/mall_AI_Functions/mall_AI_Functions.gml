@@ -1,43 +1,31 @@
-/// @desc Creates AI templates (rules and packages) from data.
-/// @param {Struct} data Struct containing AI data, including reusable rules and packages.
-function mall_create_ai_from_data(_data)
+/// @desc Registers a ai package template.
+/// @param {String} key Unique package key.
+/// @param {Struct.MallAIPackage} template Package template.
+function mall_create_ai_package(_key, _template)
 {
-	/// @ignore
-	static __rules = function(_key, _values) 
+	if (!is_string(_key) || _key == "")
 	{
-		mall_create_ai_rule_from_data(_key, _values);
-	};
+		__mall_error("mall_create_ai_package expected a non-empty string key.");
+		return false;
+	}
 
-	/// @ignore
-	static __packages = function(_key, _values) 
+	if (!is_struct(_template) )
 	{
-		mall_create_ai_package_from_data(_key, _values);
-	};
+		__mall_error("mall_create_ai_package expected a struct template child of MallAIPackage.");
+		return false;
+	}
 
-	// Validation.
-	if (!__mall_validate_registry_args("mall_create_ai_from_data", undefined, _data, undefined, "AI", false) ) return;
-
-	// Load reusable rules.
-	if (struct_exists(_data, "rules") )
-	{
-		var _rules = _data[$ "rules"];
-		struct_foreach(_rules, __rules);
+	// No duplicates allowed.
+	if (mall_exists_ai_package(_key) ) 
+	{ 
+		__mall_error($"AI package '{_key}' already exists and will be overwritten.");
+		return false;
 	}
 	
-	// Load AI packages.
-	if (struct_exists(_data, "packages") )
-	{
-		var _packages = _data[$ "packages"];
-		struct_foreach(_packages, __packages);
-	}
-}
+	__Systemall.__ai_packages[$ _key] = _template;
+	array_push(__Systemall.__ai_packages_keys, _key);
 
-/// @desc Creates and registers an AI rule template from data.
-/// @param {String} key AI rule key.
-/// @param {Struct} data Rule payload.
-function mall_create_ai_rule_from_data(_key, _data)
-{
-	__mall_create_ai_template_from_data(_key, _data, false);
+	return true;
 }
 
 /// @desc Creates and registers an AI package template from data.
@@ -45,49 +33,77 @@ function mall_create_ai_rule_from_data(_key, _data)
 /// @param {Struct} data Package payload.
 function mall_create_ai_package_from_data(_key, _data)
 {
-	__mall_create_ai_template_from_data(_key, _data, true);
+	if (!is_struct(_data) )
+	{
+		__mall_error("mall_create_ai_package_from_data expected a import struct data.");
+		return false;
+	}
+
+	var _template = (new MallAIPackage(_key) ).Import(_data);
+	return (mall_create_ai_package(_key, _template) );
 }
 
-/// @ignore
-/// @desc Internal helper to build and store an AI template.
-/// @param {String} key AI key.
-/// @param {Struct} data Rule/package payload.
-/// @param {Bool} is_package True for package templates.
-function __mall_create_ai_template_from_data(_key, _data, _is_package)
+/// @desc Registers an AI rule template.
+/// @param {String} key Unique rule key.
+/// @param {Struct.MallAI} template Rule template.
+function mall_create_ai_rule(_key, _template)
 {
-	var _caller_name = _is_package ? "mall_create_ai_package_from_data" : "mall_create_ai_rule_from_data";
-	var _exists_func = _is_package ? mall_ai_package_exists : mall_ai_rule_exists;
-	var _label = _is_package ? "AI package" : "AI rule";
-
-	if (!__mall_validate_registry_args(_caller_name, _key, _data, _exists_func, _label) ) return;
-
-	var _template = (new MallAI(_key, _is_package) ).FromData(_data);
-	if (_is_package)
+	if (!is_string(_key) || _key == "")
 	{
-		__Systemall.__ai_packages[$ _key] = _template;
+		__mall_error("mall_create_ai_rule expected a non-empty string key.");
+		return false;
+	}
 
-		if (!array_contains(__Systemall.__ai_keys, _key) )
-		{
-			array_push(__Systemall.__ai_keys, _key);
-		}
-	}
-	else
+	if (!is_struct(_template) )
 	{
-		__Systemall.__ai_rules[$ _key] = _template;
+		__mall_error("mall_create_ai_rule expected a struct template child of MallAI.");
+		return false;
 	}
+
+	if (mall_exists_ai_rule(_key) ) 
+	{ 
+		__mall_error($"AI rule '{_key}' already exists and will be overwritten.");
+		return false;
+	}
+	
+	__Systemall.__ai_rules[$ _key] = _template;
+	array_push(__Systemall.__ai_rules_keys, _key);
+
+	return true;
+}
+
+/// @desc Creates and registers an AI rule template from data.
+/// @param {String} key AI rule key.
+/// @param {Struct} data Rule payload.
+function mall_create_ai_rule_from_data(_key, _data)
+{
+	if (!is_string(_key) || _key == "")
+	{
+		__mall_error("mall_create_ai_rule_from_data expected a non-empty string key.");
+		return false;
+	}
+
+	if (!is_struct(_data) )
+	{
+		__mall_error("mall_create_ai_rule_from_data expected a import struct data.");
+		return false;
+	}
+
+	var _template = (new MallAI(_key) ).Import(_data);
+	return (mall_create_ai_rule(_key, _template) );
 }
 
 /// @desc Returns an AI package template by key.
 /// @param {String} key AI package key.
-/// @return {Struct.MallAI|Undefined}
+/// @return {Struct.MallAIPackage|Undefined}
 function mall_get_ai_package(_key)
 {
-	if (!mall_ai_package_exists(_key) )
+	if (!mall_exists_ai_package(_key) )
 	{
 		__mall_error($"AI package '{_key}' does not exist.");
 		return undefined;
 	}
-	
+
 	return (__Systemall.__ai_packages[$ _key] );
 }
 
@@ -96,7 +112,7 @@ function mall_get_ai_package(_key)
 /// @return {Struct.MallAI|Undefined}
 function mall_get_ai_rule(_key)
 {
-	if (!mall_ai_rule_exists(_key) )
+	if (!mall_exists_ai_rule(_key) )
 	{
 		__mall_error($"AI rule '{_key}' does not exist.");
 		return undefined;
@@ -105,16 +121,30 @@ function mall_get_ai_rule(_key)
 	return (__Systemall.__ai_rules[$ _key] );
 }
 
+/// @desc Checks whether an AI package template exists.
+/// @param {String} key AI package key.
+function mall_exists_ai_package(_key)
+{
+	return struct_exists(__Systemall.__ai_packages, _key);
+}
+
 /// @desc Checks whether an AI rule template exists.
 /// @param {String} key AI rule key.
-function mall_ai_rule_exists(_key)
+function mall_exists_ai_rule(_key)
 {
 	return struct_exists(__Systemall.__ai_rules, _key);
 }
 
-/// @desc Checks whether an AI package template exists.
-/// @param {String} key AI package key.
-function mall_ai_package_exists(_key)
+/// @desc Returns an array with all registered AI package keys.
+/// @returns {Array<String>}
+function mall_get_ai_package_keys()
 {
-	return struct_exists(__Systemall.__ai_packages, _key);
+	return (__Systemall.__ai_packages_keys);
+}
+
+/// @desc Returns an array with all registered AI rule keys.
+/// @returns {Array<String>}
+function mall_get_ai_rule_keys()
+{
+	return (__Systemall.__ai_rules_keys);
 }

@@ -1,30 +1,49 @@
+/// @desc Creates a stat at runtime.
+/// @param {String} key Stat key.
+/// @param {Struct.MallStat} template MallStat template.
+function mall_create_stat(_key, _template) 
+{
+	if (!is_string(_key) || _key == "")
+	{
+		__mall_error("mall_create_stat expected a non-empty string key.");
+		return false;
+	}
+
+	if (!is_struct(_template) )
+	{
+		__mall_error("mall_create_stat expected a struct template.");
+		return false;
+	}
+
+	if (mall_exists_stat(_key) ) 
+	{ 
+		__mall_error($"Stat '{_key}' already exists."); 
+		return false;
+	}
+	
+	__Systemall.__stats[$ _key] = _template;
+	array_push(__Systemall.__stats_keys, _key);
+
+	// Register the stat under its type category.
+	mall_create_type(_template.type, _key);
+
+	return true;
+}
+
 /// @desc Creates a stat template from data and adds it to the database.
 /// @param {String} key Stat key (for example "EN").
 /// @param {Struct} data Data struct read from JSON.
 function mall_create_stat_from_data(_key, _data)
 {
-    if (!__mall_validate_registry_args("mall_create_stat_from_data", _key, _data, mall_exists_stat, "Stat")) return;
-    
-    // Create an empty instance and then configure it from incoming data.
-    var _stat = new MallStat(_key).FromData(_data);
-    
-    __Systemall.__stats[$ _key] = _stat;
-    array_push(__Systemall.__stats_keys, _key);
-}
+	if (!is_struct(_data) )
+	{
+		__mall_error("mall_create_stat_from_data expected a struct data.");
+		return false;
+	}
 
-/// @desc Creates a stat at runtime.
-/// @param {String} key Stat key.
-/// @param {Struct.MallStat} component MallStat instance.
-function mall_create_stat(_key, _component) 
-{
-    if (mall_exists_stat(_key) )
-    {
-        __mall_alert($"Stat '{_key}' already exists. Duplicate creation was skipped.");
-		return;
-    }
-    
-    __Systemall.__stats[$ _key] = _component;
-    array_push(__Systemall.__stats_keys, _key);
+	// Create an empty instance and then configure it from incoming data.
+	var _stat = new MallStat(_key).Import(_data);	
+	return mall_create_stat(_key, _stat);
 }
 
 /// @desc Returns a stat template by key.
@@ -32,7 +51,7 @@ function mall_create_stat(_key, _component)
 /// @return {Struct.MallStat}
 function mall_get_stat(_key) 
 {
-    return (__Systemall.__stats[$ _key] ); 
+	return (__Systemall.__stats[$ _key] ); 
 }
 
 /// @desc Checks whether a stat exists in the database.
@@ -40,12 +59,12 @@ function mall_get_stat(_key)
 /// @return {Bool}
 function mall_exists_stat(_key) 
 { 
-    return (struct_exists(__Systemall.__stats, _key) ); 
+	return (struct_exists(__Systemall.__stats, _key) ); 
 }
 
 /// @desc Returns an array with all registered stat keys.
 /// @return {Array<String>}
 function mall_get_stat_keys() 
 {
-    return (__Systemall.__stats_keys); 
+	return (__Systemall.__stats_keys); 
 }

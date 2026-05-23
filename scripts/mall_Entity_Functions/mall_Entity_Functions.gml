@@ -122,6 +122,13 @@ function mall_get_instance(_id)
 	return (__Systemall.__instances[$ _id] );
 }
 
+/// @desc Returns an array with all registered entity instance ids.
+/// @returns {Array<String>}
+function mall_get_entity_keys()
+{
+	return (__Systemall.__entities_keys);
+}
+
 /// @desc Safely removes an entity from its group and runtime registry.
 /// @param {Struct.MallEntity} _entity Entity instance to destroy.
 /// @returns {Bool}
@@ -165,12 +172,7 @@ function mall_create_group_from_data(_key, _data)
 /// @returns {Struct.MallEntityGroup|undefined}
 function mall_get_group(_key)
 {
-	if (mall_exists_group(_key) ) 
-	{
-		return __Systemall.__groups[$ _key];
-	}
-	
-	return undefined;
+	return (mall_exists_group(_key) ) ? __Systemall.__groups[$ _key] : undefined;
 }
 
 /// @desc Returns whether a group template exists.
@@ -178,7 +180,14 @@ function mall_get_group(_key)
 /// @returns {Bool}
 function mall_exists_group(_key)
 {
-	return variable_struct_exists(__Systemall.__groups, _key);
+	return struct_exists(__Systemall.__groups, _key);
+}
+
+/// @desc Returns an array with all registered group keys.
+/// @returns {Array<String>}
+function mall_get_group_keys()
+{
+	return (__Systemall.__groups_keys);
 }
 
 /// @desc Swaps all entities between two groups.

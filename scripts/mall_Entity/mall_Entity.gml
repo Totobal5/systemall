@@ -3,37 +3,56 @@
 /// @param {String} instance_id Unique ID for this entity instance.
 function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) constructor
 {
-	/// @ignore Flag used to optimize batched state updates.
+	/// @ignore
+	/// @type {Struct} Cache for events to avoid redundant lookups. Maps event keys to resolved function references.
+	__cache = {};
+
+	/// @ignore
+	/// @type {Bool} Flag used to optimize batched state updates.
 	__is_updating_all_states = false;
-    
-	// -- Identity --
+
+	/// @ignore
+	/// @type {Bool} Flag used to defer expensive recalculations while loading template data.
+	__is_loading_template = false;
+	
+	/// @type {String} Unique identifier for this entity instance.
 	id = _instance_id;
-	template_key = _template_key;
+	/// @desc Group key for organizational purposes (for example, "enemies" or "allies").
 	group_key = "";
-    
-	// --- Combat properties ---
+	
+	/// @type {Real} Experience given to the player when this entity is defeated.
 	exp_value = 0;
+	/// @type {String} Loot table key used to determine drops when this entity is defeated.
 	loot_table_key = "";
+	/// @type {Array} Bonus drops added on top of the loot table rolls.
 	bonus_drops = [];
-	// AI brain instance.
+
+	/// @type {String} AI Package key used to determine behavior in battle.
+	ai_package = "";
+	/// @type {Struct.MallAIInstance} AI brain instance.
 	ai_instance = undefined;
-    // Entity faction.
+
+	/// @type {String} Entity faction.
 	faction = "NEUTRAL";
-    // Threat level.
+	/// @type {Real} Threat level.
 	aggro = 0;
-    // Commands learned on level milestones.
+	/// @type {Array} Commands learned on level milestones.
 	learnset = [];
+
+	/// @type {Real} Current level of the entity.
+	level =	1;
+	/// @type {Struct.MallStatInstance} Stat instances owned by this entity.
+	stats =	{};
+	/// @type {Struct.MallSlotInstance} Slot instances owned by this entity.
+	slots =	{};
+	/// @type {Struct.MallStateInstance} State instances owned by this entity.
+	states = {};
 	
-	// Custom variables outside the Mall core model.
-	vars = {};
-	
-	// --- Instance state ---
-	level =		1;
-	stats =		{};
-	slots =		{};
-	states =	{};
-	commands =	{};
-	flags =		{};
+	/// @type {Struct.MallEntityCommands} Command categories owned by this entity.
+	commands = new MallEntityCommands(self, $"{id}_commands");
+
+	/// @type {Struct} Flags for various purposes (for example, tracking if an enemy has called for help).
+	flags =	{};
 	
 	#region EVENTS
 	
@@ -55,93 +74,108 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	/// @desc Runs after an item is equipped in any slot.
 	/// @context Struct.MallEntity
 	/// @param {Struct.MallSlotInstance} slot_instance Affected slot instance.
-	/// @param {Struct} result Equip operation result.
-	event_on_equip = "";
+	/// @param {Struct.MallItem} item_template Equip operation result.
+	// event_on_equip
 
 	/// @desc Runs after an item is unequipped from any slot.
 	/// @context Struct.MallEntity
 	/// @param {Struct.MallSlotInstance} slot_instance Affected slot instance.
-	/// @param {Struct} result Unequip operation result.
-	event_on_desequip = "";
+	/// @param {Struct.MallItem} item_template Unequip operation result.
+	// event_on_desequip
 	
 	#endregion
 
 	#region PRIVATE LOAD METHODS
 	
 	/// @ignore
-	/// @desc Loads event functions from the template.
-	static __LoadFunctions = function(_template)
+	/// @desc Logs an alert message with entity context if __MALL_ENTITIES_ALERT is enabled.
+	/// @param {String} _message Alert message to log.
+	static __Alert = function(_message)
 	{
-		event_on_level_up = method(self, mall_get_event(_template[$ "event_on_level_up"]) );
-		event_on_level_check = method(self, __mall_get_event_check_true(_template[$ "event_on_level_check"] ) );
-		
-		event_on_action_select = method(self, mall_get_event(_template[$ "event_on_action_select"] ) );
-		
-		event_on_equip = method(self, mall_get_event(_template[$ "event_on_equip"] ) );
-		event_on_desequip = method(self, mall_get_event(_template[$ "event_on_desequip"] ) );
+		if (__MALL_ENTITIES_ALERT) __mall_alert($"\n	MallEntity '{id}': {_message}");
 	}
-	
+
+	/// @ignore
+	/// @desc Logs an error message with entity context.
+	/// @param {String} _message Error message to log.
+	static __Error = function(_message)
+	{
+		__mall_error($"\n	MallEntity '{id}': {_message}");
+	}
+
+	/// @ignore
+	/// @desc Loads event functions from the template.
+	/// @param {Struct} data Entity template struct.
+	static __LoadEvents = function(_data)
+	{
+		method(self, MallBehavior.__LoadEvents) (_data);
+
+		event_on_level_up = variable_get_hash(_data[$ "event_on_level_up"] ?? "");
+		event_on_level_check = variable_get_hash(_data[$ "event_on_level_check"] ?? "");
+		
+		event_on_action_select = variable_get_hash(_data[$ "event_on_action_select"] ?? "");
+	}
+
+	/// @desc If the event exists in the cache.
+	/// @param {String} event_key The slot event key to check.
+	/// @returns {Bool}
+	static __ExistsInCache = function(_key_instance, _key_item, _key_template)
+	{
+		return struct_exists_from_hash(__cache, _key_instance);
+	}
+
 	/// @ignore
 	/// @desc Loads stat instances and applies base values.
-	/// @param {Struct} _template Entity template.
+	/// @param {Struct} template Entity template struct.
 	static __LoadStats = function(_template)
 	{
 		var _all_stat_keys = mall_get_stat_keys();
-		var _all_stat_length = array_length(_all_stat_keys);
-
-		// Add every system stat to this entity.
-		for (var i = 0; i < _all_stat_length; i++) 
+		var i=0; repeat ( array_length(_all_stat_keys) )
 		{
-			var _stat_key = _all_stat_keys[i];
+			var _stat_key = _all_stat_keys[i++];
 			var _stat_instance = new MallStatInstance(mall_get_stat(_stat_key), self);
 			
 			stats[$ _stat_key] = _stat_instance;
 			
 			// Run start event on initialization.
-			var _start_event = _stat_instance.event_on_start;
-			if (is_callable(_start_event) ) _start_event(_stat_instance);
+			var _on_start = _stat_instance.event_on_start;
+			if (is_callable(_on_start) ) method_call(_on_start, [_stat_instance]);
 		}
-		
+
 		// Load base values.
-		if (struct_exists(_template, "stats") ) 
+		if (struct_exists(_template, "stats") )
 		{
 			var _template_stats = _template[$ "stats"];
-			var _template_stat_keys = struct_get_names(_template_stats);
-			var _template_stat_length =	array_length(_template_stat_keys);
-			
-			for (var i = 0; i < _template_stat_length; i++) 
+			var _template_stats_keys = struct_get_names(_template_stats);
+			var i=0; repeat(array_length(_template_stats_keys) )
 			{
-				var _stat_key = _template_stat_keys[i];
-				if (struct_exists(stats, _stat_key) ) 
+				var _stat_key = _template_stats_keys[i++];
+				if (!struct_exists(stats, _stat_key) ) continue;
+
+				var _stat_data = _template_stats[$ _stat_key];
+				
+				// Normalize numbers into the expected stat config struct.
+				if (is_numeric(_stat_data) )
 				{
-					var _stat_data = _template_stats[$ _stat_key];
-					
-					// Normalize numbers into the expected stat config struct.
-					if (is_numeric(_stat_data) )
-					{
-						_stat_data = {
-							base: _stat_data,
-							growth: 0,
-							curve: "linear"
-						};
-					}
-					
-					// Assign stat properties.
-					stats[$ _stat_key].base_value = _stat_data.base;
-					stats[$ _stat_key].growth = _stat_data.growth ?? 0;
-					stats[$ _stat_key].curve_name = _stat_data.curve ?? "linear";
-					
-					// Resolve growth curve reference.
-					if (mall_asset_exists(stats[$ _stat_key].curve_name) )
-					{
-						stats[$ _stat_key].growth_curve = mall_asset_get(stats[$ _stat_key].curve_name);
-					}
-					else
-					{
-						// Fallback to linear if the curve asset is missing.
-						stats[$ _stat_key].growth_curve = mall_asset_get("linear");
-						stats[$ _stat_key].curve_name = "linear";
-					}
+					_stat_data = { base: _stat_data, growth: 0, curve: "linear" };
+				}
+				
+				// Assign stat properties.
+				var _stat = stats[$ _stat_key];
+				_stat[$ "base_value"] =	_stat_data[$ "base"]	?? 1;
+				_stat[$ "growth"] =		_stat_data[$ "growth"]	?? 1;
+				_stat[$ "curve_name"] =	_stat_data[$ "curve"]	?? "linear";
+				
+				// Resolve growth curve reference.
+				if (mall_asset_exists(_stat[$ "curve_name"]) )
+				{
+					_stat[$ "growth_curve"] = mall_asset_get(_stat[$ "curve_name"]);
+				}
+				// Fallback to linear if the curve asset is missing.
+				else
+				{
+					_stat[$ "growth_curve"] = mall_asset_get("linear");
+					_stat[$ "curve_name"] =	"linear";
 				}
 			}
 		}
@@ -149,33 +183,32 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	
 	/// @ignore
 	/// @desc Loads slot instances, updates permitted items, and equips initial items.
-	/// @param {Struct} _template Entity template.
+	/// @param {Struct} template Entity template.
 	static __LoadSlots = function(_template)
 	{
 		var _all_slot_keys = mall_get_slot_keys();
-		var _all_slot_length = array_length(_all_slot_keys);
-		
-		for (var i = 0; i < _all_slot_length; i++) 
+		var i=0; repeat(array_length(_all_slot_keys) )
 		{
-			var _slot_key = _all_slot_keys[i];
+			var _slot_key = _all_slot_keys[i++];
 			var _slot_instance = new MallSlotInstance(mall_get_slot(_slot_key), self);
 			
 			slots[$ _slot_key] = _slot_instance;
 			
 			// Run start event on initialization.
 			var _start_event = _slot_instance.event_on_start;
-			if (is_callable(_start_event) ) _start_event(_slot_instance);			
+			if (is_callable(_start_event) ) method_call(_start_event, [_slot_instance]);			
 		}
-		
+
 		if (struct_exists(_template, "slots") ) 
 		{
 			var _template_slots = _template[$ "slots"];
 			var _template_slot_keys = struct_get_names(_template_slots);
-			var _template_slot_keys_length = array_length(_template_slot_keys);
-			
-			for (var i = 0; i < _template_slot_keys_length; i++) 
+			// Batch initial equips and recalculate once at the end of FromTemplate.
+			__is_loading_template = true;
+
+			var i=0; repeat(array_length(_template_slot_keys) )
 			{
-				var _slot_key = _template_slot_keys[i];
+				var _slot_key = _template_slot_keys[i++];
 				var _slot_data = _template_slots[$ _slot_key];
 				
 				if (is_struct(_slot_data) ) 
@@ -184,25 +217,7 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 					if (struct_exists(_slot_data, "permitted") )
 					{
 						var _permitted_mods = _slot_data[$ "permitted"];
-						var _permitted_mods_length = array_length(_permitted_mods);
-						
-						for (var j = 0; j < _permitted_mods_length; j++)
-						{
-							// Read operation prefix from the last character.
-							var _mod_string = _permitted_mods[j];
-							var _mod_len = string_length(_mod_string);
-							var _prefix = string_char_at(_mod_string, _mod_len);
-							var _key = string_delete(_mod_string, _mod_len, 1);
-							
-							if (_prefix == "+")
-							{ 
-								SlotPermittedAdd(_slot_key, _key); 
-							} 
-							else if (_prefix == "-") 
-							{ 
-								SlotPermittedRemove(_slot_key, _key); 
-							}
-						}
+						var j=0; repeat(array_length(_permitted_mods) ) { SlotPermittedAdd(_slot_key, _permitted_mods[j++]); }
 					}
 					
 					// Configure initial equipment per slot instance.
@@ -224,83 +239,85 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 					SlotEquip(_slot_key, _slot_data);
 				}
 			}
+
+			__is_loading_template = false;
 		}
 	}
 	
-	/// @desc Loads state instances.
-	/// @param {Struct} _template Entity template.
 	/// @ignore
+	/// @desc Loads state instances.
+	/// @param {Struct} template Entity template.
 	static __LoadStates = function(_template)
 	{
 		var _all_state_keys = mall_get_state_keys();
-		var _all_state_length = array_length(_all_state_keys);
-		
-		for (var i = 0; i < _all_state_length; i++) 
+		var i=0; repeat(array_length(_all_state_keys) )
 		{
-			var _state_key = _all_state_keys[i];
-			var _state_inst = new MallStateInstance( mall_get_state(_state_key), self );
+			var _state_key = _all_state_keys[i++];
+			var _state_instance = new MallStateInstance(mall_get_state(_state_key), self);
 			
-			states[$ _state_key] = _state_inst;
+			states[$ _state_key] = _state_instance;
 			
-			// Run start event.
-			if (is_callable(_state_inst.event_on_start) ) _state_inst.event_on_start(_state_inst);
+			// Run start event on initialization.
+			var _on_start = _state_instance.event_on_start;
+			if (is_callable(_on_start) ) method_call(_on_start, [_state_instance]);
 		}
 	}
 	
+	/// @ignore
 	/// @desc Loads command categories from the entity template.
 	/// @param {Struct} _template Entity template.
-	/// @ignore
 	static __LoadCommands = function(_template)
 	{
-		commands = new MallCommandsInstance();
-		if (struct_exists(_template, "commands") ) 
+		if (!struct_exists(_template, "commands") ) return;
+
+		var _categories = struct_get_names(_template[$ "commands"]);
+		var i=0; repeat(array_length(_categories) )
 		{
-			var _categories = struct_get_names(_template[$ "commands"]);
-			for (var i = 0; i < array_length(_categories); i++)
+			var _category_name = _categories[i++];
+			var _command_keys = _template[$ "commands"][$ _category_name];
+			
+			var j=0; repeat(array_length(_command_keys) )
 			{
-				var _category_name = _categories[i];
-				var _command_keys_array = _template[$ "commands"][$ _category_name];
-				
-				// Use the public API to add commands and ensure category creation.
-				for (var j = 0; j < array_length(_command_keys_array); j++)
-				{
-					var _command_key = _command_keys_array[j];
-					CommandAdd(_category_name, _command_key);
-				}
+				var _command_key = _command_keys[j++];
+				CommandAdd(_category_name, _command_key);
 			}
 		}
 	}
 
-	/// @desc Loads AI instance.
-	/// @param {Struct} _template Entity template.
 	/// @ignore
+	/// @desc Loads AI instance.
+	/// @param {Struct} template Entity template.
 	static __LoadAI = function(_template)
 	{
-		if (struct_exists(_template, "ai_package") )
-		{
-			ai_instance = new MallAIInstance(self, _template[$ "ai_package"]);
-		}
+		if (!struct_exists(_template, "ai_package") ) return;
+		// Initialize AI instance with the specified package and resolve rules.
+		var _package = _template[$ "ai_package"];
+		ai_instance = new MallAIInstance(self, _package);
 	}
 	
-	/// @desc Calculates each stat base value (peak_value) from level.
 	/// @ignore
+	/// @desc Calculates each stat base value (peak_value) from level.
 	static __CalculatePeakValues = function()
 	{
 		var _stat_keys = struct_get_names(stats);
-		for (var i = 0; i < array_length(_stat_keys); i++)
+		var i=0; repeat(array_length(_stat_keys))
 		{
-			var _stat_inst = stats[$ _stat_keys[i]];
-			_stat_inst.Recalculate(self);
+			var _key = _stat_keys[i++];
+			/// @type {Struct.MallStatInstance}
+			var _inst = stats[$ _key];
+
+			// Recalculate peak value through the stat API.
+			_inst.Recalculate(self);
 		}
 	}
 
 	/// @ignore
 	/// @desc Applies a value/percent modifier into a stat field.
-	/// @param {Struct.MallStatInstance} _stat_to_mod Target stat.
-	/// @param {Array} _mod_array Modifier payload [value, numtype].
-	/// @param {String} _source_field Field name used as percent base.
-	/// @param {String} _target_field Field name updated with the final value.
-	static __mall_apply_mod = function(_stat_to_mod, _mod_array, _source_field, _target_field)
+	/// @param {Struct.MallStatInstance} stat_to_mod Target stat.
+	/// @param {Array} mod_array Modifier payload [value, numtype].
+	/// @param {String} source_field Field name used as percent base.
+	/// @param {String} target_field Field name updated with the final value.
+	static __ApplyMod = function(_stat_to_mod, _mod_array, _source_field, _target_field)
 	{
 		var _mod_value = _mod_array[0];
 		var _mod_type = _mod_array[1];
@@ -315,69 +332,65 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		}
 	}
 	
-	/// @desc Applies passive modifiers from states and effects.
 	/// @ignore
+	/// @desc Applies passive modifiers from states and effects.
 	static __ApplyStateModifiers = function()
 	{
+		// Set control values to equipment values before applying state modifiers, so states can modify the effective stat values after equipment.
 		var _stat_keys = struct_get_names(stats);
-		var _stat_keys_length = array_length(_stat_keys)
-		
-		for (var i = 0; i < _stat_keys_length; i++) 
+		var i=0; repeat(array_length(_stat_keys) )
 		{
-			var _stat_inst = stats[$ _stat_keys[i]];
+			/// @type {Struct.MallStatInstance}
+			var _stat_inst = stats[$ _stat_keys[i++]];
 			_stat_inst.control_value = _stat_inst.equipment_value;
 		}
 		
 		var _state_keys = struct_get_names(states);
-		var _state_keys_length = array_length(_state_keys);
-		
-		for (var i = 0; i < _state_keys_length; i++) 
+		var i=0; repeat(array_length(_state_keys) )
 		{
-			var _state_inst = states[$ _state_keys[i]];
+			var _state_key = _state_keys[i++];
+			/// @type {Struct.MallStateInstance}
+			var _state_inst = states[$ _state_key];
 			if (!_state_inst.boolean_value) continue;
 
 			// Apply state-template modifiers.
 			var _state_modifiers = _state_inst.stats;
 			var _state_mod_keys = struct_get_names(_state_modifiers);
-			var _state_mod_keys_length = array_length(_state_mod_keys);
-			
-			for (var j = 0; j < _state_mod_keys_length; j++) 
+			var j=0; repeat(array_length(_state_mod_keys) )
 			{
-				var _stat_key =  _state_mod_keys[j];
+				var _stat_key = _state_mod_keys[j++];
 				var _mod_array = _state_modifiers[$ _stat_key];
 				
 				if (!struct_exists(stats, _stat_key) ) continue;
 				
 				var _stat_to_mod = stats[$ _stat_key];
-				__mall_apply_mod(_stat_to_mod, _mod_array, "equipment_value", "control_value");
+				__ApplyMod(_stat_to_mod, _mod_array, "equipment_value", "control_value");
 			}
-
+			
 			// Apply passive effect modifiers inside the state.
-			var _effects_length = array_length(_state_inst.effects);
-			for (var eff_idx = 0; eff_idx < _effects_length; eff_idx++) 
+			var j=0; repeat(array_length(_state_inst.effects))
 			{
-				var _effect_inst = _state_inst.effects[eff_idx];
+				var _effect_inst = _state_inst.effects[j++];
 				var _effect_modifiers = _effect_inst.stats;
 				var _effect_mod_keys = struct_get_names(_effect_modifiers);
-				var _effect_mod_keys_length = array_length(_effect_mod_keys);
-				
-				for (var j = 0; j < _effect_mod_keys_length; j++) 
+				var k=0; repeat(array_length(_effect_mod_keys) )
 				{
-					var _stat_key = _effect_mod_keys[j];
+					var _stat_key = _effect_mod_keys[k++];
 					var _mod_array = _effect_modifiers[$ _stat_key];
 					
-					if (_mod_array[2] == false && !struct_exists(stats, _stat_key) ) continue;
-					
 					// Process passive modifiers only ([value, numtype, true]).
+					if (_mod_array[2] != true || !struct_exists(stats, _stat_key) ) continue;
+
+					/// @type {Struct.MallStatInstance}
 					var _stat_to_mod = stats[$ _stat_key];
-					__mall_apply_mod(_stat_to_mod, _mod_array, "equipment_value", "control_value");
+					__ApplyMod(_stat_to_mod, _mod_array, "equipment_value", "control_value");
 				}
 			}
 		}
 	}
 
-	/// @desc Applies equipment modifiers.
 	/// @ignore
+	/// @desc Applies equipment modifiers.
 	static __ApplyEquipmentModifiers = function()
 	{
 		var _stat_keys = struct_get_names(stats);
@@ -385,6 +398,7 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		
 		for (var i = 0; i < _stat_keys_length; i++) 
 		{
+			/// @type {Struct.MallStatInstance}
 			var _stat_inst = stats[$ _stat_keys[i] ];
 			_stat_inst.equipment_value = _stat_inst.peak_value;
 		}
@@ -394,6 +408,7 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		
 		for (var i = 0; i < _slot_keys_length; i++) 
 		{
+			/// @type {Struct.MallSlotInstance}
 			var _slot_inst = slots[$ _slot_keys[i]];
 			if (!_slot_inst.is_active) continue;
 			
@@ -413,74 +428,153 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 
 					var _stat_to_mod = stats[$ _item_stat_key];
 					var _mod_array = _item.stats[$ _item_stat_key];
-					__mall_apply_mod(_stat_to_mod, _mod_array, "peak_value", "equipment_value");
+					__ApplyMod(_stat_to_mod, _mod_array, "peak_value", "equipment_value");
 				}
 			}
 		}
 	}
 	
-	/// @desc Finalizes stat calculations, applies clamps, and updates values.
 	/// @ignore
+	/// @desc Finalizes stat calculations, applies clamps, and updates values.
 	static __FinalizeStatValues = function()
 	{
 		var _stat_keys = struct_get_names(stats);
-		var _stat_keys_length = array_length(_stat_keys);
-		
-		for (var i = 0; i < _stat_keys_length; i++) 
+		var i=0; repeat(array_length(_stat_keys))
 		{
-			var _stat_inst = stats[$ _stat_keys[i]];
-			// Update tracked stat values.
-			_stat_inst.last_peak_value =	_stat_inst.peak_value;
-			_stat_inst.last_current_value = _stat_inst.current_value;
-			_stat_inst.control_value =		__MALL_STAT_ROUNDING_METHOD(clamp(_stat_inst.control_value, _stat_inst.template.min_value, _stat_inst.template.max_value));
-			_stat_inst.current_value =		min(_stat_inst.current_value, _stat_inst.control_value);
+			var _key = _stat_keys[i++];
+			/// @type {Struct.MallStatInstance}
+			var _inst = stats[$ _key];
+
+			_inst.last_peak_value =		_inst.peak_value;
+			_inst.last_current_value =	_inst.current_value;
+			_inst.control_value =		__MALL_STAT_ROUNDING_METHOD(clamp(_inst.control_value, _inst.template.min_value, _inst.template.max_value) );
+			_inst.current_value =		min(_inst.current_value, _inst.control_value);
 		}
 	}
 	
-	/// @desc Dispatches an event to each component instance in a component struct.
 	/// @ignore
-	static __DispatchComponentEvent = function(_components, _event_name, _arg1 = undefined, _arg2 = undefined)
+	/// @desc Dispatches an event to each component instance in a component struct.
+	/// @param {Struct} components Struct containing component instances.
+	/// @param {String} event_name Name of the event to dispatch.
+	/// @param {Array<Any>} args Optional argument to pass to the event function.
+	static __DispatchComponentEvent = function(_components, _event_name, _args)
 	{
 		var _keys = struct_get_names(_components);
-		var _keys_length = array_length(_keys);
-		
-		for (var i = 0; i < _keys_length; i++)
+		var i=0; repeat(array_length(_keys) )
 		{
-			var _inst = _components[$ _keys[i]];
+			var _key = _keys[i++];
+			var _inst = _components[$ _key];
 			var _event_func = _inst[$ _event_name];
-			if (is_callable(_event_func)) 
-			{
-				_event_func(_inst, _arg1, _arg2);
-			}
+			// Pass the instance as the first argument, followed by any additional arguments provided.
+			if (is_callable(_event_func) ) { _event_func(_inst, _args); }
 		}
 	}
 	
-	/// @desc Dispatches an event to all equipped items.
 	/// @ignore
-	static __DispatchEquippedItemEvent = function(_event_name, _arg1 = undefined, _arg2 = undefined)
+	/// @desc Dispatches an event to all equipped items.
+	/// @param {String} _event_name Name of the event to dispatch.
+	/// @param {Struct.MallEntity} _entity Entity that owns the equipped items.
+	/// @param {Struct.MallEntity|Undefined} _other_entity Optional opposite entity in combat (target or attacker).
+	/// @param {Struct|Undefined} _payload Optional payload passed through all listeners.
+	/// @returns {Struct|Undefined}
+	static __DispatchEquippedItemEvent = function(_event_name, _entity, _other_entity=undefined, _payload=undefined)
 	{
 		var _slot_keys = struct_get_names(slots);
-		var _slot_keys_length = array_length(_slot_keys);
-		
-		for (var i = 0; i < _slot_keys_length; i++)
+		var i=0; repeat(array_length(_slot_keys) )
 		{
-			var _slot_inst = slots[$ _slot_keys[i]];
+			var _slot_key = _slot_keys[i++];
+			/// @type {Struct.MallSlotInstance}
+			var _slot_inst = slots[$ _slot_key];
 			var _equipped_items = _slot_inst.equipped_items;
-			var _equipped_items_length = array_length(_equipped_items);
-			
-			for (var j = 0; j < _equipped_items_length; j++)
+			// Loop every equipped item in the slot and dispatch the event if the function exists.
+			var j=0; repeat(array_length(_equipped_items) )
 			{
-				var _item_template = mall_get_item(_equipped_items[j]);
-				if (is_undefined(_item_template)) continue;
+				var _item_key = _equipped_items[j++];
+				var _item_template = mall_get_item(_item_key);
+				if (is_undefined(_item_template) ) continue;
 				
-				var _event_func = _item_template[$ _event_name];
-				if (is_callable(_event_func)) _event_func(self, _arg1, _arg2);
+				var _event_func = undefined;
+				if (struct_exists(_item_template, _event_name) )
+				{
+					_event_func = _item_template[$ _event_name];
+				}
+
+				if (is_callable(_event_func) )
+				{
+					var _result = _event_func(_entity, _other_entity, _payload);
+					if (!is_undefined(_result) ) _payload = _result;
+				}
 			}
 		}
+
+		return _payload;
 	}
 
-	/// @desc Notifies entity components after a slot equip/desequip operation.
 	/// @ignore
+	/// @desc Dispatches a combat event to each component instance in a component struct.
+	/// @param {Struct} _components Struct containing component instances.
+	/// @param {String} _event_name Name of the event to dispatch.
+	/// @param {Struct.MallEntity} _other_entity The opposite entity in combat (target or attacker).
+	/// @param {Struct|Undefined} _payload Optional payload passed through all listeners.
+	/// @returns {Struct|Undefined}
+	static __DispatchComponentCombatEvent = function(_components, _event_name, _other_entity, _payload=undefined)
+	{
+		var _keys = struct_get_names(_components);
+		var i=0; repeat(array_length(_keys) )
+		{
+			var _key = _keys[i++];
+			var _inst = _components[$ _key];
+			if (!struct_exists(_inst, _event_name) ) continue;
+
+			var _event_func = _inst[$ _event_name];
+			if (is_callable(_event_func) )
+			{
+				var _result = _event_func(_inst, _other_entity, _payload);
+				if (!is_undefined(_result) ) _payload = _result;
+			}
+		}
+
+		return _payload;
+	}
+
+	/// @ignore
+	/// @desc Dispatches a combat event to all active effect instances in all states.
+	/// @param {String} _event_name Name of the event to dispatch.
+	/// @param {Struct.MallEntity} _other_entity The opposite entity in combat (target or attacker).
+	/// @param {Struct|Undefined} _payload Optional payload passed through all listeners.
+	/// @returns {Struct|Undefined}
+	static __DispatchEffectsCombatEvent = function(_event_name, _other_entity, _payload=undefined)
+	{
+		var _state_keys = struct_get_names(states);
+		var i=0; repeat(array_length(_state_keys) )
+		{
+			var _state_key = _state_keys[i++];
+			/// @type {Struct.MallStateInstance}
+			var _state_inst = states[$ _state_key];
+
+			var _effects = _state_inst.effects;
+			var j=0; repeat(array_length(_effects) )
+			{
+				var _effect_inst = _effects[j++];
+				if (!struct_exists(_effect_inst, _event_name) ) continue;
+
+				var _event_func = _effect_inst[$ _event_name];
+				if (is_callable(_event_func) )
+				{
+					var _result = _event_func(_effect_inst, _other_entity, _payload);
+					if (!is_undefined(_result) ) _payload = _result;
+				}
+			}
+		}
+
+		return _payload;
+	}
+
+	/// @ignore
+	/// @desc Notifies entity components after a slot equip/desequip operation.
+	/// @param {String} event_name Name of the event ("event_on_equip" or "event_on_desequip").
+	/// @param {Struct.MallSlotInstance} slot_inst Slot instance affected by the equip/desequip operation.
+	/// @param {Struct} result Result of the equip/desequip operation.
 	static __NotifySlotChange = function(_event_name, _slot_inst, _result)
 	{
 		__DispatchComponentEvent(stats, _event_name, _slot_inst);
@@ -496,55 +590,41 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		}
 	}
 
+	/// @ignore
+	/// @desc Recalculates stats unless recalculation is currently deferred.
+	static __RecalculateAfterEquipmentChange = function()
+	{
+		if (__is_loading_template) return;
+		if (__is_updating_all_states) return;
+
+		RecalculateStats();
+	}
+
+	/// @ignore
+	/// @desc Constructor for drop entries used in runtime bonus drops.
+	/// @param {String} key Item key.
+	/// @param {Real, Array} quantity Quantity (number or [min, max] array).
+	static __DropItem = function(_key, _quantity, _chance=100) constructor
+	{
+		key = _key;
+		quantity = _quantity;
+		chance = _chance;
+	}
+
+	/// @ignore
+	/// @desc Constructor for drop entries used in runtime bonus drops.
+	/// @param {Real} experience Experience points.
+	/// @param {Array<Struct.MallEntity.__DropItem>} items Array of item drops.
+	static __Drops = function(_exps=0, _items=[]) constructor
+	{
+		exps = _exps;
+		items = _items;
+	}
 	
 	#endregion
 	
-	/// @desc Configures the entity from its template data.
-	static FromTemplate = function()
-	{
-		var _template = __Systemall.__entities[$ template_key];
-		if (is_undefined(_template) )
-		{
-			__mall_error($"Template '{template_key}' was not found.");
-			exit;
-		}
-		
-		// Load custom variables.
-		if (variable_struct_exists(_template, "vars") ) {vars = variable_clone(_template.vars); }
-		
-		// Load event functions.
-		__LoadFunctions(_template);
-		
-		// Load all components in order.
-		__LoadStats(_template);
-		__LoadSlots(_template);
-		__LoadStates(_template);
-		__LoadCommands(_template);
-		__LoadAI(_template);
-		
-		// --- Load drops and experience ---
-		exp_value =			_template[$ "exp_value"]		?? exp_value;
-		loot_table_key =	_template[$ "loot_table_key"]	?? loot_table_key;
-		faction =			_template[$ "faction"]			?? faction;
-		learnset =			_template[$ "learnset"]			?? learnset;
-		flags =				_template[$ "flags"]			?? flags;
-		
-		// Recalculate stats after all components and equipment are loaded.
-		RecalculateStats();
+	#region PUBLIC API
 
-		// Initialize current values at max after first calculation.
-		var _stat_keys = struct_get_names(stats);
-		var _stat_keys_length = array_length(_stat_keys);
-		
-		for (var i = 0; i < _stat_keys_length; i++) 
-		{
-			var _stat_inst = stats[$ _stat_keys[i]];
-			_stat_inst.current_value = _stat_inst.control_value;
-		}
-		
-		return self;
-	}
-	
 	/// @desc Recalculates all stats (used on level up and equip/unequip).
 	static RecalculateStats = function()
 	{
@@ -572,14 +652,12 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		// Check newly learned commands.
 		var i=0; repeat(array_length(learnset) )
 		{
-			var _learn_data = learnset[i];
+			var _learn_data = learnset[i++];
 			// Learn if requirement is between old and new level.
 			if (_learn_data.level > _old_level && _learn_data.level <= level) 
 			{
 				CommandAdd(_learn_data.category, _learn_data.command);
 			}
-			
-			i++;	
 		}
 		
 		// Recalculate stats.
@@ -596,48 +674,56 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	/// @return {Struct.MallStatInstance}
 	static StatGet = function(_key)
 	{
-		if (!mall_exists_stat(_key) ) 
+		if (!mall_exists_stat(_key) )
 		{
-			__mall_error($"Stat '{_key}' does not exist.");
+			__error($"StatGet: stat '{_key}' is not registered in the database.");
+			return undefined;
 		}
-		return (struct_get(stats, _key));
+
+		if (!struct_exists(stats, _key) )
+		{
+			__error($"StatGet: stat '{_key}' is not loaded on entity '{id}'.");
+			return undefined;
+		}
+
+		return (struct_get(stats, _key) );
 	}
 	
-	/// @desc Sets the current value of a stat.
+	/// @desc Sets the current value of a stat. Return the current value after modification.
 	/// @param {String} key Stat key.
 	/// @param {Real} value New value.
 	/// @param {Enum.MALL_NUMTYPE} [numtype]=MALL_NUMTYPE.REAL
 	/// @param {Enum.MALL_STAT_TARGET} [numtarget]=MALL_STAT_TARGET.CONTROL
-	/// @return {Real} Current value after modification.
+	/// @return {Real}
 	static StatSet = function(_key, _value, _numtype=MALL_NUMTYPE.REAL, _numtarget=MALL_STAT_TARGET.CONTROL)
 	{
 		var _stat = StatGet(_key);
 		if (is_undefined(_stat) ) return 0;
 		
 		_stat.last_current_value = _stat.current_value;
-		
 		var _new_value = _value;
-		if (_numtype == MALL_NUMTYPE.PERCENT) {
-			_new_value = _stat.ReturnValueTarget(_numtarget) * _value / 100;
-		}
-		
+
+		// If the value is a percentage, calculate the real value based on the specified target.
+		if (_numtype == MALL_NUMTYPE.PERCENT) { _new_value = _stat.ReturnValueTarget(_numtarget) * _value / 100; }
 		_stat.current_value = clamp(_new_value, _stat.template.min_value, _stat.control_value);
+
 		return _stat.current_value;
 	}
 	
-	/// @desc Adds (or subtracts) a value to a stat.
+	/// @desc Adds (or subtracts) a value to a stat. Return the actual delta applied to the stat after clamps and rounding.
 	/// @param {String} key Stat key.
 	/// @param {Real} value Value to add (can be negative).
 	/// @param {Enum.MALL_NUMTYPE} [numtype]=MALL_NUMTYPE.REAL
 	/// @param {Enum.MALL_STAT_TARGET} [numtarget]=MALL_STAT_TARGET.CURRENT
-	/// @return {Real} Actual delta applied to the value.
+	/// @return {Real}
 	static StatAdd = function(_key, _value, _numtype=MALL_NUMTYPE.REAL, _numtarget = MALL_STAT_TARGET.CURRENT)
 	{
 		var _stat = StatGet(_key);
-		if (is_undefined(_stat)) return 0;
+		if (is_undefined(_stat) ) return 0;
 		
 		var _value_to_add = _value;
-		if (_numtype == MALL_NUMTYPE.PERCENT) {
+		if (_numtype == MALL_NUMTYPE.PERCENT)
+		{
 			var _base_for_percent = _stat.ReturnValueTarget(_numtarget);
 			_value_to_add = (_base_for_percent * _value) / 100;
 		}
@@ -650,113 +736,176 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		return (_stat.current_value - _old_value);
 	}
 	
+	/// @desc Iterates over stat instances and applies a callback function.
+	/// @param {Function} fn Callback function with signature fn(stat_key, stat_instance).
+	static StatForeach = function(_fn)
+	{
+		var _stat_keys = struct_get_names(stats);
+		var i=0; repeat(array_length(_stat_keys))
+		{
+			var _stat_key = _stat_keys[i++];
+			var _stat_inst = stats[$ _stat_key];
+			_fn(_stat_key, _stat_inst);
+		}
+
+		return self;
+	}
+
 	#endregion
 	
 	#region SLOTS API
 	
 	/// @desc Gets a slot instance.
 	/// @param {String} key Slot key.
-	/// @return {Struct.EntitySlotInstance}
+	/// @return {Struct.MallSlotInstance}
 	static SlotGet = function(_key)
 	{
 		if (!mall_exists_slot(_key) )
 		{
-			__mall_error($"Slot '{_key}' does not exist.");
-		}		
+			__error($"SlotGet: slot '{_key}' is not registered in the database.");
+			return undefined;
+		}
+
+		if (!struct_exists(slots, _key) )
+		{
+			__error($"SlotGet: slot '{_key}' is not loaded on entity '{id}'.");
+			return undefined;
+		}
+
 		return (struct_get(slots, _key) );
 	}
 	
 	/// @desc Adds permitted items/types for a slot.
-	/// @param {String} slotKey Slot key.
-	/// @param {String, Array} itemOrTypeKey Item or type key to add.
-	static SlotPermittedAdd = function(_slotKey, _itemOrTypeKey)
+	/// @param {String} key Slot key.
+	/// @param {String, Array} item_or_type_key Item or type key to add.
+	static SlotPermittedAdd = function(_key, _item_or_type_key)
 	{
-		var _slot = SlotGet(_slotKey);
-		if (is_undefined(_slot)) return;
+		var _slot = SlotGet(_key);
+		if (is_undefined(_slot) ) return;
 		
-		if (mall_exists_type(_itemOrTypeKey) ) 
+		if (mall_exists_type(_item_or_type_key) ) 
 		{
-			var _type_items = mall_get_type(_itemOrTypeKey);
-			for (var i = 0; i < array_length(_type_items); i++)
-			{
-				_slot[$ "permitted"][$ _type_items[i]] = 0;
-			}
+			var _type_items = mall_get_type(_item_or_type_key);
+			var _slot_permitted = _slot[$ "permitted"];
+			var i=0; repeat(array_length(_type_items) ) { _slot_permitted[$ _type_items[i++]] = 0; }
+
+			__alert($"Added type '{_item_or_type_key}' to slot '{_key}' permitted list. This allows items of this type to be equipped in the slot.");
 		} 
-		else 
+		else
 		{
-			_slot[$ "permitted"][$ _itemOrTypeKey] = 0;
+			_slot[$ "permitted"][$ _item_or_type_key] = 0;
+			__alert($"Added item '{_item_or_type_key}' to slot '{_key}' permitted list. This allows the item to be equipped in the slot.");
 		}
+
+		return self;
 	}
 	
 	/// @desc Removes permitted items/types.
-	/// @param {String} slotKey Slot key.
-	/// @param {String, Array} itemOrTypeKey Item or type key to remove.
-	static SlotPermittedRemove = function(_slotKey, _itemOrTypeKey)
+	/// @param {String} key Slot key.
+	/// @param {String, Array} item_or_type_key Item or type key to remove.
+	static SlotPermittedRemove = function(_key, _item_or_type_key)
 	{
-		var _slot = SlotGet(_slotKey);
-		if (is_undefined(_slot)) return;
+		var _slot = SlotGet(_key);
+		if (is_undefined(_slot) ) return;
 		
-		if (mall_exists_type(_itemOrTypeKey) )
+		if (mall_exists_type(_item_or_type_key) ) 
 		{
-			var _type_items = mall_get_type(_itemOrTypeKey);
-			for (var i = 0; i < array_length(_type_items); i++)
-			{
-				struct_remove(_slot[$ "permitted"], _type_items[i]);
-			}
-		} 
-		else 
-		{
-			struct_remove(_slot[$ "permitted"], _itemOrTypeKey);
+			var _type_items = mall_get_type(_item_or_type_key);
+			var _slot_permitted = _slot[$ "permitted"];
+			var i=0; repeat(array_length(_type_items) ) { struct_remove(_slot_permitted, _type_items[i++]); }
+
+			__alert($"Removed type '{_item_or_type_key}' from slot '{_key}' permitted list. This prevents items of this type from being equipped in the slot.");
 		}
+		else
+		{
+			struct_remove(_slot[$ "permitted"], _item_or_type_key);
+			__alert($"Removed item '{_item_or_type_key}' from slot '{_key}' permitted list. This prevents the item from being equipped in the slot.");
+		}
+
+		return self;
 	}
 	
-	/// @desc Equips an item into a slot.
+	/// @desc Equips an item into a slot. Returns an Struct with the operation result and any relevant data.
 	/// @param {String} slot_key Slot key.
 	/// @param {String} item_key Item key to equip.
+	/// @return {{success: Bool, previously_equipped: Array<String>|undefined}}
 	static SlotEquip = function(_slot_key, _item_key)
 	{
 		var _slot_inst = SlotGet(_slot_key);
-		if (is_undefined(_slot_inst) ) return { success: false, previously_equipped: undefined };
+		if (is_undefined(_slot_inst) )
+		{
+			__alert($"SlotEquip: slot '{_slot_key}' is invalid or not loaded.");
+			return { success: false, previously_equipped: undefined };
+		}
 		
 		var _equip = _slot_inst[$ "Equip"];
-		if (!is_callable(_equip)) return { success: false, previously_equipped: undefined };
+		if (!is_callable(_equip) )
+		{
+			__error($"SlotEquip: Equip callback is not callable for slot '{_slot_key}'.");
+			return { success: false, previously_equipped: undefined };
+		}
+		
+		// Call the equip function of the slot instance, which returns a result struct with success and previously_equipped fields.
 		var _result = method(_slot_inst, _equip)(_item_key);
 		if (_result.success)
 		{ 
-			RecalculateStats();
+			__RecalculateAfterEquipmentChange();
 			__NotifySlotChange("event_on_equip", _slot_inst, _result);
+
+			__alert($"Item '{_item_key}' was equipped in slot '{_slot_key}'.");
+		}
+		else
+		{
+			__alert($"Failed to equip item '{_item_key}' in slot '{_slot_key}'.");
 		}
 		
-		return _result;
+		return (_result);
 	}
 	
 	/// @desc Unequips an item from a slot.
 	/// @param {String} slot_key Slot key.
 	/// @param {String} item_key Item key to unequip.
+	/// @return {{success: Bool, unequipped_item: String|Array|undefined}}
 	static SlotDesequip = function(_slot_key, _item_key)
 	{
 		var _slot_inst = SlotGet(_slot_key);
-		if (is_undefined(_slot_inst)) return { success: false, unequipped_item: undefined };
+		if (is_undefined(_slot_inst))
+		{
+			__alert($"SlotDesequip: slot '{_slot_key}' is invalid or not loaded.");
+			return { success: false, unequipped_item: undefined };
+		}
 
 		var _desequip = _slot_inst[$ "Desequip"];
-		if (!is_callable(_desequip)) return { success: false, unequipped_item: undefined };
+		if (!is_callable(_desequip) )
+		{
+			__error($"SlotDesequip: Desequip callback is not callable for slot '{_slot_key}'.");
+			return { success: false, unequipped_item: undefined };
+		}
+
+		// Call the desequip function of the slot instance, which returns a result struct with success and unequipped_item fields.
 		var _result = method(_slot_inst, _desequip)(_item_key);
 		if (_result.success) 
 		{ 
-			RecalculateStats();
+			__RecalculateAfterEquipmentChange();
 			__NotifySlotChange("event_on_desequip", _slot_inst, _result);
+
+			__alert($"Item '{_item_key}' was unequipped from slot '{_slot_key}'.");
+		}
+		else
+		{
+			__alert($"Failed to unequip item '{_item_key}' from slot '{_slot_key}'.");
 		}
 		
-		return _result;
+		return (_result);
 	}
 
-	/// @desc Returns equipped item keys for a slot.
+	/// @desc Returns equipped item keys for a slot. Returns an empty array if the slot is empty or undefined.
 	/// @param {String} key Slot key.
-	/// @return {Array<String>} Array of equipped item keys.
+	/// @return {Array<String>}
 	static SlotGetEquipped = function(_key)
 	{
 		var _slot = SlotGet(_key);
-		if (is_undefined(_slot)) return [];
+		if (is_undefined(_slot) ) return [];
 		return (_slot[$ "equipped_items"]);
 	}
 	
@@ -767,7 +916,8 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	static SlotIsPermitted = function(_slot_key, _item_key)
 	{
 		var _slot = SlotGet(_slot_key);
-		if (is_undefined(_slot)) return false;
+		if (is_undefined(_slot) ) return false;
+
 		return (struct_exists(_slot[$ "permitted"], _item_key));
 	}
 	
@@ -777,7 +927,7 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	static SlotIsEmpty = function(_key)
 	{
 		var _slot = SlotGet(_key);
-		if (is_undefined(_slot)) return true;
+		if (is_undefined(_slot) ) return true;
 		return (array_length(_slot[$ "equipped_items"]) == 0);
 	}
 
@@ -801,11 +951,13 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	/// @return {Struct.EntityStateInstance}
 	static StateGet = function(_key)
 	{
-		if (!struct_exists(states, _key))
+		if (!struct_exists(states, _key) )
 		{
-			__mall_alert($"StateGet: state '{_key}' is not loaded on entity '{id}'.");
+			__error($"StateGet: state '{_key}' is not loaded on entity '{id}'.");
+			return undefined;
 		}
-		return states[$ _key];
+
+		return (struct_get(states, _key) );
 	}
 	
 	/// @desc Checks whether a state is active on the entity (has at least one effect).
@@ -816,27 +968,32 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		var _state = StateGet(_key);
 		if (is_undefined(_state) ) return false;
 		
-		return _state[$ "boolean_value"];
+		return (_state[$ "boolean_value"] );
 	}
 	
-	/// @desc Adds an effect to an entity state.
+	/// @desc Adds an effect to an entity state. Return created effect instance, or undefined on failure.
 	/// @param {String} effect_key Effect template key to add.
-	/// @return {Struct.MallEffectInstance} Created effect instance, or undefined on failure.
+	/// @return {Struct.MallEffectInstance|Undefined}
 	static EffectAdd = function(_effect_key)
 	{
 		var _result = { added: undefined, success: false, leftover: undefined }
+
 		// Resolve effect template, return early if missing.
 		var _effect_template = mall_get_effect(_effect_key);
 		if (is_undefined(_effect_template) )
 		{
-			__mall_alert($"EffectAdd: effect template '{_effect_key}' was not found.");
+			__alert($"EffectAdd: effect template '{_effect_key}' was not found.");
 			return _result;
 		}
 		
 		// Resolve target state instance, return early if missing.
 		var _state_key = _effect_template.state_key;
 		var _state_inst = StateGet(_state_key);
-		if (is_undefined(_state_inst) ) return _result;
+		if (is_undefined(_state_inst) )
+		{
+			__alert($"EffectAdd: state '{_state_key}' is not loaded on entity '{id}'.");
+			return _result;
+		}
 		
 		// Create effect instance and validate insertion.
 		var _effect_instance = new MallEffectInstance(_effect_template);
@@ -844,6 +1001,7 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		var _can_add_effect = _state_inst[$ "event_can_add_effect"];
 		if (is_callable(_can_add_effect) && !(method(_state_inst, _can_add_effect)(_state_inst, _effect_instance) ) ) 
 		{
+			__alert($"EffectAdd: event_can_add_effect denied effect '{_effect_key}' for state '{_state_key}'.");
 			// Return the non-added instance as leftover.
 			_result.leftover = _effect_instance;
 			return _result;
@@ -859,14 +1017,23 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		for (var i = 0; i < _state_keys_length; i++)
 		{
 			var _k = _state_keys[i];
+			/// @type {Struct.MallStateInstance}
 			var _current_state_inst = states[$ _k];
 			if (!_current_state_inst.boolean_value) continue;
 			
 			// Current active state prevents target state.
-			if (array_contains(_current_state_inst.template.prevents_states, _state_key) ) return _result;
+			if (array_contains(_current_state_inst.template.prevents_states, _state_key) )
+			{
+				__alert($"EffectAdd: active state '{_k}' prevents state '{_state_key}'.");
+				return _result;
+			}
 			
 			// Check state priority.
-			if (_current_state_inst.template.restricts_action && _state_template.priority < _current_state_inst.template.priority) return _result;
+			if (_current_state_inst.template.restricts_action && _state_template.priority < _current_state_inst.template.priority)
+			{
+				__alert($"EffectAdd: blocked by higher-priority active state '{_k}'.");
+				return _result;
+			}
 		}
 		
 		// Clear conflicting states.
@@ -907,7 +1074,9 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	/// @param {Function} [filter] Optional function to select a specific effect. (_value, _index) with context (template: EffectTemplate).
 	static EffectRemove = function(_effect_key, _filter)
 	{
-		static __default_filter = function(_value, _index) {
+		/// @ignore
+		static __default_filter = function(_value, _index)
+		{
 			return (_value.template.key == self[$ "template"][$ "key"]);
 		}
 		
@@ -917,13 +1086,17 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		var _effect_template = mall_get_effect(_effect_key);
 		if (is_undefined(_effect_template) )
 		{
-			__mall_alert($"EffectRemove: effect template '{_effect_key}' was not found.");
+			__alert($"EffectRemove: effect template '{_effect_key}' was not found.");
 			return _result;
 		}
 		
 		var _state_key = _effect_template.state_key;
 		var _state_inst = StateGet(_state_key);
-		if (is_undefined(_state_inst) ) return _result;
+		if (is_undefined(_state_inst) )
+		{
+			__alert($"EffectRemove: state '{_state_key}' is not loaded on entity '{id}'.");
+			return _result;
+		}
 
 		// Find first matching effect and remove it.
 		var _index = array_find_index(_state_inst[$ "effects"], method({ template: _effect_template }, _filter ?? __default_filter));
@@ -932,12 +1105,17 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		if (_index > -1) _effect_removed = _state_inst[$ "effects"][_index];
 		
 		// Return if no effect matched.
-		if (is_undefined(_effect_removed) ) return _result;
+		if (is_undefined(_effect_removed) )
+		{
+			__alert($"EffectRemove: no effect instance matched key '{_effect_key}' on state '{_state_key}'.");
+			return _result;
+		}
 		
 		// Validate remove policy.
 		var _can_remove_effect = _state_inst[$ "event_can_remove_effect"];
 		if (is_callable(_can_remove_effect) && !method(_state_inst, _can_remove_effect)(_state_inst, _effect_removed) ) 
 		{
+			__alert($"EffectRemove: event_can_remove_effect denied effect '{_effect_key}' on state '{_state_key}'.");
 			return _result;
 		}
 		
@@ -967,7 +1145,24 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 
 		return _result;
 	}
-	
+
+	/// @desc Runs a function for each effect instance in a state.
+	/// @param {String} key State key.
+	/// @param {Function} fn Function to execute. Receives (effect_instance, index).
+	static EffectForeach = function(_key, _fn)
+	{
+		var _state_inst = StateGet(_key);
+		if (is_undefined(_state_inst) || !_state_inst[$ "boolean_value"]) return;
+
+		// Iterate over effects with index.
+		var _effects = _state_inst[$ "effects"];
+		var i=0; repeat (array_length(_effects) )
+		{
+			var _effect_inst = _effects[i++];
+			_fn(_effect_inst, i);
+		}
+	}
+
 	/// @desc Removes all effects from a specific state.
 	/// @param {String} key State key to clear.
 	/// @param {Function} [filter] Optional function to select specific effects. (_value, _index) with context (template: EffectTemplate).
@@ -984,8 +1179,9 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		{
 			var _effect_inst =	_state_inst[$ "effects"][i];
 			var _effect_key =	_effect_inst.template.key;
-			
-			struct_set(_results, _effect_key+i, EffectRemove(_effect_key, _filter) );
+			var _result_key = string(_effect_key) + "_" + string(i);
+
+			struct_set(_results, _result_key, EffectRemove(_effect_key, _filter));
 		}
 		
 		__is_updating_all_states = false;
@@ -1080,7 +1276,6 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		// Recalculate stats when not inside a batched update flow.
 		if (!__is_updating_all_states) RecalculateStats();
 	}
-
 	
 	/// @desc Updates all entity states based on turn timing.
 	/// @param {Enum.MALL_EFFECT_TURN} turn_type Turn timing (START or END).
@@ -1090,57 +1285,47 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		__is_updating_all_states = true;
 		
 		var _keys = variable_struct_get_names(states);
-		var _keys_length = array_length(_keys);
+		var i=0; repeat(array_length(_keys) ) { EffectsUpdateByTurn(_keys[i++], _turn_type); }
 		
-		for (var i = 0; i < _keys_length; i++)
-		{
-			EffectsUpdateByTurn(_keys[i], _turn_type);
-		}
-		
+		// Re-enable regular recalculation flow.
 		__is_updating_all_states = false;
 		
 		RecalculateStats();
 	}
 	
+	/// @desc Runs a function for each entity state.
+	/// @param {Function} fn Function to execute. Receives (state_key, state_instance).
+	static StateForeach = function(_fn)
+	{
+		var _keys = struct_get_names(states);
+		var i=0; repeat(array_length(_keys) ) 
+		{
+			var _key = _keys[i++];
+			var _state_inst = states[$ _key];
+			_fn(_key, _state_inst);
+		}
+	}
+
 	#endregion
 
 	#region COMMANDS API
 	
-	/// @desc Adds a command to a category.
+	/// @desc Adds a command to a category. Returns true if added successfully.
 	/// @param {String} category_key Category key to add into.
 	/// @param {String} command_key Command key to add.
-	/// @return {Bool} Returns true if added successfully.
+	/// @return {Bool}
 	static CommandAdd = function(_category_key, _command_key)
 	{
-		if (!mall_exists_command(_command_key) )
-		{
-			__mall_alert($"CommandAdd: command '{_command_key}' is not registered in the database.");
-			return false;
-		}
-		
-		// Create category if missing.
-		if (!struct_exists(commands[$ "commands"], _category_key) ) 
-		{
-			commands[$ "commands"][$ _category_key] = {};
-			array_push(commands[$ "commands_key"], _category_key);
-		}
-		
-		commands[$ "commands"][$ _category_key][$ _command_key] = true;
-		return true;
+		return commands.AddCommand(_category_key, _command_key);
 	}
 	
-	/// @desc Removes a command from a category.
+	/// @desc Removes a command from a category. Returns true if removed.
 	/// @param {String} category_key Command category key.
 	/// @param {String} command_key Command key to remove.
-	/// @return {Bool} Returns true if removed.
+	/// @return {Bool} 
 	static CommandRemove = function(_category_key, _command_key)
 	{
-		if (struct_exists(commands[$ "commands"], _category_key) )
-		{
-			return struct_remove(commands[$ "commands"][$ _category_key], _command_key);
-		}
-		
-		return false;
+		return commands.RemoveCommand(_category_key, _command_key);
 	}
 	
 	/// @desc Checks whether the entity has a command in a specific category.
@@ -1149,38 +1334,24 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	/// @return {Bool}
 	static CommandExists = function(_category_key, _command_key)
 	{
-		if (struct_exists(commands[$ "commands"], _category_key) ) 
-		{
-			return struct_exists(commands[$ "commands"][$ _category_key], _command_key);
-		}
-		
-		return false;
+		return commands.HasCommand(_category_key, _command_key);
 	}
 	
-	/// @desc Gets the command template if owned by the entity.
+	/// @desc Gets the command template if owned by the entity. Return the command or undefined if the entity does not have the command.
 	/// @param {String} category_key Command category key.
 	/// @param {String} command_key Command key.
-	/// @return {Struct.MallCommand} La template del comando, o undefined.
+	/// @return {Struct.MallCommand|Undefined}
 	static CommandGet = function(_category_key, _command_key)
 	{
-		if (CommandExists(_category_key, _command_key) ) 
-		{
-			return mall_get_command(_command_key);
-		}
-		return undefined;
+		return commands.GetCommand(_category_key, _command_key);
 	}
 	
-	/// @desc Gets all command keys in a category.
+	/// @desc Gets all command keys in a category. Array with command keys or empty array if category does not exist or has no commands.
 	/// @param {String} category_key Category key.
-	/// @return {Array<String>} Array with command keys.
+	/// @return {Array<String>}
 	static CommandGetAll = function(_category_key)
 	{
-		if (struct_exists(commands[$ "commands"], _category_key) ) 
-		{
-			return struct_get_names(commands[$ "commands"][$ _category_key]);
-		}
-		
-		return [];
+		return commands.GetAllCommands(_category_key);
 	}
 	
 	/// @desc Gets a random command key from a category.
@@ -1188,36 +1359,27 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	/// @return {String} Random command key, or undefined.
 	static CommandGetRandom = function(_category_key)
 	{
-		var _all_commands = CommandGetAll(_category_key);
-		var _all_commands_length = array_length(_all_commands);
-		if (_all_commands_length > 0) 
-		{
-			var _random_index = irandom(_all_commands_length - 1);
-			return _all_commands[_random_index];
-		}
-		
-		return undefined;
+		return commands.GetRandomCommand(_category_key);
 	}
 	
 	/// @desc Gets all command categories for the entity.
 	/// @return {Array<String>}
 	static CategoryGetAll = function()
 	{
-		return commands[$ "commands_key"];
+		return commands.GetCategories();
 	}
 	
 	#endregion
 
 	#region MISC API
-	/// @desc Calculates and returns experience and item drops when the entity is defeated.
-	/// @return {Struct} Struct with format { exp: Real, items: Array<Struct> }.
+
+	/// @desc Calculates and returns experience and item drops when the entity is defeated. 
+	/// Return struct with format { exps: Real, items: Array<Struct.MallEntity.__DropItem> }.
+	/// @return {Struct.MallEntity.__Drops}
 	static GetDrops = function()
 	{
-		var _result = {
-			exps: exp_value,
-			items: []
-		};
-		
+		// Start with bonus drops defined at runtime, then merge drops from the loot table and roll final drops.
+		var _result = new __Drops();
 		var _all_drops = [];
 		array_copy(_all_drops, 0, bonus_drops, 0, array_length(bonus_drops) );
 		
@@ -1230,35 +1392,22 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		}
 		
 		// Roll item drops.
-		for (var i = 0; i < array_length(_all_drops); i++) 
+		var i=0; repeat(array_length(_all_drops) )
 		{
-			var _drop_data = _all_drops[i];
+			var _drop_data = _all_drops[i++];
 			var _chance = _drop_data.chance ?? 100;
 			
-			if (random(100) < _chance)
-			{
-				var _quantity = 0;
-				var _quantity_data = _drop_data.quantity ?? 1;
-				
-				if (is_array(_quantity_data) ) 
-				{
-					_quantity = irandom_range(_quantity_data[0], _quantity_data[1]);
-				} 
-				else 
-				{
-					_quantity = _quantity_data;
-				}
-				
-				if (_quantity > 0)
-				{
-					array_push(_result.items, {
-						key:		_drop_data.key,
-						quantity:	_quantity
-					});
-				}
-			}
+			if (random(100) >= _chance) continue;
+
+			// Determine quantity.
+			var _quantity_data = _drop_data.quantity ?? 1;
+			var _quantity = is_array(_quantity_data) ? 
+				irandom_range(_quantity_data[0], _quantity_data[1]) : 
+				_quantity_data;
+			// Add to result if quantity is greater than 0.
+			if (_quantity > 0) { array_push(_result.items, new __DropItem(_drop_data.key, _quantity)); }
 		}
-		
+
 		return _result;
 	}	
 
@@ -1268,12 +1417,7 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	/// @param {Real} [chance]=100 Drop chance (0-100).
 	static AddDrop = function(_key, _quantity, _chance = 100)
 	{
-		array_push(bonus_drops, {
-			key: _key,
-			quantity: _quantity,
-			chance: _chance
-		});
-		
+		array_push(bonus_drops, new __DropItem(_key, _quantity, _chance) );
 		return self;
 	}
 	
@@ -1301,6 +1445,36 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		__DispatchEquippedItemEvent("event_on_turn_end", self);		
 	}
 
+	/// @desc Runs attack hooks on every entity component (stats, slots, states, effects, equipped items).
+	/// @param {Struct.MallEntity} _target Target entity receiving this attack.
+	/// @param {Struct|Undefined} _payload Optional payload passed through all listeners.
+	/// @returns {Struct|Undefined}
+	static OnAttack = function(_target, _payload=undefined)
+	{
+		_payload = __DispatchComponentCombatEvent(stats, "event_on_attack", _target, _payload);
+		_payload = __DispatchComponentCombatEvent(slots, "event_on_attack", _target, _payload);
+		_payload = __DispatchComponentCombatEvent(states, "event_on_attack", _target, _payload);
+		_payload = __DispatchEffectsCombatEvent("event_on_attack", _target, _payload);
+		_payload = __DispatchEquippedItemEvent("event_on_attack", self, _target, _payload);
+
+		return _payload;
+	}
+
+	/// @desc Runs defense hooks on every entity component (stats, slots, states, effects, equipped items).
+	/// @param {Struct.MallEntity} _attacker Entity attacking this defender.
+	/// @param {Struct|Undefined} _payload Optional payload passed through all listeners.
+	/// @returns {Struct|Undefined}
+	static OnDefense = function(_attacker, _payload=undefined)
+	{
+		_payload = __DispatchComponentCombatEvent(stats, "event_on_defense", _attacker, _payload);
+		_payload = __DispatchComponentCombatEvent(slots, "event_on_defense", _attacker, _payload);
+		_payload = __DispatchComponentCombatEvent(states, "event_on_defense", _attacker, _payload);
+		_payload = __DispatchEffectsCombatEvent("event_on_defense", _attacker, _payload);
+		_payload = __DispatchEquippedItemEvent("event_on_defense", self, _attacker, _payload);
+
+		return _payload;
+	}
+
 	/// @desc Selects the action for this turn.
 	/// @param {Struct} battle_context Battle context (allies, enemies).
 	/// @return {Struct} Selected action.
@@ -1309,29 +1483,26 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		// Delegate decision-making to AI when available.
 		if (!is_undefined(ai_instance) )
 		{
-			var _select_action = ai_instance[$ "SelectAction"];
-			if (is_callable(_select_action)) return method(ai_instance, _select_action)(_battle_context);
-			return undefined;
+			return ai_instance.SelectAction(_battle_context);
 		}
-	
+		
 		// Otherwise, caller may use player input or a default action.
 		return undefined;
 	}
 
-	/// @desc Checks whether the entity can perform an action this turn.
-	/// @return {Bool} Returns false if any active state restricts actions.
+	/// @desc Checks whether the entity can perform an action this turn. Returns false if any active state restricts actions.
+	/// @return {Bool}
 	static CanAct = function()
 	{
 		var _state_keys = variable_struct_get_names(states);
-		for (var i = 0; i < array_length(_state_keys); i++) 
+		var i=0; repeat(array_length(_state_keys) )
 		{
-			var _state_inst = states[$ _state_keys[i]];
+			var _key = _state_keys[i++];
+			/// @type {Struct.MallStateInstance}
+			var _state_inst = states[$ _key];
 			
 			// Active state prevents actions.
-			if (_state_inst.boolean_value && _state_inst.template.restricts_action) 
-			{
-				return false;
-			}
+			if (_state_inst.boolean_value && _state_inst.template.restricts_action) { return false; }
 		}
 		
 		return true;
@@ -1367,6 +1538,21 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	/// @return {Struct} Struct containing entity save data.
 	static Export = function()
 	{
+		var _this = self;
+		with (method(self, MallBehavior.Export)() )
+		{
+			id = _this.id;
+			group_key = _this.group_key;
+			exp_value = _this.exp_value;
+			loot_table_key = _this.loot_table_key;
+			bonus_drops = variable_clone(_this.bonus_drops);
+			ai_package = _this.ai_package.Export();
+			faction = _this.faction;
+			aggro = _this.aggro;
+			learnset = variable_clone(_this.learnset);
+			
+		}
+
 		var _export_data =
 		{
 			id:				id,
@@ -1381,26 +1567,26 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		};
 		
 		// Export each stat state.
-		var _stat_keys = variable_struct_get_names(stats);
-		for (var i = 0; i < array_length(_stat_keys); i++) 
-		{
-			var _key = _stat_keys[i];
-			_export_data.stats[$ _key] = stats[$ _key].Export();
+		var _stat_keys = struct_get_names(stats);
+		var i=0; repeat ( array_length(_stat_keys) ) 
+		{ 
+			var _key = _stat_keys[i++];
+			_export_data.stats[$ _key] = stats[$ _key].Export(); 
 		}
 		
 		// Export each slot state.
 		var _slot_keys = variable_struct_get_names(slots);
-		for (var i = 0; i < array_length(_slot_keys); i++) 
-		{
-			var _key = _slot_keys[i];
-			_export_data.slots[$ _key] = slots[$ _key].Export();
+		var i=0; repeat ( array_length(_slot_keys) ) 
+		{ 
+			var _key = _slot_keys[i++];
+			_export_data.slots[$ _key] = slots[$ _key].Export(); 
 		}
 		
 		// Export each state state.
 		var _state_keys = variable_struct_get_names(states);
-		for (var i = 0; i < array_length(_state_keys); i++) 
-		{
-			var _key = _state_keys[i];
+		var i=0; repeat ( array_length(_state_keys) ) 
+		{ 
+			var _key = _state_keys[i++];
 			_export_data.states[$ _key] = states[$ _key].Export();
 		}
 		
@@ -1411,60 +1597,44 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	/// @param {Struct} data Struct containing saved data.
 	static Import = function(_data)
 	{
+		// Parent Import.
+		method(self, MallBehavior.Import)(_data);
+
 		// Restore base properties.
-		id =		_data[$ "id"]			?? _data[$ "instance_id"] ?? id;
-		level =		_data[$ "level"]		?? 1;
-		group_key =	_data[$ "group_key"]	?? "";
-		vars =		_data[$ "vars"]			?? {};
-		// Load flags.
-		flags =		_data[$ "flags"]		?? {};
-		
-		// Import each stat state.
-		if (struct_exists(_data, "stats") ) 
-		{
-			var _import_stats = _data[$ "stats"];
-			var _stat_keys = struct_get_names(_import_stats);
-			var _stat_keys_length = array_length(_stat_keys);
+		id = _data[$ "id"] ?? id;
+		group_key = _data[$ "group_key"] ?? group_key;
 
-			for (var i = 0; i < _stat_keys_length; i++) 
-			{
-				var _key = _stat_keys[i];
-				if (struct_exists(stats, _key) ) { stats[$ _key].Import(_import_stats[$ _key]); }
-			}
-		}
+		// 
+		exp_value = _data[$ "exp_value"] ?? exp_value;
+		loot_table_key = _data[$ "loot_table_key"] ?? loot_table_key;
+		bonus_drops = _data[$ "bonus_drops"] ?? bonus_drops;
 		
-		// Import each slot state.
-		if (struct_exists(_data, "slots") ) 
+		// Load AI.
+		ai_package = _data[$ "ai_instance"] ?? ai_instance;
+		if (mall_exists_ai_package(ai_package) )
 		{
-			var _import_slots = _data[$ "slots"];
-			var _slot_keys = struct_get_names(_import_slots);
-			var _slot_keys_length = array_length(_slot_keys);
-
-			for (var i = 0; i < _slot_keys_length; i++) 
-			{
-				var _key = _slot_keys[i];
-				if (struct_exists(slots, _key) ) { slots[$ _key].Import(_import_slots[$ _key]); }
-			}
+			ai_package = mall_get_ai_package(ai_package);
 		}
-		
-		// Import each state state.
-		if (struct_exists(_data, "states") ) 
-		{
-			var _import_states = _data[$ "states"];
-			var _state_keys = struct_get_names(_import_states);
-			var _state_keys_length = array_length(_state_keys);
 
-			for (var i = 0; i < _state_keys_length; i++) 
-			{
-				var _key = _state_keys[i];
-				if (struct_exists(states, _key) ) { states[$ _key].Import(_import_states[$ _key]); }
-			}
-		}
+		faction = _data[$ "faction"] ?? faction;
+		aggro = _data[$ "aggro"] ?? aggro;
+		learnset = _data[$ "learnset"] ?? learnset;
+
+		// 
+		level = _data[$ "level"] ?? level;
+
+		__LoadStats(_data);
+		__LoadSlots(_data);
+		__LoadStates(_data);
+		__LoadCommands(_data);
+		__LoadAI(_data);
 		
 		// Recalculate everything to apply loaded changes.
 		RecalculateStats();
+
+		return self;
 	}
-	
+
 	#endregion
 
 	#region STATE QUERY API
@@ -1474,13 +1644,14 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	static StateGetAllActive = function()
 	{
 		var _active_states = [];
-		var _state_keys = variable_struct_get_names(states);
-		var _state_keys_length = array_length(_state_keys);
-
-		for (var i = 0; i < _state_keys_length; i++) 
+		var _state_keys = struct_get_names(states);
+		var i=0; repeat(array_length(_state_keys) )
 		{
-			var _key = _state_keys[i];
-			if (states[$ _key].boolean_value) { array_push(_active_states, _key); }
+			var _key = _state_keys[i++];
+			/// @type {Struct.MallStateInstance}
+			var _state_inst = states[$ _key];
+
+			if (_state_inst.boolean_value) { array_push(_active_states, _key); }
 		}
 
 		return _active_states;
@@ -1493,12 +1664,12 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	{
 		var _active_states = [];
 		var _type_upper = string_upper(_type);
+		var _state_keys = struct_get_names(states);
 
-		var _state_keys = variable_struct_get_names(states);
-		var _state_keys_length = array_length(_state_keys);		
-		for (var i = 0; i < _state_keys_length; i++) 
+		var i=0; repeat(array_length(_state_keys) )
 		{
-			var _key = _state_keys[i];
+			var _key = _state_keys[i++];
+			/// @type {Struct.MallStateInstance}
 			var _state_inst = states[$ _key];
 			if (_state_inst.boolean_value && _state_inst.template.state_type == _type_upper) 
 			{
@@ -1535,6 +1706,13 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		return (struct_exists(flags, _key) );
 	}
 	
+	/// @desc Runs a function for each entity flag.
+	/// @param {Function} fn Function to execute. Receives (value, key).
+	static FlagForeach = function(_fn)
+	{
+		struct_foreach(flags, _fn);
+	}
+
 	#endregion
 
 	#region API DEBUG
@@ -1542,31 +1720,33 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 	/// @return {String} Formatted string with entity summary.
 	static toString = function()
 	{
-		var _str = $"[ENTITY: {template_key} (Lvl {level})]";
+		var _str = $"[MallEntity: {template_key} (Lvl {level})]";
 		
 		// Stats
 		_str += "\n- Stats:";
-		var _stat_keys = variable_struct_get_names(stats);
+		var _stat_keys = struct_get_names(stats);
 		// Sort alphabetically for easier reading.
 		array_sort(_stat_keys, true);
 		
-		for (var i = 0; i < array_length(_stat_keys); i++) 
+		var i=0; repeat(array_length(_stat_keys) )
 		{
-			var _k = _stat_keys[i];
+			var _k = _stat_keys[i++];
+			/// @type {Struct.MallStatInstance}
 			var _s = stats[$ _k];
 			// Format: NAME: Current/Max
 			_str += $"\n  * {_k}: {_s.current_value}/{_s.control_value}";
 		}
-		
+
 		// Slots (show only those with items).
 		_str += "\n- Slots:";
-		var _slot_keys = variable_struct_get_names(slots);
+		var _slot_keys = struct_get_names(slots);
 		array_sort(_slot_keys, true);
 		var _has_items = false;
 		
-		for (var i = 0; i < array_length(_slot_keys); i++) 
+		var i=0; repeat(array_length(_slot_keys) )
 		{
-			var _k = _slot_keys[i];
+			var _k = _slot_keys[i++];
+			/// @type {Struct.MallSlotInstance}
 			var _s = slots[$ _k];
 			if (array_length(_s.equipped_items) > 0) 
 			{
@@ -1574,21 +1754,46 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 				_has_items = true;
 			}
 		}
+
 		if (!_has_items) _str += " None";
 		
 		// States (show only active ones).
 		_str += "\n- States:";
-		var _state_keys = variable_struct_get_names(states);
+		var _state_keys = struct_get_names(states);
 		array_sort(_state_keys, true);
 		var _has_states = false;
 		
-		for (var i = 0; i < array_length(_state_keys); i++) 
+		var i=0; repeat(array_length(_state_keys) )
 		{
-			var _k = _state_keys[i];
+			var _k = _state_keys[i++];
+			/// @type {Struct.MallStateInstance}
 			var _s = states[$ _k];
-			if (_s.boolean_value) 
+			if (_s[$ "boolean_value"])
 			{
-				var _duration_text = (_s.iterator.duration == infinity) ? "Inf" : string(_s.iterator.duration - _s.iterator.ticks_elapsed);
+				var _duration_left = 0;
+				var _has_finite_duration = false;
+				var _has_infinite_duration = false;
+				/// @type {Array<Struct.MallEffectInstance>}
+				var _effects = _s.effects;
+				var j=0; repeat(array_length(_effects) )
+				{
+					/// @type {Struct.MallEffectInstance}
+					var _effect_inst = _effects[j++];
+					var _iter = (_effect_inst.template.turn_type == MALL_EFFECT_TURN.END) ? _effect_inst.iterator_end : _effect_inst.iterator_start;
+					var _iter_duration = _iter.duration;
+
+					if (_iter_duration == infinity)
+					{
+						_has_infinite_duration = true;
+						continue;
+					}
+
+					_has_finite_duration = true;
+					var _remaining = max(0, _iter_duration - _iter.ticks_elapsed);
+					_duration_left = max(_duration_left, _remaining);
+				}
+
+				var _duration_text = (_has_infinite_duration && !_has_finite_duration) ? "Inf" : string(_duration_left);
 				_str += $"\n  * {_k} ({_duration_text} trn)";
 				_has_states = true;
 			}
@@ -1598,5 +1803,7 @@ function MallEntity(_template_key, _instance_id) : MallBehavior(_template_key) c
 		return _str;
 	}
 	
+	#endregion
+
 	#endregion
 }

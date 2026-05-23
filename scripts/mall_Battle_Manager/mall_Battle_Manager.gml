@@ -1,53 +1,122 @@
 /// @desc Manages battle state and combat flow.
 /// @param {String} _encounter_key Encounter template key.
 /// @param {Struct.MallEntityGroup} _player_group Player party group instance.
-function BattleManager(_encounter_key, _player_group) constructor
+function MallBattleManager(_encounter_key, _player_group) : MallBehavior(_encounter_key) constructor
 {
-	// --- Encounter data ---
+	/// @type {Struct.MallBattleEncounter} The encounter template defining this battle.
 	encounter_template = mall_get_battle_encounter(_encounter_key);
-	player_group = _player_group;
-
-	if (is_undefined(encounter_template))
+	if (is_undefined(encounter_template) )
 	{
-		__mall_error($"BattleManager could not find encounter template '{_encounter_key}'.");
+		__mall_error($"MallBattleManager could not find encounter template '{_encounter_key}'.");
 		exit;
 	}
-	
-	// Enemy groups, each with its own bag if configured.
+
+	/// @type {Struct.MallEntityGroup} The player's party group instance.
+	player_group = _player_group;
+
+	/// @type {Array<Struct.MallEntityGroup>} Enemy groups, each with its own bag if configured.
 	enemy_groups = [];
 	
-	// --- Battle runtime state ---
+	/// @type {Array<Struct.MallEntity>} Queue of entities in current turn order.
 	turn_queue = [];
+	
+	/// @type {Real} Current index in turn queue.
 	current_turn_index = 0;
+	
+	/// @type {Real} Current wave index in encounter.
 	current_wave_index = 0;
+
+	/// @type {Bool} Whether the battle is currently active. Used to prevent actions when battle has ended but manager instance still exists.
 	is_battle_active = false;
 	
+	/// @type {Struct} Additional variables can be stored here for access in events. They are cleaned between battles.
+	vars = {};
+
 	#region EVENTS
-	// Runs when battle starts.
+
+	/// @context Struct.MallBattleManager
+	/// @desc (EVENT) Runs at the start of battle, after encounter template is loaded and before first wave starts.
+	/// @param {Struct.MallEntityGroup} _player_group The player's party group instance.
+	/// @param {Struct.MallEntityGroup} _enemy_group  The current wave's enemy group instance.
+	/// @param {Struct} _params Additional parameters (for example, { encounter: Struct.MallBattleEncounter }).
+	/// @return {Struct.MallResult}
 	event_on_start = "";
-	// Runs when battle ends, receiving rewards if player won.
+	
+	/// @context Struct.MallBattleManager
+	/// @desc (EVENT) Runs at the end of battle, after victory/defeat is determined and rewards are calculated (if applicable).
+	/// @param {Struct.MallEntityGroup} _player_group The player's party group instance.
+	/// @param {Struct.MallEntityGroup} _enemy_group  The current wave's enemy group instance.
+	/// @param {Struct} _params Additional parameters (for example, { victory: Bool, rewards: Struct }).
+	/// @return {Struct.MallResult}
 	event_on_end = "";
-	// Validates whether escape is allowed (must return Bool).
+
+	/// @context Struct.MallBattleManager
+	/// @desc (EVENT) Validates whether escape is allowed (must return Bool).
+	/// @param {Struct.MallEntityGroup} _player_group The player's party group instance.
+	/// @param {Struct.MallEntityGroup} _enemy_group  The current wave's enemy group instance.
+	/// @param {Struct} _params Additional parameters (for example, { attempted_by: Struct.MallEntity }).
+	/// @return {Bool}
 	event_can_escape_check = ""; 
-	// Runs on successful escape.
+
+	/// @context Struct.MallBattleManager
+	/// @desc (EVENT) Runs on successful escape.
+	/// @param {Struct.MallEntityGroup} _player_group The player's party group instance.
+	/// @param {Struct.MallEntityGroup} _enemy_group  The current wave's enemy group instance.
+	/// @param {Struct} _params Additional parameters (for example, { attempted_by: Struct.MallEntity }).
+	/// @return {Struct.MallResult}
 	event_on_escape_success = "";
-	// Runs on failed escape.
+
+	/// @context Struct.MallBattleManager
+	/// @desc (EVENT) Runs on failed escape.
+	/// @param {Struct.MallEntityGroup} _player_group The player's party group instance.
+	/// @param {Struct.MallEntityGroup} _enemy_group  The current wave's enemy group instance.
+	/// @param {Struct} _params Additional parameters (for example, { attempted_by: Struct.MallEntity }).
+	/// @return {Struct.MallResult}
 	event_on_escape_fail = "";
 
-	// Runs whenever a new entity is added to battle.
+	/// @context Struct.MallBattleManager
+	/// @desc (EVENT) Runs whenever an entity is added to battle (for example, at the start of a new wave).
+	/// @param {Struct.MallEntityGroup} _player_group The player's party group instance.
+	/// @param {Struct.MallEntityGroup} _enemy_group  The current wave's enemy group instance.
+	/// @param {Struct.MallEntity} _entity The entity being added.
+	/// @param {Struct} _params Additional parameters (for example, { added_by: Struct.MallEntity }).
+	/// @return {Struct.MallResult}
 	event_on_entity_added = "";
-	// Runs whenever an entity is defeated/removed from battle.
+
+	/// @context Struct.MallBattleManager
+	/// @desc (EVENT) Runs whenever an entity is defeated/removed from battle.
+	/// @param {Struct.MallEntityGroup} _player_group The player's party group instance.
+	/// @param {Struct.MallEntityGroup} _enemy_group  The current wave's enemy group instance.
+	/// @param {Struct.MallEntity} _entity The entity being removed.
+	/// @param {Struct} _params Additional parameters (for example, { defeated_by: Struct.MallEntity }).
+	/// @return {Struct.MallResult}
 	event_on_entity_removed = "";
 	
-	// Defines logic to build initial turn order.
+	/// @context Struct.MallBattleManager
+	/// @desc (EVENT) Runs when turn order is created or rebuilt, before the next turn starts. Can be used to alter or fully define turn order.
+	/// @param {Array<Struct.MallEntity>} _entities All entities currently in battle that should be considered for turn order.
+	/// @param {Struct} _params Additional parameters (for example, { current_wave: Real }).
 	event_on_turn_order_create = "";
-	// Runs at start of a new turn round.
-	event_on_turn_start = "";	
-	// Runs after each action to reorder/update turn queue.
+
+	/// @context Struct.MallBattleManager
+	/// @desc (EVENT) Runs at the start of each turn, before the active entity takes action.
+	/// @param {Struct.MallEntity} _active_entity The entity whose turn it is.
+	/// @param {Struct} _params Additional parameters (for example, { current_wave: Real }).
+	event_on_turn_start = "";
+
+	/// @context Struct.MallBattleManager
+	/// @desc (EVENT) Runs during each turn, after the active entity takes action but before the turn ends. Can be used for mid-turn effects or checks.
+	/// @param {Struct.MallEntity} _active_entity The entity whose turn it is.
+	/// @param {Struct} _params Additional parameters (for example, { current_wave: Real }).
 	event_on_turn_update = "";
-	// Runs when all entities have completed one round.
+
+	/// @context Struct.MallBattleManager
+	/// @desc (EVENT) Runs at the end of each turn, after all actions and updates for the active entity are resolved.
+	/// @param {Struct.MallEntity} _active_entity The entity whose turn it is.
+	/// @param {Struct} _params Additional parameters (for example, { current_wave: Real }).
 	event_on_turn_end = "";
 	
+	// Load event function references from encounter template.
 	__LoadFunctions();
 
 	#endregion
@@ -58,25 +127,26 @@ function BattleManager(_encounter_key, _player_group) constructor
 	/// @desc Loads encounter event function references.
 	static __LoadFunctions = function()
 	{
-		event_on_start = mall_get_event(encounter_template[$ "event_on_start"] ?? "");
-		event_on_end = mall_get_event(encounter_template[$ "event_on_end"] ?? "");
+		/// All the events are executed with the same context (the battle manager instance) and receive the same base parameters (player group, enemy group, and additional params struct), 
+		/// so they can be used interchangeably in different event hooks depending on the encounter design.
+		// -- Init --
+		event_on_start =			method(self, mall_get_event(encounter_template[$ "event_on_start"] ));
+		event_on_end = 				method(self, mall_get_event(encounter_template[$ "event_on_end"]   ));
 
-		// Escape validation event (must return Bool).
-		event_can_escape_check = __mall_get_event_check_true(encounter_template[$ "event_can_escape_check"] ?? "" ); 
-		// Escape success event.
-		event_on_escape_success = mall_get_event(encounter_template[$ "event_on_escape_success"] ?? "");
-		// Escape fail event.
-		event_on_escape_fail = mall_get_event(encounter_template[$ "event_on_escape_fail"] ?? "");
+		// -- Escape --
+		event_can_escape_check =	method(self, __mall_get_event_check_true(encounter_template[$ "event_can_escape_check"]	)); 
+		event_on_escape_success =	method(self, mall_get_event(encounter_template[$ "event_on_escape_success"]				));
+		event_on_escape_fail =		method(self, mall_get_event(encounter_template[$ "event_on_escape_fail"]				));
+		
+		// -- Entities --
+		event_on_entity_added =		method(self, mall_get_event(encounter_template[$ "event_on_entity_added"]			));
+		event_on_entity_removed =	method(self, mall_get_event(encounter_template[$ "event_on_entity_removed"]			));
 
-		// Entity add/remove events.
-		event_on_entity_added = mall_get_event(encounter_template[$ "event_on_entity_added"] ?? "");
-		event_on_entity_removed = mall_get_event(encounter_template[$ "event_on_entity_removed"] ?? "");
-
-		// Turn queue events.
-		event_on_turn_order_create = mall_get_event(encounter_template[$ "event_on_turn_order_create"] ?? "");
-		event_on_turn_start = mall_get_event(encounter_template[$ "event_on_turn_start"] ?? "");
-		event_on_turn_update = mall_get_event(encounter_template[$ "event_on_turn_update"] ?? "");
-		event_on_turn_end = mall_get_event(encounter_template[$ "event_on_turn_end"] ?? "");
+		// -- Turn flow --
+		event_on_turn_order_create =	method(self, mall_get_event(encounter_template[$ "event_on_turn_order_create"]	));
+		event_on_turn_start =			method(self, mall_get_event(encounter_template[$ "event_on_turn_start"]			));
+		event_on_turn_update =			method(self, mall_get_event(encounter_template[$ "event_on_turn_update"]		));
+		event_on_turn_end =				method(self, mall_get_event(encounter_template[$ "event_on_turn_end"]			));
 	}
 	
 	/// @ignore
@@ -108,16 +178,12 @@ function BattleManager(_encounter_key, _player_group) constructor
 		if (struct_exists(_group_template, "bag_template") ) 
 		{
 			var _bag_template_key = _group_template[$ "bag_template"];
+			/// @type {Struct.MallBag} The bag template to use for this enemy group, if defined.
 			var _bag_template = mall_get_bag(_bag_template_key);
-			
-			if (!is_undefined(_bag_template) ) 
+			// Bag template is optional, but if a key is provided it must be valid.
+			if (!is_undefined(_bag_template) )
 			{
-				// Create a new bag instance from template.
-				var _create_bag_instance = _bag_template[$ "CreateInstance"];
-				if (is_callable(_create_bag_instance))
-				{
-					_new_enemy_group.bag = _create_bag_instance(_new_enemy_group.key + "_bag");
-				}
+				_new_enemy_group.bag = _bag_template.CreateInstance(_new_enemy_group.key + "_bag"); 
 			}
 		}
 		
@@ -130,7 +196,7 @@ function BattleManager(_encounter_key, _player_group) constructor
 			var _level = is_array(_pos_data.level) ? irandom_range(_pos_data.level[0], _pos_data.level[1]) : _pos_data.level;
 			
 			var _enemy_inst = mall_entity_create_instance(_pos_data.template_key, _level);
-			if (is_undefined(_enemy_inst))
+			if (is_undefined(_enemy_inst) )
 			{
 				__mall_alert($"__ProcessNextWave: skipping position {i} — entity template '{_pos_data.template_key}' could not be created.");
 				continue;
@@ -210,14 +276,12 @@ function BattleManager(_encounter_key, _player_group) constructor
 		{
 			// Victory: last configured wave cleared.
 			__EndBattle(true);
-			// Battle ended.
 			return true;
 		}
 		else
 		{
 			// Advance to next wave.
 			__ProcessNextWave();
-			// Battle state changed (new wave), turn flow must restart.
 			return true;
 		}
 	}
@@ -234,14 +298,16 @@ function BattleManager(_encounter_key, _player_group) constructor
 			var _rewards = __CalculateRewards();
 			mall_broadcast_post("BATTLE_VICTORY", { encounter: self, rewards: _rewards });
 			
-			if (is_callable(event_on_end) ) event_on_end(self, _rewards);
+			if (is_callable(event_on_end) ) event_on_end(_rewards);
 		}
 		else
 		{
 			mall_broadcast_post("BATTLE_DEFEAT", { encounter: self });
 		}
 		
-		__Systemall.__battle_manager = undefined;
+		// Clear battle manager instance for GC.
+		delete vars;
+		delete __Systemall.__battle_manager;
 	}
 	
 	/// @ignore
@@ -261,9 +327,9 @@ function BattleManager(_encounter_key, _player_group) constructor
 			var _defeated_size = array_length(_defeated_entities);
 			for (var j = 0; j < _defeated_size; j++)
 			{
+				/// @type {Struct.MallEntity} The defeated enemy instance.
 				var _entity = _defeated_entities[j];
-				
-				// Read entity drops.
+				/// @type {Struct.MallEntity.__Drops} Read entity drops.
 				var _drops = _entity.GetDrops();
 				
 				// Add EXP.
@@ -280,7 +346,7 @@ function BattleManager(_encounter_key, _player_group) constructor
 				// Merge item drops.
 				var _drops_items = _drops.items;
 				var _drops_size = array_length(_drops_items);
-				for (var k = 0; k < _drops_size; k++) 
+				for (var k = 0; k < _drops_size; k++)
 				{
 					var _drop_item = _drops_items[k];
 					if (struct_exists(_end_rewards.items, _drop_item.key) ) 
@@ -303,13 +369,12 @@ function BattleManager(_encounter_key, _player_group) constructor
 	#region BATTLE FLOW
 	
 	/// @desc Starts battle flow.
-	/// @returns {Struct.BattleManager} Self reference for chaining.
 	static StartBattle = function()
 	{
 		is_battle_active = true;
 		mall_broadcast_post("BATTLE_START", { encounter: self });
 		// Call start event if defined.
-		if (is_callable(event_on_start) ) event_on_start(self);
+		if (is_callable(event_on_start) ) event_on_start();
 		
 		__ProcessNextWave();
 		NextTurn();
@@ -347,10 +412,10 @@ function BattleManager(_encounter_key, _player_group) constructor
 	}
 	
 	/// @desc Runs selected action and advances turn.
-	/// @param {Struct.BattleAction} _action Action to execute.
+	/// @param {Struct.MallBattleAction} action Action to execute.
 	static ExecuteAction = function(_action)
 	{
-		if (!is_battle_active) exit;
+		if (!is_battle_active) return;
 		
 		var _caster = turn_queue[current_turn_index];
 		
@@ -361,19 +426,20 @@ function BattleManager(_encounter_key, _player_group) constructor
 			current_turn_index++;
 			NextTurn();
 
-			exit;
+			return;
 		}
 		
 		var _command = _action.source;
 		var _targets = _action.targets;
 		
-		if (!is_struct(_command))
+		if (!is_struct(_command) )
 		{
 			__mall_error($"ExecuteAction: action.source is not a valid command struct (got {typeof(_command)}). Turn will be skipped.");
 			_caster.OnTurnEnd();
 			current_turn_index++;
 			NextTurn();
-			exit;
+			
+			return;
 		}
 		
 		var _check_func =	__mall_get_event_check_true(_command.event_check);

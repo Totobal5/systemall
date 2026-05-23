@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"mall_Battle",
+  "%Name":"mall_Battle_Manager_Functions",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"mall_Battle",
+  "name":"mall_Battle_Manager_Functions",
   "parent":{
     "name":"Battle",
     "path":"folders/Systemall/Battle.yy",

@@ -2,43 +2,37 @@
 /// @param {String} item_key Item template key.
 /// @param {Real} count Quantity for this item entry.
 /// @param {Struct} [vars] Optional unique data struct (for example { enchantment: "fire" }).
-function MallItemInstance(_item_key, _count, _vars = {}) constructor
+function MallItemInstance(_item_key, _count, _vars = {}) : Mall(_item_key) constructor
 {
-    /// @desc Item template key.
-    /// @type {String}
-    key = _item_key;
-    
-    /// @desc Amount in this entry.
-    /// @type {Real}
-    count = _count;
-    
-    /// @desc Entry-specific variables.
-    /// @type {Struct}
-    vars = _vars;
-    
-    #region API
-    
-    /// @desc Exports this instance to a plain struct for saving.
-    /// @returns {{key: String, count: Real, vars: Struct}}
-    static Export = function()
-    {
+	// Set item vars to the argument struct or an empty struct if not provided.
+	vars = _vars;
+	
+	/// @type {Real} Amount in this entry.
+	count = _count;
+	
+	#region PUBLIC API
+	
+	/// @desc Exports this instance to a plain struct for saving.
+	/// @returns {Struct}
+	static Export = function()
+	{
 		var _this = self;
-        return {
-            key: _this.key,
-            count: _this.count,
-            vars: variable_clone(_this.vars)
-        };
-    }
-    
-    /// @desc Imports data from a saved struct.
-    /// @param {{key: String, count: Real, vars: Struct}} data The data struct to import.
-    /// @returns {undefined}
-    static Import = function(_data)
-    {
-        key = _data.key;
-        count = _data.count;
-        vars = variable_clone(_data.vars);
-    }
-    
-    #endregion
+		with (method(self, Mall.Export)() )
+		{
+			count = _this.count;
+			return self;
+		}
+	}
+	
+	/// @desc Imports data from a saved struct.
+	/// @param {Struct} data The data struct to import.
+	static Import = function(_data)
+	{
+		method(self, Mall.Import) (_data);
+		count = _data[$ "count"] ?? count;
+
+		return self;
+	}
+	
+	#endregion
 }

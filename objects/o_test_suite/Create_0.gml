@@ -42,6 +42,11 @@ __mall_test_party_entity(runner);
 __mall_test_party_entity_events(runner);
 
 // =============================================================================
+// SUITE 6.1: PRUEBAS INTEGRALES DE API DE ENTITY + ITEM/ITEM_INSTANCE
+// =============================================================================
+__mall_test_entity_api_full(runner);
+
+// =============================================================================
 // SUITE 7: PRUEBAS DEL SISTEMA DE IA
 // =============================================================================
 __mall_test_ai(runner);
@@ -55,6 +60,11 @@ __mall_test_wate(runner);
 // SUITE 9: PRUEBAS DEL SISTEMA DE BROADCAST Y MENSAJES
 // =============================================================================
 __mall_test_broadcast(runner);
+
+// =============================================================================
+// SUITE 10: PRUEBAS DEL SISTEMA DE TYPES (REFactor SIN LEGACY)
+// =============================================================================
+__mall_test_types(runner);
 
 
 // --- EJECUTAR TODAS LAS PRUEBAS ---

@@ -1,7 +1,7 @@
 {
     "type": "slots",
     "SLOT_ARMA": {
-		"permited":	 "WEAPON", // Solo permitir armas
+		"permitted": "WEAPON",
         "max_items": 1,
         "event_on_attack": "EVT_SLOT_ARMA_OnAttack" 
     },

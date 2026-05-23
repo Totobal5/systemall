@@ -15,7 +15,7 @@
         "buy_value": 200,
         "sell_value": 100,
         "stats": {
-            "FUERZA": [10, "real"]
+            "FUERZA+": 10
         },
         "event_on_equip": "EVT_ITEM_DefaultEquip",
         "event_on_desequip": "EVT_ITEM_DefaultDesequip"
@@ -25,7 +25,7 @@
         "buy_value": 10000,
         "sell_value": 5000,
         "stats": {
-            "FUERZA": [24, "real"] // [valor, "real" o "percent"]
+            "FUERZA+": 24 // Use key suffix (+ or %) for num type in 4.0 format.
         },
         "event_on_equip": "EVT_ITEM_DefaultEquip",
         "event_on_desequip": "EVT_ITEM_DefaultDesequip"

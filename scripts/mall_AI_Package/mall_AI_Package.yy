@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"mall_Broadcast_Message",
+  "%Name":"mall_AI_Package",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"mall_Broadcast_Message",
+  "name":"mall_AI_Package",
   "parent":{
     "name":"Components",
     "path":"folders/Systemall/Components.yy",

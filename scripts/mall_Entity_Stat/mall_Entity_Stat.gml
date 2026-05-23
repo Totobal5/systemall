@@ -19,10 +19,23 @@ function MallStatInstance(_template, _entity) constructor
 	/// @type {Real}
 	base_value = template.base_value;
 	
-	// Calculated values.
-	
-	/// @desc Maximum value after applying level scaling.
+	/// @desc Growth amount applied per level.
 	/// @type {Real}
+	growth = template.growth;
+
+	/// @desc Curve name, for example "linear".
+	/// @type {String}
+	curve_name = template.curve_name;
+
+	/// @desc Reference to an AnimationCurveChannel.
+	/// @type {Any|undefined}
+	growth_curve = template.growth_curve;
+
+	if (is_undefined(growth_curve) && curve_name != "" && mall_asset_exists(curve_name))
+	{
+		growth_curve = mall_asset_get(curve_name);
+	}
+
 	peak_value = 0;
 	
 	/// @desc Value after applying equipment modifiers.
@@ -44,21 +57,7 @@ function MallStatInstance(_template, _entity) constructor
 	/// @desc Previous current value snapshot.
 	/// @type {Real}
 	last_current_value = current_value;
-	
-	// --- Growth configuration. ---
-	
-	/// @desc Growth amount applied per level.
-	/// @type {Real}
-	growth = 0;
-	
-	/// @desc Curve name, for example "linear".
-	/// @type {String}
-	curve_name = "";
-	
-	/// @desc Reference to an AnimationCurveChannel.
-	/// @type {Any|undefined}
-	growth_curve = undefined;
-	
+		
 	#region EVENTS
 	
 	/// @desc Runs once when the instance is created for an entity.

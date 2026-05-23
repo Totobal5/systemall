@@ -1,124 +1,117 @@
-/// @ignore
-/// @desc Internal compartment used by complex bag categories.
-function __MallCategorySlot(_slot_limit) constructor
-{
-	/// Maximum item count for this category.
-	/// @type {Real}
-	slot_limit = _slot_limit;
-	/// Items currently in this category, indexed by item key.
-	/// @type {Struct}
-	items = {};
-	/// Array to track item order within the category. Each entry is { key: item_key, count: item_count }.
-	/// @type {Array<Struct.MallItemInstance>}
-	order =	[];
-	/// Arguments for event callbacks. Shared with parent bag.
-	/// @type {Struct}
-	args =	{};
-
-	#region PRIVATE
-	static __CompareVars =	MallBagSimple.__CompareVars;
-	
-	#endregion
-	
-	#region API
-	static AddItem =		MallBagSimple.AddItem;
-	static RemoveItem =		MallBagSimple.RemoveItem;
-	static GetItemCount =	MallBagSimple.GetItemCount;
-	static GetItemByKey =	MallBagSimple.GetItemByKey;
-	static GetItemByIndex = MallBagSimple.GetItemByIndex;
-	
-	/// @desc Exports the category slot state to a struct.
-	/// @returns {Struct} Struct with the category slot data.
-	static Export = function() 
-	{ 
-		return { items: items, order: order }; 
-	}
-	
-	/// @desc Imports the category slot state from a struct.
-	/// @param {Struct} data Struct with the category slot data.
-	/// @returns {undefined}
-	static Import = function(_data)
-	{ 
-		items = _data[$ "items"] ?? {}; 
-		order = _data[$ "order"] ?? []; 
-	}
-	
-	#endregion
-}
-
 /// @desc Complex bag that groups items by type.
 /// @param {String} key
 function MallBagComplex(_key) : MallBag(_key) constructor
 {
-	/// Objects in the bag are grouped into categories, which are managed separately.
-	/// @type {Struct}
-	categories = {};
-	/// Default limits for each category type. Each key is a category name, and its value is an object with limit properties (e.g. slot_limit).
-	/// @type {Struct}
-	category_defaults = { slot_limit: 30 };
-	/// Optional overrides for specific categories.
-	/// @type {Struct}
-	category_overrides = {};
+	/// @type {Struct<Struct.MallBagSimple>} Objects in the bag are grouped into categories, which are managed separately.
+	categories = { /* is_persistent, limit, event_on_add_item, event_on_remove_item, ... */ };
 	
-	#region PRIVATE
-	
-	/// @ignore
-	/// @desc Gets or creates a category compartment.
-	/// @param {String} type The category type.
-	/// @returns {Struct}
-	static __GetCategory = function(_type)
-	{
-		if (!struct_exists(categories, _type) )
-		{
-			var _limits = struct_exists(category_overrides, _type)
-				? category_overrides[$ _type]
-				: category_defaults;
-			if (!is_struct(_limits) ) _limits = category_defaults;
-			
-			var _category = new __MallCategorySlot(_limits[$ "slot_limit"]);
-			categories[$ _type] = _category;
-			
-			// Mirror parent bag events.
-			_category[$ "event_on_add_item"] = self.event_on_add_item;
-			_category[$ "event_on_remove_item"] = self.event_on_remove_item;
-
-			// Share callback args context.
-			_category[$ "args"] = self.args;
-		}
-		
-		return (categories[$ _type] );
-	}
-	
-	#endregion
+	/// @type {Struct} Optional overrides for specific categories.
+	overrides = {};
 	
 	#region API
+
+	/// @ignore
+	/// @desc Resolves the primary category from an item template using the new type array format.
+	/// @param {Struct} item_template The item template struct.
+	/// @returns {String|undefined}
+	static __ResolveCategoryFromItem = function(_item_template)
+	{
+		if (!is_struct(_item_template) )
+		{
+			__mall_error("Bag (ResolveCategory): expected an item template struct.");
+			return undefined;
+		}
+
+		var _type = _item_template[$ "type"];
+		if (!is_array(_type) || array_length(_type) <= 0)
+		{
+			var _item_key = _item_template[$ "key"] ?? "<unknown>";
+			__mall_error($"Bag (ResolveCategory): item '{_item_key}' must define 'type' as a non-empty array.");
+			return undefined;
+		}
+
+		var _category = _type[0];
+		if (!is_string(_category) )
+		{
+			var _item_key_2 = _item_template[$ "key"] ?? "<unknown>";
+			__mall_error($"Bag (ResolveCategory): item '{_item_key_2}' has invalid type[0]. Expected string, received: {string(_category)}");
+			return undefined;
+		}
+
+		return _category;
+	}
+	
+	/// @desc Gets or creates a category compartment.
+	/// @param {String} type The category type.
+	/// @returns {Struct.MallBagSimple}
+	static GetCategory = function(_category)
+	{
+		if (!is_string(_category) )
+		{
+			__mall_error($"Bag (GetCategory): category must be a string. Received: {string(_category)}");
+			return undefined;
+		}
+
+		var _this = self;
+		var _base_limit = _this[$ "limit"];
+		var _base_key = _this[$ "key"];
+
+		if (!struct_exists(categories, _category) )
+		{
+			var _limits = struct_exists(overrides, _category)
+				? (overrides[$ _category][$ "limit"] ?? _base_limit)
+				: _base_limit;
+			// Create a new bag compartment for this category.
+			// Using 'self' as a template to load category-specific events and settings.
+			/// @type {Struct.MallBagSimple}
+			var _category_bag = new MallBagSimple(_base_key + "_" + _category);
+			_category_bag.limit = _limits;
+
+			categories[$ _category] = _category_bag;
+
+			if (__MALL_BAG_ALERT) { __mall_alert($"Created new bag category '{_category}' with limit { _limits }."); }
+		}
+
+		return (categories[$ _category] );
+	}
+
 	/// @desc Adds an item amount to the correct category.
+	/// Return A result struct with success flag, amount actually added and leftover amount that couldn't be added due to capacity limits.
 	/// @param {String} item_key The key of the item to add.
 	/// @param {Real} count The amount of the item to add.
 	/// @param {Struct} vars Optional struct with item variables to consider for stacking.
-	/// @returns {{success: Bool, added: Real, leftover: Real}}
+	/// @returns {Struct.MallResult}
 	static AddItem = function(_item_key, _count, _vars = {})
 	{
-		/// @ignore
-		var __default = { success: false, added: 0, leftover: _count };
-
+		// Prepare 
 		var _item_template = mall_get_item(_item_key);
-		
-		if (is_undefined(_item_template) )
+		if (is_undefined(_item_template) ) 
 		{
-			__mall_alert($"Pocket (AddItem): item template '{_item_key}' does not exist.");
-			return __default;
+			__mall_alert($"Bag (AddItem): item template '{_item_key}' does not exist.");
+			return MallBagSimple.__PrepareResult(false);
 		}
-		
-		// Determine category and delegate addition to it.
-		var _item_type = _item_template[$ "item_type"];
-		var _category_slot = __GetCategory(_item_type);
-		var _add_item = _category_slot[$ "AddItem"];
-		var _result = __default;
 
-		// If the category slot has an AddItem method, call it. Otherwise, return failure.
-		if (is_callable(_add_item) ) { _result = method(_category_slot, _add_item)(_item_key, _count, _vars); }
-		
+		// Get item category and delegate to the correct category slot.
+		var _item_category = __ResolveCategoryFromItem(_item_template);
+		if (is_undefined(_item_category) )
+		{
+			return MallBagSimple.__PrepareResult(false);
+		}
+
+		var _category_slot = GetCategory(_item_category);
+		if (is_undefined(_category_slot) )
+		{
+			return MallBagSimple.__PrepareResult(false);
+		}
+
+		var _result = _category_slot.AddItem(_item_key, _count, _vars);
+
+		if (_result.success)
+		{
+			var _event = method(self, mall_get_event(event_on_add_item) );
+			_event(_item_key, _result.GetVar("added"), args);
+		}
+
 		return _result;
 	}
 	
@@ -126,26 +119,38 @@ function MallBagComplex(_key) : MallBag(_key) constructor
 	/// @param {String} item_key The key of the item to remove.
 	/// @param {Real} count The amount of the item to remove.
 	/// @param {Struct} vars Optional struct with item variables to consider for matching.
-	/// @returns {Bool}
+	/// @returns {Struct.MallResult}
 	static RemoveItem = function(_item_key, _count, _vars = {})
 	{
 		var _item_template = mall_get_item(_item_key);
 		
 		if (is_undefined(_item_template) ) 
 		{
-			__mall_alert($"Pocket (RemoveItem): item template '{_item_key}' does not exist.");
-			return false;
+			__mall_alert($"Bag (RemoveItem): item template '{_item_key}' does not exist.");
+			return MallBagSimple.__PrepareResult(true);
 		}
 		
-		var _item_type = _item_template[$ "item_type"];
-		var _category_slot = __GetCategory(_item_type);
-		var _remove_item = _category_slot[$ "RemoveItem"];
-		if (is_callable(_remove_item) && method(_category_slot, _remove_item)(_item_key, _count, _vars) ) 
+		var _item_category = __ResolveCategoryFromItem(_item_template);
+		if (is_undefined(_item_category) )
 		{
-			return true;
+			return MallBagSimple.__PrepareResult(true);
 		}
-		
-		return false;
+
+		var _category_slot = GetCategory(_item_category);
+		if (is_undefined(_category_slot) )
+		{
+			return MallBagSimple.__PrepareResult(true);
+		}
+
+		var _result = _category_slot.RemoveItem(_item_key, _count, _vars);
+
+		if (_result.success)
+		{
+			var _event = method(self, mall_get_event(event_on_remove_item) );
+			_event(_item_key, _result.GetVar("removed"), args);
+		}
+
+		return _result;
 	}
 
 	/// @desc Returns the total amount for an item in its category.
@@ -156,18 +161,23 @@ function MallBagComplex(_key) : MallBag(_key) constructor
 		var _item_template = mall_get_item(_item_key);
 		if (is_undefined(_item_template) )
 		{
-			__mall_alert($"Pocket (GetItemCount): item template '{_item_key}' does not exist.");
+			__mall_alert($"Bag (GetItemCount): item template '{_item_key}' does not exist.");
 			return 0;
 		}
 		
-		var _type = _item_template[$ "item_type"];
-		if (struct_exists(categories, _type) )
+		var _item_category = __ResolveCategoryFromItem(_item_template);
+		if (is_undefined(_item_category) )
 		{
-			var _get_item_count = categories[$ _type][$ "GetItemCount"];
-			return is_callable(_get_item_count) ? method(categories[$ _type], _get_item_count)(_item_key) : 0;
+			return 0;
 		}
-		
-		return 0;
+
+		var _category_slot = GetCategory(_item_category);
+		if (is_undefined(_category_slot) )
+		{
+			return 0;
+		}
+
+		return (_category_slot.GetItemCount(_item_key) );
 	}
 	
 	/// @desc Returns the first item instance by key.
@@ -178,18 +188,23 @@ function MallBagComplex(_key) : MallBag(_key) constructor
 		var _item_template = mall_get_item(_item_key);
 		if (is_undefined(_item_template) )
 		{
-			__mall_alert($"Pocket (GetItemByKey): item template '{_item_key}' does not exist.");
+			__mall_alert($"Bag (GetItemByKey): item template '{_item_key}' does not exist.");
 			return undefined;
 		}
 
-		var _type = _item_template[$ "item_type"];
-		if (struct_exists(categories, _type) ) 
+		var _item_category = __ResolveCategoryFromItem(_item_template);
+		if (is_undefined(_item_category) )
 		{
-			var _get_item_by_key = categories[$ _type][$ "GetItemByKey"];
-			return is_callable(_get_item_by_key) ? method(categories[$ _type], _get_item_by_key)(_item_key) : undefined;
+			return undefined;
 		}
-		
-		return undefined;
+
+		var _category_slot = GetCategory(_item_category);
+		if (is_undefined(_category_slot) )
+		{
+			return undefined;
+		}
+
+		return (_category_slot.GetItemByKey(_item_key) );
 	}
 	
 	/// @desc Returns an item instance by index within a category.
@@ -198,14 +213,9 @@ function MallBagComplex(_key) : MallBag(_key) constructor
 	/// @returns {Struct.MallItemInstance|undefined} An item instance struct with key, count and vars, or undefined if not found.
 	static GetItemByIndexInCategory = function(_category, _index)
 	{
-		if (struct_exists(categories, _category) )
-		{
-			return categories[$ _category].GetItemByIndex(_index);
-		}
+		var _category_slot = GetCategory(_category);
 
-		__mall_alert($"Pocket (GetItemByIndexInCategory): category '{_category}' does not exist.");
-		
-		return undefined;
+		return (_category_slot.GetItemByIndex(_index) );
 	}
 	
 	/// @desc Returns all item instances for a category.
@@ -213,14 +223,9 @@ function MallBagComplex(_key) : MallBag(_key) constructor
 	/// @returns {Array<Struct.MallItemInstance>} An array of item instance structs with key, count and vars, or an empty array if no items are found.
 	static GetItemsByCategory = function(_type)
 	{
-		if (struct_exists(categories, _type) ) 
-		{
-			return categories[$ _type].order;
-		}
+		var _category_slot = GetCategory(_type);
 
-		__mall_alert($"Bag (GetItemsByCategory): category '{_type}' does not exist.");
-		
-		return [];
+		return (_category_slot.GetOrderedItems() );
 	}
 	
 	/// @desc Returns all category keys currently in use.
@@ -230,81 +235,53 @@ function MallBagComplex(_key) : MallBag(_key) constructor
 		return (struct_get_names(categories) );
 	}
 	
-	/// @desc Configures the bag from a data struct.
-	/// @param {Struct} data The data struct to configure the bag with.
-	/// @returns {Struct.MallBagComplex}
-	static FromData = function(_data)
-	{
-		static __default = { slot_limit: 30 };
-		
-		// Call parent implementation.
-		method(self, MallBag.FromData)(_data);
-		
-		category_defaults  = variable_clone(_data[$ "category_defaults"]  ?? __default);
-		category_overrides = variable_clone(_data[$ "category_overrides"] ?? {});
-		if (struct_exists(_data, "category_defaults") && !is_struct(category_defaults) )
-		{
-			__mall_alert("Pocket bag category_defaults must be a struct. Falling back to defaults.");
-			category_defaults = variable_clone(__default);
-		}
-		if (!is_struct(category_overrides)) category_overrides = {};
-		
-		return self;
-	}
-	
 	/// @desc Exports bag state to a struct.
 	/// @returns {Struct}
 	static Export = function()
 	{
-		var _export_data = method(self, Mall.Export)();
-		_export_data.categories = {};
-		
-		var _category_keys = struct_get_names(categories);
-		var i=0; repeat(array_length(_category_keys) )
+		var _this = self;
+		with (method(self, MallBag.Export)() )
 		{
-			var _key = _category_keys[ i++ ];
-			_export_data.categories[$ _key] = categories[$ _key].Export(); 	
+			overrides = overrides;
+			categories = {}
+			
+			// Export each category separately to preserve their internal structure and avoid circular references.
+			var _category_keys = struct_get_names(categories);
+			var i=0; repeat(array_length(_category_keys) )
+			{
+				var _key = _category_keys[i++];
+				categories[$ _key] = _this.categories[$ _key].Export();
+			}
+
+			return self;
 		}
-		
-		return _export_data;
 	}
-	
-	/// @desc Imports bag state from a struct.
-	/// @param {Struct} data The data struct to import the bag state from.
-	/// @returns {undefined}
+
+	/// @desc Configures the bag from a data struct.
+	/// @param {Struct} data The data struct to configure the bag with.
+	/// @returns {Struct.MallBagComplex}
 	static Import = function(_data)
 	{
-		method(self, Mall.Import)(_data);
-		categories = {};
-		
+		// Call parent implementation.
+		method(self, MallBag.Import)(_data);
+		overrides = _data[$ "overrides"] ?? overrides;
+		// Load categories.
 		if (struct_exists(_data, "categories") )
 		{
-			var _saved_categories = _data[$ "categories"];
-			var _category_keys = struct_get_names(_saved_categories);
+			var _data_categories = _data[$ "categories"];
+			var _category_keys = struct_get_names(_data_categories);
 			
 			var i=0; repeat(array_length(_category_keys) )
 			{
 				var _key = _category_keys[ i++ ];
-				
 				// Create category slot with configured limits.
-				var _category_slot = __GetCategory(_key);
-				var _import_category = _category_slot[$ "Import"];
-				if (is_callable(_import_category)) method(_category_slot, _import_category)(_saved_categories[$ _key]);
+				var _category_slot = GetCategory(_key);
+				_category_slot.Import(_data_categories[$ _key]);
 			}
 		}
-	}
 
-	/// @desc Creates a new instance of this complex bag template.
-	/// @param {String} instance_key The key for the new bag instance.
-	/// @returns {Struct.MallBagComplex} A new instance of MallBagComplex configured from this template.
-	static CreateInstance = function(_instance_key)
-	{
-		var _new_inst = new MallBagComplex(_instance_key);
-		// Here, 'self' is the template.
-		_new_inst.FromData(self);
-		
-		return _new_inst;
-	}
-	
+		return self;
+	}	
+
 	#endregion
 }

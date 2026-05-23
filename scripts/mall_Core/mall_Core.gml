@@ -1,27 +1,113 @@
 /// @ignore
-/// @desc Base element for most Systemall components.
+/// @desc Base class for all Systemall components.
 /// @param {String} [_key=""] Component identifier key.
 function Mall(_key="") constructor 
 {
-	/// @desc Reference to the instance constructor type.
-	/// @type {String}
+	/// @type {String} Reference to the instance constructor type.
 	is = instanceof(self);
-	
-	/// @desc Base template key for this component.
-	/// @type {String}
+
+	/// @type {String} Optional note or comment.
+	comment = "";
+
+	/// @type {String} Unique key for this component, used to reference templates within the same component type.
+	/// Used as an identifier.
 	key = _key;
 	
-	/// @desc Instance index inside an array, when applicable.
-	/// @type {Real}
+	/// TODO: Implement this later.
+	/// @type {Real} Instance index inside an array, when applicable.
+	/// This is used to track the instance inside its parent group array and should be updated on array modifications.
 	index = -1;
+
+	/// @type {Struct} Struct used to pass custom event arguments.
+	/// Allows flexible event hooks without requiring a fixed set of fields for every possible argument.
+	/// Example: a command with a "power" argument that can be modified by events and persisted in saves without adding a "power" field to the MallCommand class.
+	args = __MALL_DEFAULT_ARGS;
 	
-	/// @desc Struct used to pass custom event arguments.
-	/// @type {Struct}
-	args = {};
+	/// @type {Struct} Struct used to store custom instance variables.
+	/// Allows custom variable storage without requiring pre-defined fields on the class.
+	/// Example: a custom sword with a "sharpness" variable that can be modified by events and persisted in saves without adding a "sharpness" field to the MallItem class.
+	vars = __MALL_DEFAULT_VARS;
+
+	/// @type {Array<String>} General type category for this component, used for organizational purposes.
+	/// Is used in conjunction with the Type system of Systemall, but is not strictly required to be unique.
+	type = __MALL_TYPE_DEFAULT;
 	
-	#region API
-	
-	/// @desc Exports the base instance state to a save struct.
+	#region PUBLIC API
+
+	/// @desc Check whether the provided struct contains the same fields and values as this instance's vars struct.
+	/// Used for matching items with variable-dependent stats or effects.
+	/// @param {Struct} other_vars Struct to compare with this instance's vars.
+	/// @return {Bool} Whether the provided struct matches this instance's vars.
+	static SameVars = function(_other_vars)
+	{
+		var _this_vars_names = struct_get_names(vars);
+		var _other_vars_names = struct_get_names(_other_vars);
+
+		// Quick check for different number of variables.
+		if (array_length(_this_vars_names) != array_length(_other_vars_names) ) { return false; }
+
+		var i=0; repeat(array_length(_this_vars_names) )
+		{
+			// Check that the variable name exists in the other struct.
+			var _var_name = _this_vars_names[i++];
+			if (!struct_exists(_other_vars, _var_name) ) { return false; }
+
+			// Now check for variable value equality.
+			var _var_value = vars[$ _var_name];
+			var _other_var_value = _other_vars[$ _var_name];
+
+			if (_var_value != _other_var_value) { return false; }
+		}
+
+		return true;
+	}
+
+	/// @desc Set a custom variable in this instance's vars struct.
+	/// @param {String|Real} key_or_hash Variable name or hash.
+	/// @param {Any} value Variable value.
+	static SetVar = function(_key_or_hash, _value)
+	{
+		if (is_numeric(_key_or_hash) )
+		{
+			struct_set_from_hash(vars, _key_or_hash, _value);
+		}
+		else if(is_string(_key_or_hash) )
+		{
+			struct_set(vars, _key_or_hash, _value);
+		}
+		else
+		{
+			__mall_error($"Mall.SetVar expected a string or numeric (hash) key. Received: {_key_or_hash}");
+		}
+		
+		return self;
+	}
+
+	/// @desc Get a custom variable from this instance's vars struct.
+	/// @param {String|Real} key_or_hash Variable name or hash.
+	/// @param {Any} default_value Value to return if the variable is not found.
+	static GetVar = function(_key_or_hash, _default)
+	{
+		var _value = _default;
+
+		if (is_numeric(_key_or_hash) )
+		{
+			_value = struct_get_from_hash(vars, _key_or_hash, _value);
+		}
+		else if(is_string(_key_or_hash) )
+		{
+			_value = struct_get(vars, _key_or_hash, _value);
+		}
+		else
+		{
+			__mall_error($"Mall.GetVar expected a string or numeric (hash) key. Received: {_key_or_hash}");
+		}
+
+		return _value;
+	}	
+
+	/// @desc Export the base instance state to a save struct.
+	/// Call this via Function.static_get (aka super) inside child classes' Export methods.
 	/// @return {Struct} Struct with essential instance data.
 	static Export = function()
 	{
@@ -32,83 +118,110 @@ function Mall(_key="") constructor
 			is =        _this.is;
 			key =       _this.key;
 			index =     _this.index;
-			
+			args =      _this.args;
+			vars =      _this.vars;
+			type =		variable_clone(_this.type);
+
 			return self;
 		}
 	};
 	
-	/// @desc Imports and restores the base instance state from a struct.
-	/// @param {{is: String, key: String, index: Real}} import Struct containing saved data.
-	static Import = function(_import)
+	/// @desc Import and restore the base instance state from a struct.
+	/// Call this via Function.static_get (aka super) inside child classes' Import methods.
+	/// @param {Struct} data Struct containing component data.
+	static Import = function(_data)
 	{
-		if (!is_struct(_import))
+		var _type_old = type;
+
+		// Struct validation.
+		if (!is_struct(_data) )
 		{
 			__mall_error("Mall.Import expected a struct payload.");
 			exit;
 		}
+		is =		_data[$ "is"]		?? is;
+		comment =	_data[$ "comment"]	?? comment;
+		key =   _data[$ "key"]		?? key;
+		index = _data[$ "index"]	?? index;
+		args =  _data[$ "args"]		?? args;
+		vars =  _data[$ "vars"]		?? vars;
+		type =	_data[$ "type"]		?? type;
 
-		is =    _import[$ "is"]		?? "";
-		key =   _import[$ "key"]	?? "";
-		index = _import[$ "index"]	?? -1;
-	};
-	
-	/// @desc Configures the component from data. Must be overridden.
-	/// @param {Struct} data Struct containing component data.
-	static FromData = function(_data) 
-	{
-		// Struct validation.
-		if (!is_struct(_data) )
+		if (!is_array(type) )
 		{
-			__mall_error("Mall.FromData expected a struct payload.");
-			exit;
+			if (is_string(type) ) 
+			{
+				type = [type];
+				__mall_alert($"Mall.Import expected 'type' field to be an array. Converted string to array. Value: {type}");
+			}
+			else
+			{
+				type = _type_old;
+				__mall_alert($"Mall.Import expected 'type' field to be an array. Using old value. Value: {type}");
+			}
 		}
-
-		// Type check.
-		if (!struct_exists(_data, "is") || _data[$ "is"] != instanceof(self) )
-		{
-			__mall_error("Mall.FromData received a struct that is not of the expected type.");
-			exit;
-		}
-		
-		// Load base data.
-		is = _data[$ "is"] ?? is;
-		key = _data[$ "key"] ?? key;
-		index = _data[$ "index"] ?? index;
-		args = _data[$ "args"] ?? args;
 
 		return self;
+	};
+
+	/// @desc Return a string representation of this instance for debugging.
+	/// Call this via Function.static_get (aka super) from child classes' toString methods.
+	/// @return {String}
+	static toString = function()
+	{
+		return $"Systemall Component::\n		Core:: (Type: {type}, Key: {key})";
 	}
 
 	#endregion
 }
 
-/// @ignore
 /// @desc Lightweight iterator used to track cycle duration and repeats.
-function MallIterator() : Mall() constructor
+function MallIterator(_key="") : Mall(_key="") constructor
 {
-	/// @desc Whether the iterator is currently running.
-	/// @type {Bool}
+	/// @ignore 
+	/// @type {Real} Static ID counter for all MallIterator instances. Used to assign unique keys.
+	static __id = 1;
+	
+	/// @ignore 
+	/// @type {Struct<Struct.MallIterator>} Static registry of all MallIterator instances
+	static __all = {};
+
+	/// @type {Bool} Whether the iterator is currently running.
 	active = false;
 	
-	/// @desc Number of ticks that compose one full cycle.
-	/// @type {Real}
+	/// @type {Real} Number of ticks that compose one full cycle.
 	duration = 1;
 	
-	/// @desc Number of ticks elapsed in the current cycle.
-	/// @type {Real}
+	/// @type {Real} Number of ticks elapsed in the current cycle.
 	ticks_elapsed = 0;
 	
-	/// @desc Number of repeats for the cycle. 0 = one execution, infinity = infinite repeats.
-	/// @type {Real}
+	/// @type {Real} Number of repeats for the cycle. 0 = one execution, infinity = infinite repeats.
 	repeats = 0;
 	
-	/// @desc Number of repeats already completed.
-	/// @type {Real}
+	/// @type {Real} Number of repeats already completed.
 	repeats_done = 0;
 	
+	// Register this instance in the static registry.
+	struct_set(__all, $"_key_{__id++}", self);
+
 	#region API
 	
-	/// @desc Configures and activates the iterator.
+	/// @desc Get all MallIterator instances.
+	/// @return {Struct<Struct.MallIterator>}
+	static GetAll = function()
+	{
+		return static_get(self)[$ "__all"];
+	}
+
+	/// @desc Remove all inactive MallIterator instances from the static registry.
+	static AllCleanup = function()
+	{
+		struct_foreach(GetAll(), function(_key, _value) {
+			if (!_value.active) { delete _value; struct_remove(static_get(self)[$ "__all"], _key); }
+		});
+	}
+
+	/// @desc Configure and activate the iterator.
 	/// @param {Real} [duration=1] Tick count for one cycle.
 	/// @param {Real} [repeats=0] Number of times to repeat.
 	static Configure = function(_duration=1, _repeats=0)
@@ -122,7 +235,7 @@ function MallIterator() : Mall() constructor
 		ticks_elapsed = 0;
 		repeats_done = 0;
 		
-		// Allow infinite durations/repeats.
+		// Allow infinite duration or repeats.
 		if (duration <= 0) duration = infinity;
 		if (repeats < 0) repeats = infinity;
 		
@@ -164,14 +277,14 @@ function MallIterator() : Mall() constructor
 		return MALL_ITERATOR_STATE.WORKING;
 	}
 	
-	/// @desc Returns whether the iterator is currently active.
+	/// @desc Return whether the iterator is currently active.
 	/// @return {Bool}
 	static IsActive = function()
 	{
 		return active;
 	}
 	
-	/// @desc Returns current cycle progress as a normalized value in range [0, 1].
+	/// @desc Return current cycle progress as a normalized value in [0, 1].
 	/// @return {Real}
 	static GetProgress = function()
 	{
@@ -205,64 +318,62 @@ function MallIterator() : Mall() constructor
 	}
 	
 	/// @desc Imports iterator state from a struct.
-	/// @param {Struct} import Struct containing saved data.
-	static Import = function(_import)
+	/// @param {Struct} data Struct containing component data.
+	static Import = function(_data)
 	{
-		if (!is_struct(_import))
+		if (!is_struct(_data) )
 		{
 			__mall_error("MallIterator.Import expected a struct payload.");
-			exit;
+			return self;
 		}
 		
-		if (struct_exists(_import, "is") && _import[$ "is"] == instanceof(self) )
-		{
-			// Call parent import.
-			method(self, Mall.Import) (_import);
-			
-			// Load iterator variables.
-			active =			_import[$ "active"]			?? false;
-			duration =			_import[$ "duration"]		?? 1;
-			ticks_elapsed =		_import[$ "ticks_elapsed"]	?? 0;
-			repeats =			_import[$ "repeats"]		?? 0;
-			repeats_done =		_import[$ "repeats_done"]	?? 0;
+		// Call parent import.
+		method(self, Mall.Import) (_data);
+		
+		// Load iterator variables.
+		active =			_data[$ "active"]			?? false;
+		duration =			_data[$ "duration"]			?? 1;
+		ticks_elapsed =		_data[$ "ticks_elapsed"]	?? 0;
+		repeats =			_data[$ "repeats"]			?? 0;
+		repeats_done =		_data[$ "repeats_done"]		?? 0;
 
-			if (duration <= 0) duration = infinity;
-			if (repeats < 0) repeats = infinity;
-		}
-		else
-		{
-			__mall_error("MallIterator.Import received a struct with incompatible 'is' field.");
-		}
+		// Allow infinite durations/repeats.
+		if (duration <= 0) duration = infinity;
+		if (repeats < 0)   repeats =  infinity;
+
+		return self;
 	}
 	
+	/// @desc Return a string representation of this instance for debugging.
+	/// @return {String}
+	static toString = function()
+	{
+		var _parent_str = method(self, Mall.toString) ();
+		return $"{_parent_str}\nMallIterator:: (Active: {active}, Duration: {duration}, Ticks Elapsed: {ticks_elapsed}, Repeats: {repeats}, Repeats Done: {repeats_done})";
+	}
+
 	#endregion
 }
 
 /// @desc Standardized result container for combat actions.
-function MallResult() constructor
+function MallResult(_success = true) : Mall("MallResult") constructor
 {
-	/// @desc Overall operation success flag.
-	/// @type {Bool}
-	success = true;
+	/// @type {Bool} Overall operation success flag.
+	success = _success;
 	
-	/// @desc Per-target flags indicating whether each target was defeated.
-	/// @type {Array<Bool>}
+	/// @type {Array<Bool>} Per-target flags indicating whether each target was defeated.
 	defeated = [];
 	
-	/// @desc Per-target generic numeric values (for example, healing amount).
-	/// @type {Array<Real>}
+	/// @type {Array<Real>} Per-target generic numeric values (for example, healing amount).
 	value = [];
 	
-	/// @desc Per-target damage values.
-	/// @type {Array<Real>}
+	/// @type {Array<Real>} Per-target damage values.
 	damage = [];
 	
-	/// @desc Per-target consumed resource values (for example, MP cost).
-	/// @type {Array<Real>}
+	/// @type {Array<Real>} Per-target consumed resource values (for example, MP cost).
 	consumed = [];
 	
-	/// @desc Per-target used item quantities.
-	/// @type {Array<Real>}
+	/// @type {Array<Real>} Per-target used item quantities.
 	used = [];
 	
 	#region API
@@ -326,17 +437,20 @@ function MallResult() constructor
 		return (_index >= 0 && _index < Size() ) ? value[_index] : 0;
 	}
 	
-	/// @desc Checks whether at least one target was defeated.
+	/// @desc Return whether at least one target was defeated.
 	/// @return {Bool}
 	static WasAnyDefeated = function()
 	{
-		var i = 0;
-		repeat (array_length(defeated))
-		{
-			if (defeated[i++]) return true;
-		}
-
+		var i = 0; repeat (array_length(defeated) ) { if (defeated[i++]) return true; }
 		return false;
+	}
+
+	/// @desc Return a string representation of this result for debugging.
+	/// @return {String}
+	static toString = function()
+	{
+		var _parent_str = method(self, Mall.toString) ();
+		return $"{_parent_str}\nMallResult:: (Success: {success}, Defeated: {defeated}, Value: {value}, Damage: {damage}, Consumed: {consumed}, Used: {used})";
 	}
 
 	#endregion

@@ -18,6 +18,11 @@ function EVT_CORE_PhysicalDamage(_caster, _target, _params)
     
     var _caster_atk = _caster.StatGet(_scaling_stat).control_value;
     var _target_def = _target.StatGet("DEFENSA").control_value;
+
+    // Trigger entity-wide combat hooks before final damage is applied.
+    var _combat_payload = {};
+    if (struct_exists(_caster, "OnAttack") && is_callable(_caster.OnAttack)) _combat_payload = _caster.OnAttack(_target, _combat_payload);
+    if (struct_exists(_target, "OnDefend") && is_callable(_target.OnDefend)) _combat_payload = _target.OnDefend(_caster, _combat_payload);
     
     // Simple damage formula.
     var _damage = max(1, (_caster_atk + _power) - _target_def);

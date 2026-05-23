@@ -1,0 +1,40 @@
+{
+	"type": "Entities",
+	"JON": {
+		"vars": {
+			"display_name_key": "UI.NAMES.JON",
+			"gender": "M",
+			"portrait_sprite": "spUIPortraitJon",
+			"battle_object": "oCoJon"
+		},
+		"commands": {
+			"default": ["CMD_ATTACK"],
+			"skill": ["CMD_POISON_STING"]
+		},
+		"slots": {
+			"SLOT_ARMA": {
+				"equip": "IRON_SWORD",
+				"permitted": ["IRON_SWORD"]
+			}
+		},
+		"stats": {
+			"EN": 50,
+			"FUERZA": 16,
+			"DEFENSA": 17
+		}
+	},
+	"SLIME": {
+		"vars": {
+			"display_name_key": "UI.NAMES.SLIME",
+			"battle_object": "oCoSlime"
+		},
+		"commands": {
+			"default": ["CMD_ATTACK"]
+		},
+		"stats": {
+			"EN": 50,
+			"FUERZA": 5,
+			"DEFENSA": 20
+		}
+	}
+}

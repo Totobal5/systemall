@@ -86,14 +86,149 @@ function __mall_test_load(_runner)
 		var file = file_text_open_write("test_master_malformed.json");
 		file_text_write_string(file, master_content);
 		file_text_close(file);
-	
-		AssertRaises(function() {
-			mall_init("test_master_malformed.json");
-		}, "Expected an error when parsing malformed JSON.");
+
+		mall_system_cleanup();
+		mall_init("test_master_malformed.json");
+
+		AssertFalse(mall_exists_stat("EN"), "Malformed JSON file must not create any stat entries.");
+		AssertEqual(array_length(mall_get_stat_keys()), 0, "No stats should be loaded when the only source file is malformed.");
 	
 		file_delete("test_master_malformed.json");
 	});
 	suite_loading.AddCase(test_load_fail);
+
+	// --- Test Case 2.3: Real Datafiles Load ---
+	var test_load_real_datafiles = new CrispyCase("Test Real Datafiles JSON Load", function() {
+		var _master_candidates = [
+			"datafiles/mall_database.json",
+			"./datafiles/mall_database.json",
+			"mall_database.json",
+			"./mall_database.json"
+		];
+		var _master_path = "";
+		var _candidate_count = array_length(_master_candidates);
+		for (var i = 0; i < _candidate_count; i++)
+		{
+			var _candidate = _master_candidates[i];
+			if (file_exists(_candidate))
+			{
+				_master_path = _candidate;
+				break;
+			}
+		}
+
+		AssertTrue(_master_path != "", "Could not resolve 'mall_database.json' in runtime working directory.");
+
+		mall_system_cleanup();
+		mall_init(_master_path);
+
+		AssertTrue(mall_exists_stat("EN"), "Expected stat 'EN' from datafiles/components/stats.json.");
+		AssertTrue(mall_exists_state("STATE_VENENO"), "Expected state 'STATE_VENENO' from datafiles/components/states.json.");
+		AssertTrue(mall_exists_slot("SLOT_ARMA"), "Expected slot 'SLOT_ARMA' from datafiles/components/slots.json.");
+
+		AssertTrue(mall_exists_item("POTION_01"), "Expected item 'POTION_01' from datafiles/pocket/general_items.json.");
+		AssertTrue(mall_exists_bag("BAG_PLAYER_INVENTORY"), "Expected bag 'BAG_PLAYER_INVENTORY' from datafiles/pocket/bags.json.");
+		AssertTrue(mall_exists_group("HEROES"), "Expected group 'HEROES' from datafiles/party/groups.json.");
+	});
+	suite_loading.AddCase(test_load_real_datafiles);
+
+	// --- Test Case 2.4: Real Datafiles Create One Of Each ---
+	var test_load_real_datafiles_create_one_each = new CrispyCase("Test Real Datafiles Create One Of Each", function() {
+		var _master_candidates = [
+			"datafiles/mall_database.json",
+			"./datafiles/mall_database.json",
+			"mall_database.json",
+			"./mall_database.json"
+		];
+		var _master_path = "";
+		var _candidate_count = array_length(_master_candidates);
+		for (var i = 0; i < _candidate_count; i++)
+		{
+			var _candidate = _master_candidates[i];
+			if (file_exists(_candidate) )
+			{
+				_master_path = _candidate;
+				break;
+			}
+		}
+
+		AssertTrue(_master_path != "", "Could not resolve 'mall_database.json' in runtime working directory.");
+
+		mall_system_cleanup();
+		mall_init(_master_path);
+
+		var _stat_keys =		mall_get_stat_keys();
+		var _slot_keys =		mall_get_slot_keys();
+		var _state_keys =		mall_get_state_keys();
+		var _item_keys =		mall_get_item_keys();
+		var _bag_keys =			mall_get_bag_keys();
+		var _group_keys =		mall_get_group_keys();
+		var _entity_keys = 		mall_get_entity_keys();
+		var _command_keys =		mall_get_command_keys();
+		var _effect_keys =		mall_get_effect_keys();
+		var _ai_package_keys =	struct_get_names(__Systemall.__ai_packages);
+		var _ai_rule_keys =		struct_get_names(__Systemall.__ai_rules);
+
+		AssertTrue(array_length(_stat_keys)    > 0, "Expected at least one stat key loaded from database.");
+		AssertTrue(array_length(_slot_keys)    > 0, "Expected at least one slot key loaded from database.");
+		AssertTrue(array_length(_state_keys)   > 0, "Expected at least one state key loaded from database.");
+		AssertTrue(array_length(_item_keys)    > 0, "Expected at least one item key loaded from database.");
+		AssertTrue(array_length(_bag_keys)     > 0, "Expected at least one bag key loaded from database.");
+		AssertTrue(array_length(_group_keys)   > 0, "Expected at least one group key loaded from database.");
+		AssertTrue(array_length(_entity_keys)  > 0, "Expected at least one entity template key loaded from database.");
+		AssertTrue(array_length(_command_keys) > 0, "Expected at least one command key loaded from database.");
+		AssertTrue(array_length(_effect_keys)  > 0, "Expected at least one effect key loaded from database.");
+		
+		// AI
+		AssertTrue(array_length(_ai_package_keys) > 0, "Expected at least one AI package loaded from database.");
+		AssertTrue(array_length(_ai_rule_keys)    > 0, "Expected at least one AI rule loaded from database.");
+
+		var _stat_template = mall_get_stat(_stat_keys[0]);
+		var _slot_template = mall_get_slot(_slot_keys[0]);
+		var _state_template = mall_get_state(_state_keys[0]);
+		var _item_template = mall_get_item(_item_keys[0]);
+		var _command_template = mall_get_command(_command_keys[0]);
+		var _effect_template = mall_get_effect(_effect_keys[0]);
+		var _group_template = mall_get_group(_group_keys[0]);
+		var _bag_template = mall_get_bag(_bag_keys[0]);
+		var _ai_package_template = mall_get_ai_package(_ai_package_keys[0]);
+		var _ai_rule_template = mall_get_ai_rule(_ai_rule_keys[0]);
+
+		AssertTrue(is_struct(_stat_template), "Failed to fetch one loaded stat template.");
+		AssertTrue(is_struct(_slot_template), "Failed to fetch one loaded slot template.");
+		AssertTrue(is_struct(_state_template), "Failed to fetch one loaded state template.");
+		AssertTrue(is_struct(_item_template), "Failed to fetch one loaded item template.");
+		AssertTrue(is_struct(_command_template), "Failed to fetch one loaded command template.");
+		AssertTrue(is_struct(_effect_template), "Failed to fetch one loaded effect template.");
+		AssertTrue(is_struct(_group_template), "Failed to fetch one loaded group template.");
+		AssertTrue(is_struct(_bag_template), "Failed to fetch one loaded bag template.");
+		AssertTrue(is_struct(_ai_package_template), "Failed to fetch one loaded AI package template.");
+		AssertTrue(is_struct(_ai_rule_template), "Failed to fetch one loaded AI rule template.");
+
+		var _entity = mall_entity_create_instance(_entity_keys[0], 1, { source: "test_load_real_datafiles_create_one_each" });
+		AssertTrue(is_struct(_entity), "Failed to create one entity instance from loaded templates.");
+
+		AssertTrue(is_struct(_entity.StatGet(_stat_keys[0])), "Failed to create/get one stat instance on entity.");
+		AssertTrue(is_struct(_entity.SlotGet(_slot_keys[0])), "Failed to create/get one slot instance on entity.");
+		AssertTrue(is_struct(_entity.StateGet(_state_keys[0])), "Failed to create/get one state instance on entity.");
+
+		var _bag_instance = _bag_template.CreateInstance("TEST_BAG_INSTANCE");
+		AssertTrue(is_struct(_bag_instance), "Failed to create one bag instance from loaded bag template.");
+
+		var _command_added = _entity.CommandAdd("__TEST", _command_keys[0]);
+		AssertTrue(_command_added, "Failed to add one loaded command to entity.");
+		AssertTrue(is_struct(_entity.CommandGet("__TEST", _command_keys[0])), "Failed to retrieve one loaded command from entity.");
+
+		var _effect_add_result = _entity.EffectAdd(_effect_keys[0]);
+		AssertTrue(is_struct(_effect_add_result), "Failed to invoke EffectAdd with one loaded effect.");
+
+		var _ai_instance = new MallAIInstance(_entity, _ai_package_keys[0]);
+		AssertTrue(is_struct(_ai_instance), "Failed to create one AI instance from loaded AI package.");
+
+		var _group_add_result = mall_group_add(_group_keys[0], _entity);
+		AssertTrue(_group_add_result, "Failed to add created entity instance to one loaded group.");
+	});
+	suite_loading.AddCase(test_load_real_datafiles_create_one_each);
 	
 }
 
@@ -112,8 +247,8 @@ function __mall_test_pocket_bag_simple(_runner)
 	
 		var items_content = json_stringify({
 			"type": "Items",
-			"ITEM_POCION": { "item_type": "CONSUMABLE", "is_stackable": true, "stack_limit": 99 },
-			"ITEM_ESPADA_HIERRO": { "item_type": "WEAPON", "is_stackable": false }
+			"ITEM_POCION": { "type": ["CONSUMABLE"], "is_stackable": true, "stack_limit": 99 },
+			"ITEM_ESPADA_HIERRO": { "type": ["WEAPON"], "is_stackable": false }
 		});
 		file = file_text_open_write("test_items.json");
 		file_text_write_string(file, items_content);
@@ -156,8 +291,8 @@ function __mall_test_pocket_bag_simple(_runner)
 		AssertEqual(CrispyTest.vars.bag.GetOrderedItems()[1].count, 11, "Second stack should contain 11 potions.");
 	
 		// Assert operation result.
-		AssertEqual(result.added, 20, "Exactly 20 potions should be added.");
-		AssertEqual(result.leftover, 0, "No potions should remain as leftover.");
+		AssertEqual(result.GetVar("added"), 20, "Exactly 20 potions should be added.");
+		AssertEqual(result.GetVar("leftover"), 0, "No potions should remain as leftover.");
 	});
 	suite_pocket.AddCase(test_pocket_stack);
 
@@ -168,8 +303,8 @@ function __mall_test_pocket_bag_simple(_runner)
 	
 		AssertEqual(CrispyTest.vars.bag.GetItemCount("ITEM_ESPADA_HIERRO"), 1, "La cantidad total de espadas debe seguir siendo 1.");
 		AssertEqual(array_length(CrispyTest.vars.bag.GetOrderedItems()), 1, "Solo debe haber 1 slot de item ocupado.");
-		AssertEqual(result.added, 0, "No se debió añadir ninguna espada nueva.");
-		AssertEqual(result.leftover, 1, "Debió sobrar 1 espada.");
+		AssertEqual(result.GetVar("added"), 0, "No se debió añadir ninguna espada nueva.");
+		AssertEqual(result.GetVar("leftover"), 1, "Debió sobrar 1 espada.");
 	});
 	suite_pocket.AddCase(test_pocket_no_stack);
 
@@ -179,8 +314,8 @@ function __mall_test_pocket_bag_simple(_runner)
 		var result = CrispyTest.vars.bag.AddItem("ITEM_ESPADA_HIERRO", 5);
 	
 		// Assert
-		AssertEqual(result.added, 1, "Solo se debe añadir 1 item no apilable.");
-		AssertEqual(result.leftover, 4, "Deben sobrar 4 items no apilables.");
+		AssertEqual(result.GetVar("added"), 1, "Solo se debe añadir 1 item no apilable.");
+		AssertEqual(result.GetVar("leftover"), 4, "Deben sobrar 4 items no apilables.");
 		AssertEqual(CrispyTest.vars.bag.GetItemCount("ITEM_ESPADA_HIERRO"), 1, "La cantidad total de espadas debe ser 1.");
 		AssertEqual(array_length(CrispyTest.vars.bag.GetOrderedItems()), 1, "Solo debe haber 1 slot de item ocupado.");
 	});
@@ -195,8 +330,8 @@ function __mall_test_pocket_bag_simple(_runner)
 		// Assert
 		AssertEqual(CrispyTest.vars.bag.GetItemCount("ITEM_ESPADA_HIERRO"), 2, "La cantidad total de espadas debe ser 2.");
 		AssertEqual(array_length(CrispyTest.vars.bag.GetOrderedItems()), 2, "Deben existir 2 slots, uno para cada espada.");
-		AssertEqual(result.added, 1, "Se debió añadir la nueva espada con vars.");
-		AssertEqual(result.leftover, 0, "No debió sobrar ninguna espada.");
+		AssertEqual(result.GetVar("added"), 1, "Se debió añadir la nueva espada con vars.");
+		AssertEqual(result.GetVar("leftover"), 0, "No debió sobrar ninguna espada.");
 	});
 	suite_pocket.AddCase(test_pocket_non_stackable_with_vars);
 
@@ -234,9 +369,9 @@ function __mall_test_pocket_bag_complex(_runner)
 	
 		var items_content = json_stringify({
 			"type": "Items",
-			"ITEM_POCION": { "item_type": "CONSUMABLE", "is_stackable": true, "stack_limit": 20 },
-			"ITEM_ESPADA_HIERRO": { "item_type": "WEAPON", "is_stackable": false },
-			"ITEM_LLAVE_MAESTRA": { "item_type": "KEY_ITEM", "is_stackable": false }
+			"ITEM_POCION": { "type": ["CONSUMABLE"], "is_stackable": true, "stack_limit": 20 },
+			"ITEM_ESPADA_HIERRO": { "type": ["WEAPON"], "is_stackable": false },
+			"ITEM_LLAVE_MAESTRA": { "type": ["KEY_ITEM"], "is_stackable": false }
 		});
 		file = file_text_open_write("test_items_complex.json");
 		file_text_write_string(file, items_content);
@@ -246,9 +381,9 @@ function __mall_test_pocket_bag_complex(_runner)
 			"type": "Bags",
 			"BAG_CATEGORIZED": {
 				"bag_type": "complex",
-				"category_defaults": { "slot_limit": 10 },
-				"category_overrides": {
-					"KEY_ITEM": { "slot_limit": 2 }
+				"limit": 99,
+				"overrides": {
+					"KEY_ITEM": { "limit": 2 }
 				}
 			}
 		});
@@ -295,8 +430,8 @@ function __mall_test_pocket_bag_complex(_runner)
 		// Assert
 		AssertEqual(CrispyTest.vars.bag.GetItemCount("ITEM_LLAVE_MAESTRA"), 2, "Solo deben caber 2 keys maestras.");
 		AssertEqual(array_length(CrispyTest.vars.bag.GetItemsByCategory("KEY_ITEM")), 2, "La categoría KEY_ITEM debe estar llena.");
-		AssertEqual(result.added, 0, "No se debió añadir la tercera key.");
-		AssertEqual(result.leftover, 1, "Debió sobrar 1 key.");
+		AssertEqual(result.GetVar("added"), 0, "No se debió añadir la tercera key.");
+		AssertEqual(result.GetVar("leftover"), 1, "Debió sobrar 1 key.");
 	});
 	suite_pocket_complex.AddCase(test_complex_limits);
 }
@@ -320,7 +455,7 @@ function __mall_test_pocket_bag_events(_runner)
 	
 		var items_content = json_stringify({
 			"type": "Items",
-			"ITEM_POCION": { "item_type": "CONSUMABLE", "is_stackable": true, "stack_limit": 99 }
+			"ITEM_POCION": { "type": ["CONSUMABLE"], "is_stackable": true, "stack_limit": 99 }
 		});
 		file = file_text_open_write("test_items_events.json");
 		file_text_write_string(file, items_content);
@@ -384,7 +519,7 @@ function __mall_test_pocket_bag_events(_runner)
 
 		// Act
 		bag.AddItem("ITEM_POCION", 10);
-	
+		
 		// Assert
 		AssertTrue(bag.event_fired, "El evento event_on_add_item debería haberse disparado.");
 	});
@@ -459,7 +594,7 @@ function __mall_test_party_entity(_runner)
 		var items = { 
 			"type": "Items", 
 			"ITEM_ESPADA_BASICA": { 
-				"item_type": "WEAPON", 
+				"type": ["WEAPON"], 
 				"stats": {
 					"FUERZA+": 10 
 				},
@@ -750,7 +885,7 @@ function __mall_test_party_entity_events(_runner)
 		var items = { 
 			"type": "Items", 
 			"ITEM_TEST": { 
-				"item_type": "WEAPON", 
+				"type": ["WEAPON"], 
 				"event_on_equip": "EVT_ItemOnEquip", 
 				"event_on_turn_start": "EVT_ItemOnTurnStart" 
 			} 
@@ -897,6 +1032,322 @@ function __mall_test_party_entity_events(_runner)
 }
 
 /// @ignore
+function __mall_test_entity_api_full(_runner)
+{
+	var suite_entity_api = new CrispySuite("Entity Full API Consistency Tests");
+	_runner.AddTestSuite(suite_entity_api);
+
+	suite_entity_api.SetUp(function() {
+		mall_system_cleanup();
+
+		var _master = {
+			"Stats": ["./test_api_stats.json"],
+			"Items": ["./test_api_items.json"],
+			"Slots": ["./test_api_slots.json"],
+			"States": ["./test_api_states.json"],
+			"Effects": ["./test_api_effects.json"],
+			"Commands": ["./test_api_commands.json"],
+			"Party": ["./test_api_entities.json"]
+		};
+
+		var _file = file_text_open_write("test_master_api.json");
+		file_text_write_string(_file, json_stringify(_master));
+		file_text_close(_file);
+
+		var _stats = {
+			"type": "Stats",
+			"HP": {
+				"max_value": 9999,
+				"event_on_level_up": "EVT_API_StatLevel"
+			},
+			"ATK": {
+				"max_value": 9999,
+				"event_on_level_up": "EVT_API_StatLevel"
+			}
+		};
+
+		_file = file_text_open_write("test_api_stats.json");
+		file_text_write_string(_file, json_stringify(_stats));
+		file_text_close(_file);
+
+		var _items = {
+			"type": "Items",
+			"ITEM_SWORD": {
+				"type": ["WEAPON"],
+				"is_stackable": false,
+				"stats": {
+					"ATK+": 5
+				}
+			}
+		};
+
+		_file = file_text_open_write("test_api_items.json");
+		file_text_write_string(_file, json_stringify(_items));
+		file_text_close(_file);
+
+		var _slots = {
+			"type": "Slots",
+			"SLOT_WEAPON": {
+				"permitted": ["WEAPON"],
+				"max_items": 1
+			}
+		};
+
+		_file = file_text_open_write("test_api_slots.json");
+		file_text_write_string(_file, json_stringify(_slots));
+		file_text_close(_file);
+
+		var _states = {
+			"type": "States",
+			"STATE_STUN": {
+				"state_type": "AILMENT",
+				"restricts_action": true
+			},
+			"STATE_BUFF_ATK": {
+				"state_type": "BUFF",
+				"stats": {
+					"ATK+": 2
+				}
+			}
+		};
+
+		_file = file_text_open_write("test_api_states.json");
+		file_text_write_string(_file, json_stringify(_states));
+		file_text_close(_file);
+
+		var _effects = {
+			"type": "Effects",
+			"EFFECT_STUN": {
+				"state_key": "STATE_STUN"
+			},
+			"EFFECT_BUFF_ATK": {
+				"state_key": "STATE_BUFF_ATK"
+			}
+		};
+
+		_file = file_text_open_write("test_api_effects.json");
+		file_text_write_string(_file, json_stringify(_effects));
+		file_text_close(_file);
+
+		var _commands = {
+			"type": "Commands",
+			"CMD_HIT": {},
+			"CMD_SKILL": {}
+		};
+
+		_file = file_text_open_write("test_api_commands.json");
+		file_text_write_string(_file, json_stringify(_commands));
+		file_text_close(_file);
+
+		var _entities = {
+			"type": "ENTITIES",
+			"HERO_API": {
+				"stats": {
+					"HP": 30,
+					"ATK": 10
+				},
+				"commands": {
+					"default": ["CMD_HIT"]
+				},
+				"learnset": [
+					{ "level": 2, "command": "CMD_SKILL", "category": "skill" }
+				],
+				"flags": {
+					"ELITE": true
+				}
+			}
+		};
+
+		_file = file_text_open_write("test_api_entities.json");
+		file_text_write_string(_file, json_stringify(_entities));
+		file_text_close(_file);
+
+		__Systemall.__events[$ "EVT_API_StatLevel"] = function(_stat)
+		{
+			return _stat.base_value + level;
+		};
+
+		mall_init("test_master_api.json");
+	});
+
+	suite_entity_api.OnRunBegin(function() {
+		CrispyTest.vars.hero = mall_entity_create_instance("HERO_API", 1);
+	});
+
+	suite_entity_api.TearDown(function() {
+		if (file_exists("test_master_api.json")) file_delete("test_master_api.json");
+		if (file_exists("test_api_stats.json")) file_delete("test_api_stats.json");
+		if (file_exists("test_api_items.json")) file_delete("test_api_items.json");
+		if (file_exists("test_api_slots.json")) file_delete("test_api_slots.json");
+		if (file_exists("test_api_states.json")) file_delete("test_api_states.json");
+		if (file_exists("test_api_effects.json")) file_delete("test_api_effects.json");
+		if (file_exists("test_api_commands.json")) file_delete("test_api_commands.json");
+		if (file_exists("test_api_entities.json")) file_delete("test_api_entities.json");
+	});
+
+	var test_entity_stats_api = new CrispyCase("Entity Stats API Methods", function() {
+		var _hero = CrispyTest.vars.hero;
+
+		AssertIsNotUndefined(_hero.StatGet("ATK"), "StatGet should return loaded stat instance.");
+		AssertEqual(_hero.StatSet("ATK", 7), 7, "StatSet should set current value when within clamp bounds.");
+		var _atk = _hero.StatGet("ATK");
+		var _old_atk = _atk.current_value;
+		var _expected_delta = clamp(_old_atk + 5, _atk.template.min_value, _atk.control_value) - _old_atk;
+		AssertEqual(_hero.StatAdd("ATK", 5), _expected_delta, "StatAdd should return real applied delta after clamp.");
+
+		var _stat_counter = { value: 0 };
+		_hero.StatForeach(method(_stat_counter, function(_key, _stat) {
+			value++;
+		}));
+		AssertEqual(_stat_counter.value, array_length(struct_get_names(_hero.stats)), "StatForeach should iterate all stats.");
+	});
+	suite_entity_api.AddCase(test_entity_stats_api);
+
+	var test_entity_slots_api = new CrispyCase("Entity Slots API Methods", function() {
+		var _hero = CrispyTest.vars.hero;
+
+		AssertTrue(_hero.SlotIsPermitted("SLOT_WEAPON", "ITEM_SWORD"), "Slot should permit ITEM_SWORD.");
+		AssertTrue(_hero.SlotIsEmpty("SLOT_WEAPON"), "Slot should start empty.");
+
+		var _equip = _hero.SlotEquip("SLOT_WEAPON", "ITEM_SWORD");
+		AssertTrue(_equip.success, "SlotEquip should succeed.");
+		AssertEqual(array_length(_equip.previously_equipped), 0, "First equip should report empty previous equipment.");
+		AssertFalse(_hero.SlotIsEmpty("SLOT_WEAPON"), "Slot should no longer be empty.");
+		AssertEqual(array_length(_hero.SlotGetEquipped("SLOT_WEAPON")), 1, "Slot should contain one equipped item.");
+
+		var _desequip = _hero.SlotDesequip("SLOT_WEAPON", "ITEM_SWORD");
+		AssertTrue(_desequip.success, "SlotDesequip should succeed.");
+		AssertEqual(_desequip.unequipped_item, "ITEM_SWORD", "Unequipped key should match requested item.");
+
+		var _slot_counter = { value: 0 };
+		_hero.SlotForeach(method(_slot_counter, function(_slot, _key) {
+			value++;
+		}));
+		AssertEqual(_slot_counter.value, array_length(struct_get_names(_hero.slots)), "SlotForeach should iterate all slots.");
+	});
+	suite_entity_api.AddCase(test_entity_slots_api);
+
+	var test_entity_states_effects_api = new CrispyCase("Entity States and Effects API Methods", function() {
+		var _hero = CrispyTest.vars.hero;
+		var _add = _hero.EffectAdd("EFFECT_BUFF_ATK");
+		AssertTrue(_add.success, "EffectAdd should succeed for buff effect.");
+		AssertTrue(_hero.StateIsActive("STATE_BUFF_ATK"), "State should be active after adding effect.");
+
+		var _effect_counter = { value: 0 };
+		_hero.EffectForeach("STATE_BUFF_ATK", method(_effect_counter, function(_effect, _index) {
+			value++;
+		}));
+		AssertEqual(_effect_counter.value, 1, "EffectForeach should iterate active effects for the state.");
+
+		var _active = _hero.StateGetAllActive();
+		AssertTrue(array_contains(_active, "STATE_BUFF_ATK"), "StateGetAllActive should include the active buff.");
+
+		var _buffs = _hero.StateGetAllByType("buff");
+		AssertTrue(array_contains(_buffs, "STATE_BUFF_ATK"), "StateGetAllByType should be case-insensitive.");
+
+		var _removed = _hero.StateRemoveAllEffects("STATE_BUFF_ATK");
+		AssertTrue(is_struct(_removed), "StateRemoveAllEffects should return a result struct.");
+		AssertFalse(_hero.StateIsActive("STATE_BUFF_ATK"), "State should deactivate after removing all effects.");
+
+		var _state_counter = { value: 0 };
+		_hero.StateForeach(method(_state_counter, function(_key, _state) {
+			value++;
+		}));
+		AssertEqual(_state_counter.value, array_length(struct_get_names(_hero.states)), "StateForeach should iterate all states.");
+	});
+	suite_entity_api.AddCase(test_entity_states_effects_api);
+
+	var test_entity_commands_api = new CrispyCase("Entity Commands API Methods", function() {
+		var _hero = CrispyTest.vars.hero;
+
+		AssertFalse(_hero.CommandExists("skill", "CMD_SKILL"), "Skill command should not exist before level up.");
+		_hero.LevelUp(1);
+		AssertTrue(_hero.CommandExists("skill", "CMD_SKILL"), "Skill command should be learned at level 2.");
+
+		AssertIsNotUndefined(_hero.CommandGet("skill", "CMD_SKILL"), "CommandGet should return learned command template.");
+		AssertEqual(array_length(_hero.CommandGetAll("skill")), 1, "CommandGetAll should return one learned skill.");
+		AssertIsNotUndefined(_hero.CommandGetRandom("skill"), "CommandGetRandom should return one command key when category is not empty.");
+
+		var _categories = _hero.CategoryGetAll();
+		AssertTrue(array_contains(_categories, "default"), "CategoryGetAll should include default category.");
+		AssertTrue(array_contains(_categories, "skill"), "CategoryGetAll should include learned category.");
+
+		_hero.CommandRemove("skill", "CMD_SKILL");
+		AssertFalse(_hero.CommandExists("skill", "CMD_SKILL"), "Removed command should no longer exist.");
+	});
+	suite_entity_api.AddCase(test_entity_commands_api);
+
+	var test_entity_misc_flags_save = new CrispyCase("Entity Misc Flags and Save API Methods", function() {
+		var _hero = CrispyTest.vars.hero;
+
+		AssertTrue(_hero.FlagHas("ELITE"), "Entity template flags should be loaded.");
+		_hero.FlagAdd("CANARY");
+		AssertTrue(_hero.FlagHas("CANARY"), "FlagAdd should add runtime flag.");
+		_hero.FlagRemove("CANARY");
+		AssertFalse(_hero.FlagHas("CANARY"), "FlagRemove should remove runtime flag.");
+
+		_hero.AggroAdd(7);
+		AssertEqual(_hero.AggroGet(), 7, "AggroAdd should increase threat.");
+		_hero.AggroReset();
+		AssertEqual(_hero.AggroGet(), 0, "AggroReset should reset threat to zero.");
+
+		AssertTrue(_hero.CanAct(), "Entity should be able to act before restrictive states.");
+		_hero.EffectAdd("EFFECT_STUN");
+		AssertFalse(_hero.CanAct(), "Entity should not act while restrictive state is active.");
+		_hero.StateRemoveAllEffects("STATE_STUN");
+		AssertTrue(_hero.CanAct(), "Entity should act again after removing restrictive state effects.");
+
+		_hero.AddDrop("ITEM_SWORD", 2, 100);
+		var _drops = _hero.GetDrops();
+		AssertIsNotUndefined(_drops, "GetDrops should return a drop struct.");
+		AssertTrue(array_length(_drops.items) > 0, "GetDrops should include guaranteed bonus drop.");
+
+		_hero.SlotEquip("SLOT_WEAPON", "ITEM_SWORD");
+		_hero.EffectAdd("EFFECT_BUFF_ATK");
+		_hero.StatSet("HP", 12);
+
+		var _saved = _hero.Export();
+		var _clone = mall_entity_create_instance("HERO_API", 1);
+		_clone.Import(_saved);
+
+		AssertEqual(_clone.level, _saved.level, "Import should restore exported level.");
+		AssertEqual(_clone.StatGet("HP").current_value, _hero.StatGet("HP").current_value, "Import should restore current stat values.");
+		AssertEqual(array_length(_clone.SlotGetEquipped("SLOT_WEAPON")), array_length(_hero.SlotGetEquipped("SLOT_WEAPON")), "Import should restore equipped items.");
+		AssertTrue(_clone.FlagHas("ELITE"), "Import should restore exported flags.");
+	});
+	suite_entity_api.AddCase(test_entity_misc_flags_save);
+
+	var test_item_and_instance_consistency = new CrispyCase("MallItem and MallItemInstance Consistency", function() {
+		var _item = (new MallItem("ITEM_TMP") ).FromData({
+			"type": ["weapon"],
+			"stats": {
+				"ATK%": 10,
+				"HP+": 3
+			}
+		});
+
+		AssertTrue(struct_exists(_item.stats, "ATK"), "FromData should parse percentage suffix and store key without suffix.");
+		AssertTrue(struct_exists(_item.stats, "HP"), "FromData should parse plus suffix and store key without suffix.");
+		AssertEqual(_item.stats[$ "ATK"][1], MALL_NUMTYPE.PERCENT, "ATK modifier should be PERCENT.");
+		AssertEqual(_item.stats[$ "HP"][1], MALL_NUMTYPE.REAL, "HP modifier should be REAL.");
+
+		var _inst = new MallItemInstance("ITEM_TMP", 2, { roll: 1 });
+		var _export = _inst.Export();
+		_export.vars.roll = 99;
+		AssertEqual(_inst.vars.roll, 1, "Export should clone vars and avoid mutating the source instance.");
+
+		var _inst_2 = new MallItemInstance("DUMMY", 0, {});
+		_inst_2.Import(_export);
+		AssertEqual(_inst_2.key, "ITEM_TMP", "Import should restore key.");
+		AssertEqual(_inst_2.count, 2, "Import should restore count.");
+		AssertEqual(_inst_2.vars.roll, 99, "Import should restore vars payload.");
+		_export.vars.roll = 7;
+		AssertEqual(_inst_2.vars.roll, 99, "Import should clone vars and avoid shared references.");
+	});
+	suite_entity_api.AddCase(test_item_and_instance_consistency);
+}
+
+/// @ignore
 function __mall_test_ai(_runner)
 {
 	var suite_ai = new CrispySuite("Pruebas del System de IA");
@@ -952,12 +1403,16 @@ function __mall_test_ai(_runner)
 			"type": "AI",
 			"rules": {
 				"RULE_ATTACK": { "priority": 0, "condition": "AI_COND_Always_True", "action": "AI_ACTION_Attack", "target": "AI_TARGET_Self" },
-				"RULE_HEAL": { "priority": 100, "condition": "AI_COND_HP_Below_50", "action": "AI_ACTION_Heal", "target": "AI_TARGET_Self" }
+				"RULE_HEAL": { "priority": 100, "condition": "AI_COND_HP_Below_50", "action": "AI_ACTION_Heal", "target": "AI_TARGET_Self" },
+				"RULE_SINGLE_TARGET": { "priority": 50, "condition": "AI_COND_Always_True", "action": "AI_ACTION_Attack", "target": "AI_TARGET_Single_Target" },
+				"RULE_BAD_ACTION": { "priority": 100, "condition": "AI_COND_Always_True", "action": "AI_ACTION_Invalid_Command", "target": "AI_TARGET_Self" }
 			},
 			"packages": {
 				"AI_SIMPLE": { "rules": ["RULE_ATTACK"] },
 				"AI_HEALER": { "rules": ["RULE_HEAL", "RULE_ATTACK"] },
 				"AI_BOSS": { "rules": ["AI_HEALER"] }, // Hereda de AI_HEALER
+				"AI_SINGLE": { "rules": ["RULE_SINGLE_TARGET"] },
+				"AI_BAD_ACTION": { "rules": ["RULE_BAD_ACTION", "RULE_ATTACK"] },
 				"AI_LOOP_A": { "rules": ["AI_LOOP_B", "RULE_ATTACK"] },
 				"AI_LOOP_B": { "rules": ["AI_LOOP_A"] }
 			}
@@ -973,7 +1428,9 @@ function __mall_test_ai(_runner)
 		};
 		__Systemall.__events[$ "AI_ACTION_Attack"] = function(caster, targets) { return "CMD_ATAQUE"; };
 		__Systemall.__events[$ "AI_ACTION_Heal"] = function(caster, targets) { return "CMD_CURAR"; };
+		__Systemall.__events[$ "AI_ACTION_Invalid_Command"] = function(caster, targets) { return "CMD_NO_EXISTE"; };
 		__Systemall.__events[$ "AI_TARGET_Self"] = function(caster, context) { return [caster]; };
+		__Systemall.__events[$ "AI_TARGET_Single_Target"] = function(caster, context) { return caster; };
 	
 		mall_init("test_master_ai.json");
 	});
@@ -1049,6 +1506,45 @@ function __mall_test_ai(_runner)
 		AssertEqual(action.source.key, "CMD_ATAQUE", "La IA debe ignorar la recursión y resolver reglas válidas restantes.");
 	});
 	suite_ai.AddCase(test_ai_cycle_guard);
+
+	var test_ai_single_target_normalization = new CrispyCase("Test Target IA No-Array", function() {
+		// Arrange
+		CrispyTest.vars.caster.ai_instance = new MallAIInstance(CrispyTest.vars.caster, "AI_SINGLE");
+
+		// Act
+		var action = CrispyTest.vars.caster.SelectAction(CrispyTest.vars.context);
+
+		// Assert
+		AssertIsNotUndefined(action, "La IA debería normalizar target single a array y seleccionar acción.");
+		AssertEqual(array_length(action.targets), 1, "La acción debe contener un solo objetivo normalizado.");
+		AssertEqual(action.source.key, "CMD_ATAQUE", "La acción resultante debe usar ataque.");
+	});
+	suite_ai.AddCase(test_ai_single_target_normalization);
+
+	var test_ai_missing_package_safe = new CrispyCase("Test IA con Paquete Inválido", function() {
+		// Arrange
+		CrispyTest.vars.caster.ai_instance = new MallAIInstance(CrispyTest.vars.caster, "AI_DOES_NOT_EXIST");
+
+		// Act
+		var action = CrispyTest.vars.caster.SelectAction(CrispyTest.vars.context);
+
+		// Assert
+		AssertIsUndefined(action, "Paquete inválido no debe romper flujo y debe devolver undefined.");
+	});
+	suite_ai.AddCase(test_ai_missing_package_safe);
+
+	var test_ai_invalid_command_fallback = new CrispyCase("Test IA Comando No Registrado", function() {
+		// Arrange
+		CrispyTest.vars.caster.ai_instance = new MallAIInstance(CrispyTest.vars.caster, "AI_BAD_ACTION");
+
+		// Act
+		var action = CrispyTest.vars.caster.SelectAction(CrispyTest.vars.context);
+
+		// Assert
+		AssertIsNotUndefined(action, "Si una regla falla por comando inválido, debe intentar reglas siguientes válidas.");
+		AssertEqual(action.source.key, "CMD_ATAQUE", "La IA debe caer a la regla válida posterior.");
+	});
+	suite_ai.AddCase(test_ai_invalid_command_fallback);
 }
 
 /// @ignore
@@ -1201,6 +1697,117 @@ function __mall_test_wate(_runner)
 		AssertIsUndefined(mall_battle_get_manager(), "La batalla debería haber terminado y el gestor debería ser undefined.");
 	});
 	suite_wate.AddCase(test_wate_victory_condition);	
+}
+
+/// @ignore
+function __mall_test_types(_runner)
+{
+	var suite_types = new CrispySuite("Type System Refactor Tests");
+	_runner.AddTestSuite(suite_types);
+
+	suite_types.SetUp(function() {
+		mall_system_cleanup();
+	});
+
+	var test_types_hybrid_index = new CrispyCase("Test Hybrid Struct+Array Index", function() {
+		mall_create_type("MAGICO", ["ITEM_FIRE", "ITEM_ICE", "ITEM_FIRE"]);
+
+		AssertTrue(struct_exists(__Systemall.__types, "MAGICO"), "Type bucket should exist in array registry.");
+		AssertTrue(struct_exists(__Systemall.__types_fast, "MAGICO"), "Type bucket should exist in fast registry.");
+		AssertEqual(array_length(__Systemall.__types[$ "MAGICO"]), 2, "Duplicated values should be deduplicated.");
+		AssertTrue(struct_exists(__Systemall.__types_fast[$ "MAGICO"], "ITEM_FIRE"), "Fast bucket should contain ITEM_FIRE.");
+		AssertTrue(struct_exists(__Systemall.__types_fast[$ "MAGICO"], "ITEM_ICE"), "Fast bucket should contain ITEM_ICE.");
+	});
+	suite_types.AddCase(test_types_hybrid_index);
+
+	var test_types_hierarchy_and_lookup = new CrispyCase("Test Hierarchy Inheritance Lookup", function() {
+		mall_create_type("FUEGO", "ITEM_FIRE");
+		mall_create_type("HIELO", "ITEM_ICE");
+		mall_types_set_hierarchy({
+			"FUEGO": ["MAGICO"],
+			"HIELO": ["MAGICO"]
+		});
+
+		AssertTrue(mall_exists_type("MAGICO"), "Parent tag should be considered as existing.");
+		AssertTrue(mall_type_has_value("MAGICO", "ITEM_FIRE"), "MAGICO should include FIRE descendants.");
+		AssertTrue(mall_type_has_value("MAGICO", "ITEM_ICE"), "MAGICO should include ICE descendants.");
+
+		var _magical_values = mall_get_type("MAGICO");
+		AssertTrue(is_array(_magical_values), "Parent query should return merged descendant values.");
+		AssertTrue(array_contains(_magical_values, "ITEM_FIRE"), "Merged values should include ITEM_FIRE.");
+		AssertTrue(array_contains(_magical_values, "ITEM_ICE"), "Merged values should include ITEM_ICE.");
+	});
+	suite_types.AddCase(test_types_hierarchy_and_lookup);
+
+	var test_types_query_and_or_not = new CrispyCase("Test Logical Query AND OR NOT", function() {
+		mall_types_set_hierarchy({ "FUEGO": ["MAGICO"] });
+
+		var _index = mall_types_make_index(["FUEGO", "RANGO"]);
+		var _q_and = { "and": ["MAGICO", "RANGO"] };
+		var _q_or = { "or": ["DEFENSA", "MAGICO"] };
+		var _q_not = { "not": ["MAGICO"] };
+		var _q_combo = { "and": ["RANGO"], "not": ["PESADO"] };
+
+		AssertTrue(mall_types_match_query(_index, _q_and), "AND should require all tags.");
+		AssertTrue(mall_types_match_query(_index, _q_or), "OR should pass if any tag matches.");
+		AssertFalse(mall_types_match_query(_index, _q_not), "NOT should fail when excluded tag exists.");
+		AssertTrue(mall_types_match_query(_index, _q_combo), "Combined query should pass when constraints are met.");
+	});
+	suite_types.AddCase(test_types_query_and_or_not);
+
+	var test_types_mutex = new CrispyCase("Test Mutex Compatibility Rules", function() {
+		mall_types_set_hierarchy({ "NO_MUERTO": ["MUERTO"] });
+		mall_types_set_mutex({
+			"VIVO": ["NO_MUERTO"],
+			"NO_MUERTO": ["VIVO"]
+		});
+
+		var _add_vivo = mall_types_try_add([], "VIVO");
+		AssertTrue(_add_vivo.success, "Adding first tag should succeed.");
+
+		var _add_undead = mall_types_try_add(_add_vivo.types, "NO_MUERTO");
+		AssertFalse(_add_undead.success, "Conflicting mutex tag should be rejected.");
+		AssertTrue(array_contains(_add_undead.conflicts, "VIVO"), "Conflict payload should include existing conflicting tag.");
+		AssertTrue(array_contains(_add_undead.conflicts, "NO_MUERTO"), "Conflict payload should include incoming conflicting tag.");
+	});
+	suite_types.AddCase(test_types_mutex);
+
+	var test_types_filter_components = new CrispyCase("Test Filtering Components By Query", function() {
+		mall_types_set_hierarchy({ "FUEGO": ["MAGICO"] });
+
+		var _items = [
+			{ key: "A", type: ["FUEGO", "RANGO"] },
+			{ key: "B", type: ["HIELO", "RANGO"] },
+			{ key: "C", type: ["PESADO", "MELEE"] }
+		];
+
+		var _filter_query = {
+			"and": ["RANGO"],
+			"or": ["MAGICO", "HIELO"],
+			"not": ["PESADO"]
+		};
+
+		var _filtered = mall_types_filter_components(_items, _filter_query);
+
+		AssertEqual(array_length(_filtered), 2, "Two entries should satisfy the logical filter.");
+		AssertEqual(_filtered[0].key, "A", "First filtered entry should be A.");
+		AssertEqual(_filtered[1].key, "B", "Second filtered entry should be B.");
+	});
+	suite_types.AddCase(test_types_filter_components);
+
+	var test_types_remove_api = new CrispyCase("Test Remove Type API", function() {
+		mall_create_type("MAGICO", ["ITEM_FIRE", "ITEM_ICE"]);
+		mall_create_type("FISICO", ["ITEM_AXE"]);
+
+		AssertTrue(mall_remove_type_value("MAGICO", "ITEM_FIRE"), "Removing one value should return true.");
+		AssertFalse(mall_type_has_value("MAGICO", "ITEM_FIRE"), "Removed value should not exist anymore.");
+		AssertTrue(mall_type_has_value("MAGICO", "ITEM_ICE"), "Remaining value should still exist.");
+
+		AssertTrue(mall_remove_type(["MAGICO", "FISICO"]), "Removing existing buckets should return true.");
+		AssertFalse(mall_exists_type("MAGICO"), "MAGICO bucket should be removed.");
+		AssertFalse(mall_exists_type("FISICO"), "FISICO bucket should be removed.");
+	});
+	suite_types.AddCase(test_types_remove_api);
 }
 
 /// @ignore
